@@ -1,5 +1,5 @@
-# offshore-seismology
-Repo for keeping track of various ideas, to-do items, and information for the Offshore Subduction Seismology Project.
+# offshore-geodesy
+Repo for keeping track of various ideas, to-do items, and information for the Offshore Subduction Geodesy Project.
 
 The current code repository for the GNSS-A processing can be found at [johnbdesanto/SeafloorGeodesy](https://github.com/johnbdesanto/SeafloorGeodesy).
 
