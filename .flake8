@@ -2,4 +2,3 @@
 max-line-length = 100
 output-file = flake8_log.txt
 tee = True
-ignore = E722,E203,W503,T001
