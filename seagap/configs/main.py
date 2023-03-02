@@ -3,9 +3,9 @@
 The main configuration module containing base settings pydantic
 classes
 """
+import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional
-import warnings
 
 import yaml
 from pydantic import BaseSettings, Field
