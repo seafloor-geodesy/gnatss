@@ -63,7 +63,10 @@ class SolverTransponder(BaseModel):
         delay-line, non-delay-line internal delays
         (determined at transdec) and any user set delay (dail-in).""",
     )
-    sv_mean: float = Field(..., description="""Sound velocity mean (m/s).""")
+    sv_mean: Optional[float] = Field(
+        None,
+        description="""Dynamically generated sound velocity mean (m/s)."""
+    )
     pxp_id: Optional[str] = Field(
         None,
         description="""Transponder id string.
