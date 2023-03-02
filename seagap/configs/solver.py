@@ -97,7 +97,10 @@ class Solver(BaseModel):
         ..., description="Reference ellipsoid configurations"
     )
     gps_sigma_limit: float = Field(
-        0.05, description="Maximum positional sigma allowed to use GPS positions"
+        0.05,
+        description="Maximum positional sigma allowed to use GPS positions",
+        gt=0,
+        lt=100,
     )
     std_dev: bool = Field(
         True,
@@ -126,13 +129,6 @@ class Solver(BaseModel):
         description="""Transponder Wait Time - delay at surface transducer (secs.).
         Options: ship/SV3 = 0.0s, WG = 0.1s""",
     )
-
-    @validator("gps_sigma_limit")
-    def check_sigma_limit(cls, v):
-        """Validate gps sigma limit value"""
-        if (v < 0.0) or (v > 100.0):
-            raise ValueError("GPS Sigma limit must be between 0 - 100")
-        return v
 
     @validator("transponder_wait_time")
     def check_transponder_wait_time(cls, v):
