@@ -64,8 +64,7 @@ class SolverTransponder(BaseModel):
         (determined at transdec) and any user set delay (dail-in).""",
     )
     sv_mean: Optional[float] = Field(
-        None,
-        description="""Dynamically generated sound velocity mean (m/s)."""
+        None, description="""Dynamically generated sound velocity mean (m/s)."""
     )
     pxp_id: Optional[str] = Field(
         None,
