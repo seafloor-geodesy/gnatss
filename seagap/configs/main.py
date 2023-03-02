@@ -5,6 +5,7 @@ classes
 """
 from pathlib import Path
 from typing import Any, Dict, Optional
+import warnings
 
 import yaml
 from pydantic import BaseSettings, Field
@@ -35,6 +36,13 @@ def yaml_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     if config_path.exists():
         # Only load config.yaml when it exists
         return yaml.safe_load(config_path.read_text(encoding))
+    else:
+        warnings.warn(
+            (
+                f"Configuration file `{CONFIG_FILE}` not found. "
+                "Will attempt to retrieve configuration from environment variables."
+            )
+        )
     return {}
 
 
