@@ -3,49 +3,43 @@
 The solver module containing base models for
 solver configuration
 """
-from typing import List, Optional, Dict, Literal, Any
+from typing import Any, List, Literal, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, validator, PrivateAttr, Field
+from pydantic import BaseModel, Field, PrivateAttr, validator
 
 
 class ReferenceEllipsoid(BaseModel):
     """Reference ellipsoid base model"""
-    semi_major_axis: float = Field(
-        ...,
-        description="Semi-major axis (m)"
-    )
-    reverse_flattening: float = Field(
-        ...,
-        description="Reverse flattening"
-    )
+
+    semi_major_axis: float = Field(..., description="Semi-major axis (m)")
+    reverse_flattening: float = Field(..., description="Reverse flattening")
     eccentricity: Optional[float] = Field(
         None,
-        description="Eccentricity. **This field will be computed during object creation**"
+        description="Eccentricity. **This field will be computed during object creation**",
     )
 
     def __init__(__pydantic_self__, **data: Any) -> None:
         super().__init__(**data)
 
-        # Note: Potential improvement with computed value: https://github.com/pydantic/pydantic/pull/2625
+        # Note: Potential improvement with computed value
+        # https://github.com/pydantic/pydantic/pull/2625
         __pydantic_self__.eccentricity = (
-            2.0 / __pydantic_self__.reverse_flattening - (1.0 / __pydantic_self__.reverse_flattening) ** 2.0
+            2.0 / __pydantic_self__.reverse_flattening
+            - (1.0 / __pydantic_self__.reverse_flattening) ** 2.0
         )
+
 
 class ArrayCenter(BaseModel):
     """Array center base model."""
-    lat: float = Field(
-        ...,
-        description="Latitude"
-    )
-    lon: float = Field(
-        ...,
-        description="Longitude"
-    )
+
+    lat: float = Field(..., description="Latitude")
+    lon: float = Field(..., description="Longitude")
 
 
 class SolverGlobal(BaseModel):
-    """Solver global base model for inversion processs."""
+    """Solver global base model for inversion process."""
+
     max_dat = 45000
     max_gps = 423000
     max_del = 15000
@@ -58,33 +52,22 @@ class SolverGlobal(BaseModel):
 
 class SolverTransponder(BaseModel):
     """Solver transponder base model for each transponder configuration"""
-    lat: float = Field(
-        ...,
-        description="Latitude"
-    )
-    lon: float = Field(
-        ...,
-        description="Longitude"
-    )
-    height: float = Field(
-        ...,
-        description="Transponder depth in meters (m)."
-    )
+
+    lat: float = Field(..., description="Latitude")
+    lon: float = Field(..., description="Longitude")
+    height: float = Field(..., description="Transponder depth in meters (m).")
     internal_delay: float = Field(
         ...,
         description="""Transponder internal delay in seconds (s).
         Assume transponder delay contains:
         delay-line, non-delay-line internal delays
-        (determined at transdec) and any user set delay (dail-in)."""
+        (determined at transdec) and any user set delay (dail-in).""",
     )
-    sv_mean: float = Field(
-        ...,
-        description="""Sound velocity mean (m/s)."""
-    )
+    sv_mean: float = Field(..., description="""Sound velocity mean (m/s).""")
     pxp_id: Optional[str] = Field(
         None,
         description="""Transponder id string.
-        **This field will be computed during object creation**"""
+        **This field will be computed during object creation**""",
     )
     # Auto generated uuid per transponder for unique identifier
     _uuid: str = PrivateAttr()
@@ -93,7 +76,7 @@ class SolverTransponder(BaseModel):
         super().__init__(**data)
 
         __pydantic_self__._uuid = uuid4().hex
-    
+
         # ID is 7 characters based on the uuid
         __pydantic_self__.pxp_id = __pydantic_self__._uuid[:7]
 
@@ -106,60 +89,52 @@ class Solver(BaseModel):
 
     defaults: SolverGlobal = SolverGlobal()
     transponders: Optional[List[SolverTransponder]] = Field(
-        ...,
-        description="A list of transponders configurations"
+        ..., description="A list of transponders configurations"
     )
     reference_ellipsoid: Optional[ReferenceEllipsoid] = Field(
-        ...,
-        description="Reference ellipsoid configurations"
+        ..., description="Reference ellipsoid configurations"
     )
     gps_sigma_limit: float = Field(
-        0.05,
-        description="Maximum positional sigma allowed to use GPS positions"
+        0.05, description="Maximum positional sigma allowed to use GPS positions"
     )
     std_dev: bool = Field(
         True,
-        description="GPS positional uncertainty flag std. dev. (True) or variance (False)"
+        description="GPS positional uncertainty flag std. dev. (True) or variance (False)",
     )
     geoid_undulation: float = Field(
-        ...,
-        description="Geoid undulation at sea surface point"
+        ..., description="Geoid undulation at sea surface point"
     )
     # TODO: Separate into different plugin for ray tracing
     ray_trace_type: Literal["scale", "1d"] = Field(
-        "scale",
-        description="Ray trace method to use"
+        "scale", description="Ray trace method to use"
     )
     bisection_tolerance: float = Field(
-        1e-10,
-        description="Tolerance to stop bisection during ray trace"
+        1e-10, description="Tolerance to stop bisection during ray trace"
     )
     array_center: ArrayCenter = Field(
-        ...,
-        description="Array center to use for calculation"
+        ..., description="Array center to use for calculation"
     )
     travel_times_variance: float = Field(
-        1e-10,
-        description="VARIANCE (s**2) PXP two-way travel time measurement"
+        1e-10, description="VARIANCE (s**2) PXP two-way travel time measurement"
     )
     # Transponder Wait Time - delay at surface transducer (secs.)
     # ship/SV3 = 0.0s, WG = 0.1s
     transponder_wait_time: float = Field(
         0.0,
-        description="Transponder Wait Time - delay at surface transducer (secs.). Options: ship/SV3 = 0.0s, WG = 0.1s"
+        description="""Transponder Wait Time - delay at surface transducer (secs.).
+        Options: ship/SV3 = 0.0s, WG = 0.1s""",
     )
 
-
-    @validator('gps_sigma_limit')
+    @validator("gps_sigma_limit")
     def check_sigma_limit(cls, v):
         """Validate gps sigma limit value"""
         if (v < 0.0) or (v > 100.0):
-            raise ValueError('GPS Sigma limit must be between 0 - 100')
+            raise ValueError("GPS Sigma limit must be between 0 - 100")
         return v
-    
-    @validator('transponder_wait_time')
+
+    @validator("transponder_wait_time")
     def check_transponder_wait_time(cls, v):
         """Validate transponder wait time value"""
-        if (v not in [0.0, 0.1]):
-            raise ValueError('Transponder wait time must either be 0.0s or 0.1s')
+        if v not in [0.0, 0.1]:
+            raise ValueError("Transponder wait time must either be 0.0s or 0.1s")
         return v
