@@ -9,4 +9,4 @@ build-backend = 'setuptools.build_meta'
 [tool.setuptools_scm]
 fallback_version = "unknown"
 local_scheme = "node-and-date"
-write_to = "ssec_project/version.py"
+write_to = "seagap/version.py"

@@ -34,6 +34,6 @@ repos:
     rev: v2.2.2
     hooks:
       - id: codespell
-        # Checks spelling in `docs/source` and `ssec_project` dirs ONLY
+        # Checks spelling in `docs/source` and `seagap` dirs ONLY
         # Ignores `.ipynb` files and `_build` folders
-        args: ["--skip=*.ipynb,docs/_build", "-w", "docs", "ssec_project"]
+        args: ["--skip=*.ipynb,docs/_build", "-w", "docs", "seagap"]
