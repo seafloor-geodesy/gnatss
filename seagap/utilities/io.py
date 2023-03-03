@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import fsspec
 
 
-def check_file_exists(input_path: str, storage_options: Dict[str, Any]) -> bool:
+def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> bool:
     """
     Perform a check if either file or directory exists
     by parsing the `input_path` into a parsed url,
