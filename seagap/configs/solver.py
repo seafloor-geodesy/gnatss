@@ -3,10 +3,12 @@
 The solver module containing base models for
 solver configuration
 """
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Literal, Optional, Dict
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, PrivateAttr, validator
+
+from ..utilities.io import check_file_exists
 
 
 class ReferenceEllipsoid(BaseModel):
@@ -35,6 +37,31 @@ class ArrayCenter(BaseModel):
 
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
+
+
+class SoundSpeed(BaseModel):
+    """Sound speed base model."""
+    
+    path: str = Field(
+        ...,
+        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat"
+    )
+    storage_options: Dict[str, Any] = Field(
+        {},
+        description="""Protocol keyword argument for specified file system.
+        This is not needed for local paths"""
+    )
+
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        super().__init__(**data)
+
+        # Checks the file
+        if not check_file_exists(
+            __pydantic_self__.path,
+            __pydantic_self__.storage_options
+        ):
+            raise FileNotFoundError(f"The specified file doesn't exist!")
+
 
 
 class SolverGlobal(BaseModel):
@@ -122,13 +149,16 @@ class Solver(BaseModel):
     travel_times_variance: float = Field(
         1e-10, description="VARIANCE (s**2) PXP two-way travel time measurement"
     )
-    # Transponder Wait Time - delay at surface transducer (secs.)
-    # ship/SV3 = 0.0s, WG = 0.1s
     transponder_wait_time: float = Field(
         0.0,
         description="""Transponder Wait Time - delay at surface transducer (secs.).
         Options: ship/SV3 = 0.0s, WG = 0.1s""",
     )
+    sound_speed: SoundSpeed = Field(
+        ...,
+        description="""Sound speed data directory for mean calculation"""
+    )
+
 
     @validator("transponder_wait_time")
     def check_transponder_wait_time(cls, v):

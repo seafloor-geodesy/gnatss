@@ -8,10 +8,13 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import yaml
-from pydantic import BaseSettings, Field
+from pydantic import BaseSettings, Field, BaseModel, validator, PrivateAttr
 from pydantic.fields import ModelField
 
+import fsspec
+
 from .solver import Solver
+from ..utilities.io import check_file_permissions
 
 CONFIG_FILE = "config.yaml"
 
@@ -109,6 +112,31 @@ class BaseConfiguration(BaseSettings):
                 file_secret_settings,
             )
 
+class OutputPath(BaseModel):
+    """Output path base model."""
+    
+    path: str = Field(
+        ...,
+        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat"
+    )
+    storage_options: Dict[str, Any] = Field(
+        {},
+        description="""Protocol keyword argument for specified file system.
+        This is not needed for local paths"""
+    )
+
+    _fsmap: str = PrivateAttr()
+
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        super().__init__(**data)
+
+        __pydantic_self__._fsmap = fsspec.get_mapper(
+            __pydantic_self__.path,
+            **__pydantic_self__.storage_options
+        )
+        # Checks the file permission as the object is being created
+        check_file_permissions(__pydantic_self__._fsmap)
+
 
 class Configuration(BaseConfiguration):
     """Configuration class to generate config object"""
@@ -116,3 +144,4 @@ class Configuration(BaseConfiguration):
     site_id: str = Field(..., description="The site identification for processing")
     # TODO: Separate settings out to core plugin
     solver: Optional[Solver] = Field(None, description="Solver configurations")
+    output: OutputPath
