@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 import fsspec
 import yaml
-from pydantic import BaseModel, BaseSettings, Field, PrivateAttr, validator
+from pydantic import BaseModel, BaseSettings, Field, PrivateAttr
 from pydantic.fields import ModelField
 
 from ..utilities.io import check_file_permissions

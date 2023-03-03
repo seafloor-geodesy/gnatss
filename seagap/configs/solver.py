@@ -59,7 +59,7 @@ class SoundSpeed(BaseModel):
         if not check_file_exists(
             __pydantic_self__.path, __pydantic_self__.storage_options
         ):
-            raise FileNotFoundError(f"The specified file doesn't exist!")
+            raise FileNotFoundError("The specified file doesn't exist!")
 
 
 class SolverGlobal(BaseModel):
