@@ -137,8 +137,8 @@ class Solver(BaseModel):
     gps_sigma_limit: float = Field(
         0.05,
         description="Maximum positional sigma allowed to use GPS positions",
-        gt=0,
-        lt=100,
+        gt=0.0,
+        lt=100.0,
     )
     std_dev: bool = Field(
         True,
@@ -175,8 +175,8 @@ class Solver(BaseModel):
         which points will be excluded from solution"""
     )
     residual_limit: float = Field(
-        50,
-        ge=0,
+        50.0,
+        ge=0.0,
         description="""Maximum residual in centimeters beyond
         which data points will be excluded from solution"""
     )
