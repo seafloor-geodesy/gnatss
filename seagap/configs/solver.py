@@ -172,13 +172,13 @@ class Solver(BaseModel):
         150.0,
         ge=0.0,
         description="""Distance in meters from center beyond
-        which points will be excluded from solution"""
+        which points will be excluded from solution""",
     )
     residual_limit: float = Field(
         50.0,
         ge=0.0,
         description="""Maximum residual in centimeters beyond
-        which data points will be excluded from solution"""
+        which data points will be excluded from solution""",
     )
 
     @validator("transponder_wait_time")
