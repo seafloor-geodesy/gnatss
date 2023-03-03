@@ -3,7 +3,7 @@
 The solver module containing base models for
 solver configuration
 """
-from typing import Any, List, Literal, Optional, Dict
+from typing import Any, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, PrivateAttr, validator
@@ -41,15 +41,15 @@ class ArrayCenter(BaseModel):
 
 class SoundSpeed(BaseModel):
     """Sound speed base model."""
-    
+
     path: str = Field(
         ...,
-        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat"
+        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat",
     )
     storage_options: Dict[str, Any] = Field(
         {},
         description="""Protocol keyword argument for specified file system.
-        This is not needed for local paths"""
+        This is not needed for local paths""",
     )
 
     def __init__(__pydantic_self__, **data: Any) -> None:
@@ -57,11 +57,9 @@ class SoundSpeed(BaseModel):
 
         # Checks the file
         if not check_file_exists(
-            __pydantic_self__.path,
-            __pydantic_self__.storage_options
+            __pydantic_self__.path, __pydantic_self__.storage_options
         ):
             raise FileNotFoundError(f"The specified file doesn't exist!")
-
 
 
 class SolverGlobal(BaseModel):
@@ -155,10 +153,8 @@ class Solver(BaseModel):
         Options: ship/SV3 = 0.0s, WG = 0.1s""",
     )
     sound_speed: SoundSpeed = Field(
-        ...,
-        description="""Sound speed data directory for mean calculation"""
+        ..., description="""Sound speed data directory for mean calculation"""
     )
-
 
     @validator("transponder_wait_time")
     def check_transponder_wait_time(cls, v):

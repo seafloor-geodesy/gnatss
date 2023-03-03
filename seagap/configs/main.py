@@ -7,14 +7,13 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import fsspec
 import yaml
-from pydantic import BaseSettings, Field, BaseModel, validator, PrivateAttr
+from pydantic import BaseModel, BaseSettings, Field, PrivateAttr, validator
 from pydantic.fields import ModelField
 
-import fsspec
-
-from .solver import Solver
 from ..utilities.io import check_file_permissions
+from .solver import Solver
 
 CONFIG_FILE = "config.yaml"
 
@@ -112,17 +111,18 @@ class BaseConfiguration(BaseSettings):
                 file_secret_settings,
             )
 
+
 class OutputPath(BaseModel):
     """Output path base model."""
-    
+
     path: str = Field(
         ...,
-        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat"
+        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat",
     )
     storage_options: Dict[str, Any] = Field(
         {},
         description="""Protocol keyword argument for specified file system.
-        This is not needed for local paths"""
+        This is not needed for local paths""",
     )
 
     _fsmap: str = PrivateAttr()
@@ -131,8 +131,7 @@ class OutputPath(BaseModel):
         super().__init__(**data)
 
         __pydantic_self__._fsmap = fsspec.get_mapper(
-            __pydantic_self__.path,
-            **__pydantic_self__.storage_options
+            __pydantic_self__.path, **__pydantic_self__.storage_options
         )
         # Checks the file permission as the object is being created
         check_file_permissions(__pydantic_self__._fsmap)

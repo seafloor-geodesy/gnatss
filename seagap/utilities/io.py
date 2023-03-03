@@ -1,6 +1,8 @@
 import os
-import fsspec
 from urllib.parse import urlparse
+
+import fsspec
+
 
 def check_file_exists(file_path, storage_options):
     parsed_path = urlparse(file_path)
