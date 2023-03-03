@@ -21,8 +21,8 @@ def input_path(request):
         return file_path, str(file_path)
     elif request.param == "glob":
         # Get file directory 2 level above
-        dir_path = str(file_dir.parent)
-        return file_path, f"{dir_path}/**/{file_path.name}"
+        dir_path = file_dir.parent / "**" / file_path.name
+        return file_path, str(dir_path)
     elif request.param == "random":
         return "./non_existent"
 
