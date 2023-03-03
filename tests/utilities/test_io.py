@@ -1,7 +1,7 @@
-from tempfile import mkstemp, mkdtemp
-from pathlib import Path
-import stat
 import os
+import stat
+from pathlib import Path
+from tempfile import mkdtemp, mkstemp
 
 import fsspec
 import pytest
@@ -9,6 +9,7 @@ import pytest
 from seagap.utilities.io import check_file_exists, check_permission
 
 PREFIX = "seagap-"
+
 
 @pytest.fixture(params=["single", "glob", "random"])
 def input_path(request):
@@ -39,10 +40,11 @@ def test_check_file_exists(input_path):
 
     assert isinstance(check_file_exists(test_path), bool) is True
     assert check_file_exists(test_path) is expected_value
-    
+
     # Clean up after
     if file_path is not None:
         os.unlink(file_path)
+
 
 @pytest.mark.parametrize("has_permission", [True, False])
 def test_check_permission(has_permission):
@@ -50,8 +52,8 @@ def test_check_permission(has_permission):
     # TODO: Add remote file test
     temp_path = mkdtemp(prefix=PREFIX)
     if not has_permission:
-       # Change directory permission to read only
-       os.chmod(temp_path, stat.S_IREAD)
+        # Change directory permission to read only
+        os.chmod(temp_path, stat.S_IREAD)
 
     fmap = fsspec.get_mapper(temp_path)
     try:
