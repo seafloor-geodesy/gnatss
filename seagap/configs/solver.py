@@ -168,6 +168,18 @@ class Solver(BaseModel):
     input_files: SolverInputs = Field(
         ..., description="Input files data path specifications."
     )
+    distance_limit: float = Field(
+        150.0,
+        ge=0.0,
+        description="""Distance in meters from center beyond
+        which points will be excluded from solution"""
+    )
+    residual_limit: float = Field(
+        50,
+        ge=0,
+        description="""Maximum residual in centimeters beyond
+        which data points will be excluded from solution"""
+    )
 
     @validator("transponder_wait_time")
     def check_transponder_wait_time(cls, v):
