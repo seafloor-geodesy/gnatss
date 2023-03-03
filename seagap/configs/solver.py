@@ -39,12 +39,12 @@ class ArrayCenter(BaseModel):
     lon: float = Field(..., description="Longitude")
 
 
-class SoundSpeed(BaseModel):
-    """Sound speed base model."""
+class InputData(BaseModel):
+    """Input data path specification base model"""
 
     path: str = Field(
         ...,
-        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat",
+        description="Path string to the data. Ex. s3://bucket/some_data.dat",
     )
     storage_options: Dict[str, Any] = Field(
         {},
@@ -60,6 +60,19 @@ class SoundSpeed(BaseModel):
             __pydantic_self__.path, __pydantic_self__.storage_options
         ):
             raise FileNotFoundError("The specified file doesn't exist!")
+
+
+class SolverInputs(BaseModel):
+    sound_speed: InputData = Field(
+        ..., description="Sound speed data path specification"
+    )
+    # NOTE: 3/3/2023 - These are required for now and will change in the future.
+    travel_times: InputData = Field(
+        ..., description="Travel times data path specification."
+    )
+    gps_solution: InputData = Field(
+        ..., description="GPS solution data path specification."
+    )
 
 
 class SolverGlobal(BaseModel):
@@ -152,8 +165,8 @@ class Solver(BaseModel):
         description="""Transponder Wait Time - delay at surface transducer (secs.).
         Options: ship/SV3 = 0.0s, WG = 0.1s""",
     )
-    sound_speed: SoundSpeed = Field(
-        ..., description="""Sound speed data directory for mean calculation"""
+    input_files: SolverInputs = Field(
+        ..., description="Input files data path specifications."
     )
 
     @validator("transponder_wait_time")

@@ -12,7 +12,7 @@ import yaml
 from pydantic import BaseModel, BaseSettings, Field, PrivateAttr
 from pydantic.fields import ModelField
 
-from ..utilities.io import check_file_permissions
+from ..utilities.io import check_permission
 from .solver import Solver
 
 CONFIG_FILE = "config.yaml"
@@ -134,7 +134,7 @@ class OutputPath(BaseModel):
             __pydantic_self__.path, **__pydantic_self__.storage_options
         )
         # Checks the file permission as the object is being created
-        check_file_permissions(__pydantic_self__._fsmap)
+        check_permission(__pydantic_self__._fsmap)
 
 
 class Configuration(BaseConfiguration):
