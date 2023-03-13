@@ -117,7 +117,7 @@ class OutputPath(BaseModel):
 
     path: str = Field(
         ...,
-        description="Path string to the sound speed data. Ex. s3://bucket/ctd_sound_speed.dat",
+        description="Path string to the output path. Ex. s3://bucket/my_output",
     )
     storage_options: Dict[str, Any] = Field(
         {},
