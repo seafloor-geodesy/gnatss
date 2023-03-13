@@ -15,7 +15,8 @@ def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> 
     ----------
     input_path : str
         Input path string. This can be a url path,
-        such as `s3://mybucket/path`
+        such as `s3://mybucket/file.dat` or
+        `s3://mybucket/**/myfile.csv`
     storage_options : dict
         Protocol keyword argument for specified file system.
         This is not needed for local paths.
@@ -24,6 +25,12 @@ def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> 
     -------
     bool
         A flag that indicates whether file or directory exists.
+
+    Notes
+    -----
+    In the case of a glob path string (has ``**``), the function will
+    travese through all child directories until it finds the specified
+    file matching the pattern.
     """
     parsed_url = urlparse(input_path)
     fs = fsspec.filesystem(parsed_url.scheme, **storage_options)
@@ -59,7 +66,7 @@ def check_permission(input_path: fsspec.FSMap) -> None:
         base_dir = os.path.dirname(input_path.root)
         if not base_dir:
             base_dir = input_path.root
-        TEST_FILE = os.path.join(base_dir, ".permission_test").replace("\\", "/")
+        TEST_FILE = os.path.join(base_dir, ".permission_test")
         with input_path.fs.open(TEST_FILE, "w") as f:
             f.write("testing\n")
         input_path.fs.delete(TEST_FILE)
