@@ -1,10 +1,10 @@
 from typing import Any, Dict, List, Literal, Optional
 
 import fsspec
-
 from pydantic import BaseModel, Field, PrivateAttr, validator
 
 from ..utilities.io import check_file_exists, check_permission
+
 
 class InputData(BaseModel):
     """Input data path specification base model"""
@@ -27,7 +27,8 @@ class InputData(BaseModel):
             __pydantic_self__.path, __pydantic_self__.storage_options
         ):
             raise FileNotFoundError("The specified file doesn't exist!")
-        
+
+
 class OutputPath(BaseModel):
     """Output path base model."""
 
