@@ -3,12 +3,12 @@
 The solver module containing base models for
 solver configuration
 """
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, List, Literal, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, PrivateAttr, validator
 
-from ..utilities.io import check_file_exists
+from .io import InputData
 
 
 class ReferenceEllipsoid(BaseModel):
@@ -37,29 +37,6 @@ class ArrayCenter(BaseModel):
 
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
-
-
-class InputData(BaseModel):
-    """Input data path specification base model"""
-
-    path: str = Field(
-        ...,
-        description="Path string to the data. Ex. s3://bucket/some_data.dat",
-    )
-    storage_options: Dict[str, Any] = Field(
-        {},
-        description="""Protocol keyword argument for specified file system.
-        This is not needed for local paths""",
-    )
-
-    def __init__(__pydantic_self__, **data: Any) -> None:
-        super().__init__(**data)
-
-        # Checks the file
-        if not check_file_exists(
-            __pydantic_self__.path, __pydantic_self__.storage_options
-        ):
-            raise FileNotFoundError("The specified file doesn't exist!")
 
 
 class SolverInputs(BaseModel):

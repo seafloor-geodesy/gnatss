@@ -7,12 +7,11 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import fsspec
 import yaml
-from pydantic import BaseModel, BaseSettings, Field, PrivateAttr
+from pydantic import BaseSettings, Field
 from pydantic.fields import ModelField
 
-from ..utilities.io import check_permission
+from .io import OutputPath
 from .solver import Solver
 
 CONFIG_FILE = "config.yaml"
@@ -110,31 +109,6 @@ class BaseConfiguration(BaseSettings):
                 env_settings,
                 file_secret_settings,
             )
-
-
-class OutputPath(BaseModel):
-    """Output path base model."""
-
-    path: str = Field(
-        ...,
-        description="Path string to the output path. Ex. s3://bucket/my_output",
-    )
-    storage_options: Dict[str, Any] = Field(
-        {},
-        description="""Protocol keyword argument for specified file system.
-        This is not needed for local paths""",
-    )
-
-    _fsmap: str = PrivateAttr()
-
-    def __init__(__pydantic_self__, **data: Any) -> None:
-        super().__init__(**data)
-
-        __pydantic_self__._fsmap = fsspec.get_mapper(
-            __pydantic_self__.path, **__pydantic_self__.storage_options
-        )
-        # Checks the file permission as the object is being created
-        check_permission(__pydantic_self__._fsmap)
 
 
 class Configuration(BaseConfiguration):
