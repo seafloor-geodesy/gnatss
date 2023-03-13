@@ -29,7 +29,7 @@ def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> 
     Notes
     -----
     In the case of a glob path string (has ``**``), the function will
-    travese through all child directories until it finds the specified
+    traverse through all child directories until it finds the specified
     file matching the pattern.
     """
     parsed_url = urlparse(input_path)
