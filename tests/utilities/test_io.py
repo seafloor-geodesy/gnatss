@@ -35,11 +35,8 @@ def input_path(request):
 
 def test_check_file_exists(input_path):
     """Tests the `check_file_exists` io function"""
-    if "non_existent" in input_path:
-        # A non existent file ... only path string
-        expected_value = False
-    else:
-        expected_value = True
+    # A non existent file ... only path string
+    expected_value = "non_existent" not in input_path
 
     assert isinstance(check_file_exists(input_path), bool) is True
     assert check_file_exists(input_path) is expected_value
