@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.8', '3.9', '3.10']
         experimental: [false]
@@ -19,11 +20,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install project
-      run: pip install ".[all]"
+      run: pip install ".[test]"
     - name: Run unit tests
       env:
         FORCE_COLOR: 3
-      run: pytest -vvv |& tee unit_test_log${{ matrix.python-version }}.log
+      run: |
+        set -o pipefail
+        pytest -vvv |& tee unit_test_log${{ matrix.python-version }}.log
     - name: Upload unit test log
       if: ${{ success() || failure() }}
       uses: actions/upload-artifact@v3.1.2

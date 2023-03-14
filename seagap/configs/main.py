@@ -11,6 +11,7 @@ import yaml
 from pydantic import BaseSettings, Field
 from pydantic.fields import ModelField
 
+from .io import OutputPath
 from .solver import Solver
 
 CONFIG_FILE = "config.yaml"
@@ -116,3 +117,4 @@ class Configuration(BaseConfiguration):
     site_id: str = Field(..., description="The site identification for processing")
     # TODO: Separate settings out to core plugin
     solver: Optional[Solver] = Field(None, description="Solver configurations")
+    output: OutputPath

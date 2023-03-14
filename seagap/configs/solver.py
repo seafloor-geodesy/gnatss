@@ -8,6 +8,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, PrivateAttr, validator
 
+from .io import InputData
+
 
 class ReferenceEllipsoid(BaseModel):
     """Reference ellipsoid base model"""
@@ -37,6 +39,19 @@ class ArrayCenter(BaseModel):
     lon: float = Field(..., description="Longitude")
 
 
+class SolverInputs(BaseModel):
+    sound_speed: InputData = Field(
+        ..., description="Sound speed data path specification"
+    )
+    # NOTE: 3/3/2023 - These are required for now and will change in the future.
+    travel_times: InputData = Field(
+        ..., description="Travel times data path specification."
+    )
+    gps_solution: InputData = Field(
+        ..., description="GPS solution data path specification."
+    )
+
+
 class SolverGlobal(BaseModel):
     """Solver global base model for inversion process."""
 
@@ -58,18 +73,22 @@ class SolverTransponder(BaseModel):
     height: float = Field(..., description="Transponder depth in meters (m).")
     internal_delay: float = Field(
         ...,
-        description="""Transponder internal delay in seconds (s).
-        Assume transponder delay contains:
-        delay-line, non-delay-line internal delays
-        (determined at transdec) and any user set delay (dail-in).""",
+        description=(
+            "Transponder internal delay in seconds (s). "
+            "Assume transponder delay contains: "
+            "delay-line, non-delay-line internal delays "
+            "(determined at transdec) and any user set delay (dail-in)."
+        ),
     )
     sv_mean: Optional[float] = Field(
-        None, description="""Dynamically generated sound velocity mean (m/s)."""
+        None, description="Dynamically generated sound velocity mean (m/s)."
     )
     pxp_id: Optional[str] = Field(
         None,
-        description="""Transponder id string.
-        **This field will be computed during object creation**""",
+        description=(
+            "Transponder id string. "
+            "**This field will be computed during object creation**"
+        ),
     )
     # Auto generated uuid per transponder for unique identifier
     _uuid: str = PrivateAttr()
@@ -99,8 +118,8 @@ class Solver(BaseModel):
     gps_sigma_limit: float = Field(
         0.05,
         description="Maximum positional sigma allowed to use GPS positions",
-        gt=0,
-        lt=100,
+        gt=0.0,
+        lt=100.0,
     )
     std_dev: bool = Field(
         True,
@@ -122,12 +141,31 @@ class Solver(BaseModel):
     travel_times_variance: float = Field(
         1e-10, description="VARIANCE (s**2) PXP two-way travel time measurement"
     )
-    # Transponder Wait Time - delay at surface transducer (secs.)
-    # ship/SV3 = 0.0s, WG = 0.1s
     transponder_wait_time: float = Field(
         0.0,
-        description="""Transponder Wait Time - delay at surface transducer (secs.).
-        Options: ship/SV3 = 0.0s, WG = 0.1s""",
+        description=(
+            "Transponder Wait Time - delay at surface transducer (secs.). "
+            "Options: ship/SV3 = 0.0s, WG = 0.1s"
+        ),
+    )
+    input_files: SolverInputs = Field(
+        ..., description="Input files data path specifications."
+    )
+    distance_limit: float = Field(
+        150.0,
+        ge=0.0,
+        description=(
+            "Distance in meters from center beyond "
+            "which points will be excluded from solution"
+        ),
+    )
+    residual_limit: float = Field(
+        50.0,
+        ge=0.0,
+        description=(
+            "Maximum residual in centimeters beyond "
+            "which data points will be excluded from solution"
+        ),
     )
 
     @validator("transponder_wait_time")
