@@ -9,6 +9,7 @@ import pytest
 from seagap.utilities.io import check_file_exists, check_permission
 
 PREFIX = "seagap-"
+NON_EXISTENT = "non_existent"
 
 
 @pytest.fixture(params=["single", "glob", "random"])
@@ -24,7 +25,7 @@ def input_path(request):
         dir_path = file_dir.parent / "**" / file_path.name
         file_path = str(dir_path)
     elif request.param == "random":
-        file_path = "./non_existent"
+        file_path = f"./{NON_EXISTENT}"
 
     yield file_path
 
@@ -36,7 +37,7 @@ def input_path(request):
 def test_check_file_exists(input_path):
     """Tests the `check_file_exists` io function"""
     # A non existent file ... only path string
-    expected_value = "non_existent" not in input_path
+    expected_value = NON_EXISTENT not in input_path
 
     assert isinstance(check_file_exists(input_path), bool) is True
     assert check_file_exists(input_path) is expected_value
