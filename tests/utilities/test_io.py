@@ -1,7 +1,7 @@
 import os
 import stat
 from pathlib import Path
-from tempfile import mkstemp, TemporaryDirectory
+from tempfile import TemporaryDirectory, mkstemp
 
 import fsspec
 import pytest
@@ -25,7 +25,7 @@ def input_path(request):
         file_path = str(dir_path)
     elif request.param == "random":
         file_path = "./non_existent"
-    
+
     yield file_path
 
     # Clean up after

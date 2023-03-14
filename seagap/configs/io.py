@@ -1,7 +1,6 @@
 from typing import Any, Dict
 
 import fsspec
-
 from pydantic import BaseModel, Field, PrivateAttr
 
 from ..utilities.io import check_file_exists, check_permission
