@@ -73,18 +73,22 @@ class SolverTransponder(BaseModel):
     height: float = Field(..., description="Transponder depth in meters (m).")
     internal_delay: float = Field(
         ...,
-        description="""Transponder internal delay in seconds (s).
-        Assume transponder delay contains:
-        delay-line, non-delay-line internal delays
-        (determined at transdec) and any user set delay (dail-in).""",
+        description=(
+            "Transponder internal delay in seconds (s). "
+            "Assume transponder delay contains: "
+            "delay-line, non-delay-line internal delays "
+            "(determined at transdec) and any user set delay (dail-in)."
+        ),
     )
     sv_mean: Optional[float] = Field(
-        None, description="""Dynamically generated sound velocity mean (m/s)."""
+        None, description="Dynamically generated sound velocity mean (m/s)."
     )
     pxp_id: Optional[str] = Field(
         None,
-        description="""Transponder id string.
-        **This field will be computed during object creation**""",
+        description=(
+            "Transponder id string. "
+            "**This field will be computed during object creation**"
+        ),
     )
     # Auto generated uuid per transponder for unique identifier
     _uuid: str = PrivateAttr()
@@ -139,8 +143,10 @@ class Solver(BaseModel):
     )
     transponder_wait_time: float = Field(
         0.0,
-        description="""Transponder Wait Time - delay at surface transducer (secs.).
-        Options: ship/SV3 = 0.0s, WG = 0.1s""",
+        description=(
+            "Transponder Wait Time - delay at surface transducer (secs.). "
+            "Options: ship/SV3 = 0.0s, WG = 0.1s"
+        ),
     )
     input_files: SolverInputs = Field(
         ..., description="Input files data path specifications."
@@ -148,14 +154,18 @@ class Solver(BaseModel):
     distance_limit: float = Field(
         150.0,
         ge=0.0,
-        description="""Distance in meters from center beyond
-        which points will be excluded from solution""",
+        description=(
+            "Distance in meters from center beyond "
+            "which points will be excluded from solution"
+        ),
     )
     residual_limit: float = Field(
         50.0,
         ge=0.0,
-        description="""Maximum residual in centimeters beyond
-        which data points will be excluded from solution""",
+        description=(
+            "Maximum residual in centimeters beyond "
+            "which data points will be excluded from solution"
+        ),
     )
 
     @validator("transponder_wait_time")

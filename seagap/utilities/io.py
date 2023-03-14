@@ -35,11 +35,15 @@ def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> 
     parsed_url = urlparse(input_path)
     fs = fsspec.filesystem(parsed_url.scheme, **storage_options)
     if "**" in parsed_url.path:
-        # Grab directory location for glob string
-        check_path = parsed_url.path.split("**")[0]
+        # Check that glob can find files
+        # as specified in the input string
+        glob_files = fs.glob(input_path)
+        if len(glob_files) == 0:
+            return False
+        return True
     else:
         check_path = input_path
-    return fs.exists(check_path)
+        return fs.exists(check_path)
 
 
 def check_permission(input_path: fsspec.FSMap) -> None:
@@ -69,6 +73,7 @@ def check_permission(input_path: fsspec.FSMap) -> None:
         TEST_FILE = os.path.join(base_dir, ".permission_test")
         with input_path.fs.open(TEST_FILE, "w") as f:
             f.write("testing\n")
-        input_path.fs.delete(TEST_FILE)
     except Exception:  # noqa
         raise PermissionError("Writing to specified path is not permitted.")
+    finally:
+        input_path.fs.delete(TEST_FILE)

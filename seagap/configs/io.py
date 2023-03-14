@@ -16,8 +16,10 @@ class InputData(BaseModel):
     )
     storage_options: Dict[str, Any] = Field(
         {},
-        description="""Protocol keyword argument for specified file system.
-        This is not needed for local paths""",
+        description=(
+            "Protocol keyword argument for specified file system. "
+            "This is not needed for local paths"
+        ),
     )
 
     def __init__(__pydantic_self__, **data: Any) -> None:
@@ -39,8 +41,10 @@ class OutputPath(BaseModel):
     )
     storage_options: Dict[str, Any] = Field(
         {},
-        description="""Protocol keyword argument for specified file system.
-        This is not needed for local paths""",
+        description=(
+            "Protocol keyword argument for specified file system. "
+            "This is not needed for local paths"
+        ),
     )
 
     _fsmap: str = PrivateAttr()
