@@ -22,39 +22,16 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "fsspec",
-    "numba",
-    "numpy",
-    "pandas",
-    "pydantic",
+    "fsspec>=2023.3.0",
+    "numba>=0.56.4",
+    "numpy>=1.23.5",
+    "pandas>=1.5.3",
+    "pydantic>=1.10.6",
+    "pluggy>=1.0.0",
+    "typer>=0.7.0"
 ]
 
 [project.optional-dependencies]
-all = [
-    "black",
-    "check-manifest",
-    "flake8",
-    "flake8-builtins",
-    "flake8-comprehensions",
-    "flake8-mutable",
-    "flake8-print",
-    "isort",
-    "jupyter-book",
-    "mypy",
-    "numpydoc",
-    "numpydoc",
-    "pre-commit",
-    "pylint",
-    "pytest",
-    "pytest-cov",
-    "pytest-flake8",
-    "pytest-mock",
-    "pytest-xdist",
-    "sphinx-automodapi",
-    "sphinx-panels",
-    "sphinx_rtd_theme",
-    "sphinxcontrib-mermaid",
-]
 docs = [
     "jupyter-book",
     "numpydoc",
@@ -73,7 +50,6 @@ lint = [
     "flake8-print",
     "isort",
     "mypy",
-    "numpydoc",
     "pre-commit",
     "pylint",
 ]
@@ -83,10 +59,14 @@ test = [
     "pytest-flake8",
     "pytest-mock",
     "pytest-xdist",
+    "pytest-benchmark",
 ]
 
 [project.urls]
 Homepage = "https://github.com/uw-ssec/offshore-geodesy"
+
+[project.scripts]
+seagap = "seagap.cli:app"
 
 [tool.hatch.version]
 source = "vcs"
