@@ -1,12 +1,75 @@
 [build-system]
-requires = [
-    "setuptools >= 66",
-    "setuptools_scm >= 7.0.0",
-    "wheel >= 0.38.4",
-]
-build-backend = 'setuptools.build_meta'
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-fallback_version = "unknown"
-local_scheme = "node-and-date"
-write_to = "seagap/version.py"
+[project]
+name = "seagap"
+dynamic = ["version"]
+description = "Community Seafloor Global Navigation Satellite Systems - Acoustic (GNSS-A) Positioning Software"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "fsspec>=2023.3.0",
+    "numba>=0.56.4",
+    "numpy>=1.23.5",
+    "pandas>=1.5.3",
+    "pydantic>=1.10.6",
+    "pluggy>=1.0.0",
+    "typer>=0.7.0"
+]
+
+[project.optional-dependencies]
+docs = [
+    "jupyter-book",
+    "numpydoc",
+    "sphinx-automodapi",
+    "sphinx-panels",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-mermaid",
+]
+lint = [
+    "black",
+    "check-manifest",
+    "flake8",
+    "flake8-builtins",
+    "flake8-comprehensions",
+    "flake8-mutable",
+    "flake8-print",
+    "isort",
+    "mypy",
+    "pre-commit",
+    "pylint",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-flake8",
+    "pytest-mock",
+    "pytest-xdist",
+    "pytest-benchmark",
+]
+
+[project.urls]
+Homepage = "https://github.com/uw-ssec/offshore-geodesy"
+
+[project.scripts]
+seagap = "seagap.cli:app"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/seagap/version.py"

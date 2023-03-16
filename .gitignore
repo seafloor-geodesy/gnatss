@@ -133,3 +133,6 @@ dmypy.json
 
 # Local Package
 version.py
+
+# MacOS
+.DS_Store
