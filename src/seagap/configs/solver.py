@@ -148,6 +148,9 @@ class Solver(BaseModel):
             "Options: ship/SV3 = 0.0s, WG = 0.1s"
         ),
     )
+    harmonic_mean_start_depth: float = Field(
+        0.0, description="Start depth in meters for harmonic mean computation."
+    )
     input_files: SolverInputs = Field(
         ..., description="Input files data path specifications."
     )
