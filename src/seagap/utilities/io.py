@@ -5,6 +5,12 @@ from urllib.parse import urlparse
 import fsspec
 
 
+def _get_filesystem(input_path: str, storage_options: Dict[str, Any] = {}):
+    """Retrieves filesystem from `input_path`"""
+    parsed_url = urlparse(input_path)
+    return fsspec.filesystem(parsed_url.scheme, **storage_options)
+
+
 def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> bool:
     """
     Perform a check if either file or directory exists
@@ -32,9 +38,8 @@ def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> 
     traverse through all child directories until it finds the specified
     file matching the pattern.
     """
-    parsed_url = urlparse(input_path)
-    fs = fsspec.filesystem(parsed_url.scheme, **storage_options)
-    if "**" in parsed_url.path:
+    fs = _get_filesystem(input_path, storage_options)
+    if "**" in input_path:
         # Check that glob can find files
         # as specified in the input string
         glob_files = fs.glob(input_path)

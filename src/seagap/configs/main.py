@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 
 import yaml
 from pydantic import BaseSettings, Field
+from pydantic.error_wrappers import ValidationError
 from pydantic.fields import ModelField
 
 from .io import OutputPath
@@ -118,3 +119,26 @@ class Configuration(BaseConfiguration):
     # TODO: Separate settings out to core plugin
     solver: Optional[Solver] = Field(None, description="Solver configurations")
     output: OutputPath
+
+
+def load_configuration(config_yaml: Optional[str] = None):
+    try:
+        config = Configuration()
+    except ValidationError:
+        warnings.warn(
+            "Loading attempt failed, trying to load configuration from file path given."
+        )
+        if config_yaml is None:
+            raise FileNotFoundError(
+                "Configuration file not found. Unable to create configuration"
+            )
+
+        config_path = Path(config_yaml)
+        if not config_path.exists():
+            raise FileNotFoundError(
+                "Configuration file not found. Unable to create configuration"
+            )
+
+        yaml_dict = yaml.safe_load(config_path.read_text("utf-8"))
+        config = Configuration(**yaml_dict)
+    return config
