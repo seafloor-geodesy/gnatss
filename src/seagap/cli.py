@@ -1,34 +1,43 @@
 """The main command line interface for seagap"""
+from typing import Any, Dict, Optional
+
 import typer
-from typing import Optional, Dict, Any
-from .configs.main import load_configuration, Configuration
-from .utilities.io import _get_filesystem
+
 # from .harmonic_mean import sv_harmonic_mean
 from . import package_name
+from .configs.main import Configuration, load_configuration
+from .utilities.io import _get_filesystem
 
 app = typer.Typer(name=package_name)
+
 
 def load_files(config: Configuration) -> Dict[str, Any]:
     all_files_dict = {}
     for k, v in config.solver.input_files.dict().items():
         typer.echo(f"Loading {k} at {v.get('path')}")
-        path = v.get('path', '')
-        storage_options = v.get('storage_options', {})
-        
+        path = v.get("path", "")
+        storage_options = v.get("storage_options", {})
+
         fs = _get_filesystem(path, storage_options)
-        if '**' in path:
+        if "**" in path:
             all_files = fs.glob(path)
         else:
             all_files = path
-            
+
         all_files_dict.setdefault(k, all_files)
     return all_files_dict
+
 
 def main(config: Configuration, all_files_dict: Dict[str, Any]):
     import pandas as pd
 
     # Read sound speed
-    svdf = pd.read_csv(all_files_dict['sound_speed'], delim_whitespace=True, header=None, names=['dd', 'sv'])
+    svdf = pd.read_csv(
+        all_files_dict["sound_speed"],
+        delim_whitespace=True,
+        header=None,
+        names=["dd", "sv"],
+    )
     transponders = config.solver.transponders
     start_depth = config.solver.harmonic_mean_start_depth
 
@@ -50,9 +59,12 @@ def callback():
 
 
 @app.command()
-def run(config_yaml: Optional[str] = typer.Option(
-            None, help="Custom path to configuration yaml file. **Currently only support local files!**"
-    )):
+def run(
+    config_yaml: Optional[str] = typer.Option(
+        None,
+        help="Custom path to configuration yaml file. **Currently only support local files!**",
+    )
+):
     """
     Run the full pre-processing routine for GNSS-A
     """
@@ -62,4 +74,3 @@ def run(config_yaml: Optional[str] = typer.Option(
     all_files_dict = load_files(config)
 
     main(config, all_files_dict)
-        
