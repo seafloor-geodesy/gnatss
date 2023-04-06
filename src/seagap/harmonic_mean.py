@@ -97,9 +97,7 @@ def _compute_hm(
     return (ze - zs) / cumsum
 
 
-def sv_harmonic_mean(
-    svdf: pd.DataFrame, start_depth: float, end_depth: float
-) -> float:
+def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> float:
     """
     Computes harmonic mean from a sound profile
     containing depth (dd) and sound speed (sv)
