@@ -1,5 +1,4 @@
 import math
-from typing import Union
 
 import numba
 import numpy as np
@@ -10,15 +9,30 @@ import pandas as pd
 def _compute_hm(
     dd: np.ndarray,
     sv: np.ndarray,
-    start_depth: Union[int, float],
-    end_depth: Union[int, float],
+    start_depth: float,
+    end_depth: float,
     start_index: int,
-):
+) -> float:
     """
     Computes harmonic mean.
     It's a direct translation from the original Fortran code found in
     src/cal_sv_harmonic_mean/get_sv_harmonic_mean.F called
     subroutine `sv_harmon_mean`
+
+    Parameters
+    ----------
+    dd : np.ndarray
+        Depth values array dd[n]
+    sv : np.ndarray
+        Sound speed values array sv[n]
+    start_depth : float
+        The start depth for calculation
+    end_depth : float
+        The end depth for calculation
+    start_index : int
+        The start index for the first value
+        computed by start depth
+
     """
     # TODO: Find a way to vectorize this computation
 
@@ -84,8 +98,8 @@ def _compute_hm(
 
 
 def sv_harmonic_mean(
-    svdf: pd.DataFrame, start_depth: Union[int, float], end_depth: Union[int, float]
-):
+    svdf: pd.DataFrame, start_depth: float, end_depth: float
+) -> float:
     """
     Computes harmonic mean from a sound profile
     containing depth (dd) and sound speed (sv)
