@@ -1,8 +1,17 @@
+import pandas as pd
+import numpy as np
+from typing import Union
 import numba
 import math
 
 @numba.njit
-def _compute_hm(dd, sv, start_depth, end_depth, start_index):
+def _compute_hm(
+    dd: np.ndarray,
+    sv: np.ndarray,
+    start_depth: Union[int, float],
+    end_depth: Union[int, float],
+    start_index: int
+):
     """
     Computes harmonic mean.
     It's a direct translation from the original Fortran code found in
@@ -10,24 +19,42 @@ def _compute_hm(dd, sv, start_depth, end_depth, start_index):
     subroutine `sv_harmon_mean`
     """
     # TODO: Find a way to vectorize this computation
+    
+    # Assign start depth and end depth to zs and ze
     zs = start_depth
     ze = end_depth
     
+    # Extract the first and second depth values
     z1=dd[start_index]
     z2=dd[start_index+1]
 
+    # Extract the first and second sound speed values
     c_z1 = sv[start_index]
     c_z2 = sv[start_index+1]
 
+    # Set start depth to initial depth to keep track of it
     zi = zs
-    if(z2 >= ze):
+
+    # If the second depth value (z2) is greater than and equal to the 
+    # end depth value (ze) then the final depth (zf) should be assigned
+    # to the end depth value (ze), otherwise, the final depth
+    # should be assigned to the second depth values
+    if z2 >= ze:
         zf = ze
     else:
         zf = z2
-        
+    
+    # Start cumulative sum as 0.0
     cumsum = 0.0
     
+    # Loop over the whole array for depth and sound speed,
+    # starting from the index of the second value to the whole
+    # depth data, which is assumed to be the same exact number
+    # as the sound speed data
     for i in range(start_index+1, len(dd)):
+        # calculate the slope of the two points
+        # for sound speed and depth
+        # slope = (sv2 - sv1) / (d2 - d1)
         b =  ( c_z2 - c_z1) / ( z2 - z1 )
         wi = zi - z1 + c_z1/b
         wf = zf - z1 + c_z1/b
@@ -52,7 +79,11 @@ def _compute_hm(dd, sv, start_depth, end_depth, start_index):
     
     return (ze-zs)/cumsum
 
-def sv_harmonic_mean(svdf, start_depth, end_depth):
+def sv_harmonic_mean(
+    svdf: pd.DataFrame,
+    start_depth: Union[int, float],
+    end_depth: Union[int, float]
+):
     """
     Computes harmonic mean from a sound profile
     containing depth (dd) and sound speed (sv)
@@ -71,6 +102,9 @@ def sv_harmonic_mean(svdf, start_depth, end_depth):
     float
         The sound speed harmonic mean value
     """
+    # Clean up the sound speed value, ensuring that there's no negative value
+    svdf = svdf[svdf['sv'] < 0]
+    # Make all of the values absolute values, so we're only dealing with positives
     abs_start = abs(start_depth)
     abs_end = abs(end_depth)
     abs_sv = abs(svdf)
