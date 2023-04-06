@@ -80,9 +80,6 @@ def _compute_hm(
         if z1 >= ze:
             break
 
-    if cumsum == 0:
-        # If cumulative sum is 0, most likely only one value
-        return sv[start_index]
     return (ze - zs) / cumsum
 
 
