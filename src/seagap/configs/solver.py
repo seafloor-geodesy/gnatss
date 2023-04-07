@@ -143,10 +143,7 @@ class Solver(BaseModel):
     )
     transducer_delay_time: float = Field(
         0.0,
-        description=(
-            "Transducer Delay Time - delay at surface transducer (secs.). "
-            "Options: ship/SV3 = 0.0s, WG = 0.1s"
-        ),
+        description="Transducer Delay Time - delay at surface transducer (secs). ",
     )
     harmonic_mean_start_depth: float = Field(
         0.0, description="Start depth in meters for harmonic mean computation."
@@ -170,10 +167,3 @@ class Solver(BaseModel):
             "which data points will be excluded from solution"
         ),
     )
-
-    @validator("transducer_delay_time")
-    def check_transducer_delay_time(cls, v):
-        """Validate transducer wait time value"""
-        if v not in [0.0, 0.1]:
-            raise ValueError("Transducer wait time must either be 0.0s or 0.1s")
-        return v
