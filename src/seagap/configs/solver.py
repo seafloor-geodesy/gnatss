@@ -6,7 +6,7 @@ solver configuration
 from typing import Any, List, Literal, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, PrivateAttr, validator
+from pydantic import BaseModel, Field, PrivateAttr
 
 from .io import InputData
 
