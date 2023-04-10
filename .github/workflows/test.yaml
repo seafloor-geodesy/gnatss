@@ -2,6 +2,9 @@ name: Test
 
 on: [push, pull_request]
 
+env:
+  PROJECT_NAME: 'seagap'
+
 jobs:
   unit_test:
     name: ${{ matrix.python-version }}-unit-test
@@ -26,10 +29,12 @@ jobs:
         FORCE_COLOR: 3
       run: |
         set -o pipefail
-        pytest -vvv |& tee unit_test_log${{ matrix.python-version }}.log
+        pytest -vvv --cov=${{ env.PROJECT_NAME }} --cov-report=xml tests/ |& tee unit_test_log${{ matrix.python-version }}.log
     - name: Upload unit test log
       if: ${{ success() || failure() }}
       uses: actions/upload-artifact@v3.1.2
       with:
         name: unit_test_log${{ matrix.python-version }}
         path: unit_test_log${{ matrix.python-version }}.log
+    - name: Upload coverage reports to Codecov with GitHub Action
+      uses: codecov/codecov-action@v3
