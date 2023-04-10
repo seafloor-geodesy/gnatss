@@ -13,7 +13,8 @@ runner = CliRunner()
             [],
             [
                 "GNSS-A Processing in Python",
-                "run    Run the full pre-processing routine for GNSS-A",
+                "run",
+                "Run the full pre-processing routine for GNSS-A",
             ],
         ),
         (
