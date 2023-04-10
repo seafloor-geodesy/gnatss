@@ -3,9 +3,9 @@ from typing import Any, Dict, Optional
 
 import typer
 
-# from .harmonic_mean import sv_harmonic_mean
 from . import package_name
 from .configs.main import Configuration, load_configuration
+from .harmonic_mean import sv_harmonic_mean
 from .utilities.io import _get_filesystem
 
 app = typer.Typer(name=package_name)
@@ -42,13 +42,15 @@ def main(config: Configuration, all_files_dict: Dict[str, Any]):
     start_depth = config.solver.harmonic_mean_start_depth
 
     # Compute harmonic mean of each transponder
-    # typer.echo("Computing harmonic mean...")
-    # for transponder in transponders:
-    #     # Compute the harmonic mean and round to 3 decimal places
-    #     harmonic_mean = round(sv_harmonic_mean(svdf, start_depth, transponder.height), 3)
-    #     transponder.sv_mean = harmonic_mean
-    #     typer.echo(transponder)
-    # typer.echo("Finished computing harmonic mean")
+    typer.echo("Computing harmonic mean...")
+    for transponder in transponders:
+        # Compute the harmonic mean and round to 3 decimal places
+        harmonic_mean = round(
+            sv_harmonic_mean(svdf, start_depth, transponder.height), 3
+        )
+        transponder.sv_mean = harmonic_mean
+        typer.echo(transponder)
+    typer.echo("Finished computing harmonic mean")
 
 
 @app.callback()
