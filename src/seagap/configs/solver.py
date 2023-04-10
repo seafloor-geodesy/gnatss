@@ -6,7 +6,7 @@ solver configuration
 from typing import Any, List, Literal, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, PrivateAttr, validator
+from pydantic import BaseModel, Field, PrivateAttr
 
 from .io import InputData
 
@@ -141,12 +141,12 @@ class Solver(BaseModel):
     travel_times_variance: float = Field(
         1e-10, description="VARIANCE (s**2) PXP two-way travel time measurement"
     )
-    transponder_wait_time: float = Field(
+    transducer_delay_time: float = Field(
         0.0,
-        description=(
-            "Transponder Wait Time - delay at surface transducer (secs.). "
-            "Options: ship/SV3 = 0.0s, WG = 0.1s"
-        ),
+        description="Transducer Delay Time - delay at surface transducer (secs). ",
+    )
+    harmonic_mean_start_depth: float = Field(
+        0.0, description="Start depth in meters for harmonic mean computation."
     )
     input_files: SolverInputs = Field(
         ..., description="Input files data path specifications."
@@ -167,10 +167,3 @@ class Solver(BaseModel):
             "which data points will be excluded from solution"
         ),
     )
-
-    @validator("transponder_wait_time")
-    def check_transponder_wait_time(cls, v):
-        """Validate transponder wait time value"""
-        if v not in [0.0, 0.1]:
-            raise ValueError("Transponder wait time must either be 0.0s or 0.1s")
-        return v
