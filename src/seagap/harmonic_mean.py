@@ -1,100 +1,45 @@
-import math
-
-import numba
-import numpy as np
 import pandas as pd
+import scipy.stats
 
 
-@numba.njit
-def _compute_hm(
-    dd: np.ndarray,
-    sv: np.ndarray,
-    start_depth: float,
-    end_depth: float,
-    start_index: int,
-) -> float:
+def _compute_hm(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> float:
     """
-    Computes harmonic mean.
-    It's a direct translation from the original Fortran code found in
-    src/cal_sv_harmonic_mean/get_sv_harmonic_mean.F called
-    subroutine `sv_harmon_mean`
+    Computes harmonic mean using `scipy's hmean <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.hmean.html>`_ method.
+    It takes the sound speed 'sv' as the input array and the depth 'dd' differences as the weights.
+
+    Note that this function assumes absolute values for depth array,
+    sound speed array, start depth, and end depth.
+
+    The underlying formula is
+
+    H = (w1+...+wn) / ((w1/x1)+...+(wn/xn))
+
+    H is the resulting harmonic mean
+    w is the weight value, in this case, the depth differences
+    x is the input value, in this case, the sound speed
 
     Parameters
     ----------
-    dd : np.ndarray
-        Depth values array dd[n]
-    sv : np.ndarray
-        Sound speed values array sv[n]
+    svdf : pd.DataFrame
+        Sound speed profile data as dataframe with columns 'dd' and 'sv'
     start_depth : float
         The start depth for calculation
     end_depth : float
         The end depth for calculation
-    start_index : int
-        The start index for the first value
-        computed by start depth
 
-    """
-    # TODO: Find a way to vectorize this computation
+    """  # noqa
+    for col in ["dd", "sv"]:
+        if col not in svdf.columns:
+            raise ValueError(f"{col} column must exist in the input dataframe!")
 
-    # Assign start depth and end depth to zs and ze
-    zs = start_depth
-    ze = end_depth
+    filtdf = svdf[
+        (svdf["dd"].round() >= start_depth) & (svdf["dd"].round() <= end_depth)
+    ]
 
-    # Extract the first and second depth values
-    z1 = dd[start_index]
-    z2 = dd[start_index + 1]
+    # Get weights
+    weights = filtdf["dd"].diff()
 
-    # Extract the first and second sound speed values
-    c_z1 = sv[start_index]
-    c_z2 = sv[start_index + 1]
-
-    # Set start depth to initial depth to keep track of it
-    zi = zs
-
-    # If the second depth value (z2) is greater than and equal to the
-    # end depth value (ze) then the final depth (zf) should be assigned
-    # to the end depth value (ze), otherwise, the final depth
-    # should be assigned to the second depth values
-    if z2 >= ze:
-        zf = ze
-    else:
-        zf = z2
-
-    # Start cumulative sum as 0.0
-    cumsum = 0.0
-
-    # Loop over the whole array for depth and sound speed,
-    # starting from the index of the second value to the whole
-    # depth data, which is assumed to be the same exact number
-    # as the sound speed data
-    for i in range(start_index + 1, len(dd)):
-        # calculate the slope of the two points
-        # for sound speed and depth
-        # slope = (sv2 - sv1) / (d2 - d1)
-        b = (c_z2 - c_z1) / (z2 - z1)
-        wi = zi - z1 + c_z1 / b
-        wf = zf - z1 + c_z1 / b
-
-        wi = math.log((zi - z1) * b + c_z1) / b
-        wf = math.log((zf - z1) * b + c_z1) / b
-
-        delta = wf - wi
-        cumsum = cumsum + delta
-        z1 = zf
-        z2 = dd[i + 1]
-        c_z1 = c_z2
-        c_z2 = sv[i + 1]
-        zi = zf
-
-        if ze > zi and ze < z2:
-            zf = ze
-        else:
-            zf = z2
-
-        if z1 >= ze:
-            break
-
-    return (ze - zs) / cumsum
+    return scipy.stats.hmean(filtdf["sv"], weights=weights, nan_policy="omit")
 
 
 def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> float:
@@ -123,11 +68,7 @@ def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -
     abs_end = abs(end_depth)
     abs_sv = abs(svdf)
     # Get the index for the start of depth closest to specified start depth
-    try:
-        start_index = abs_sv[(abs_sv["dd"].round() >= abs_start)].index[0]
-    except IndexError:
+    if len(abs_sv) == 0:
         raise ValueError("Dataframe is empty! Please check your data inputs.")
 
-    return _compute_hm(
-        abs_sv["dd"].values, abs_sv["sv"].values, abs_start, abs_end, start_index
-    )
+    return _compute_hm(abs_sv, abs_start, abs_end)
