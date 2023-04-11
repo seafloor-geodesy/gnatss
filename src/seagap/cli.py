@@ -14,8 +14,8 @@ app = typer.Typer(name=package_name)
 def load_files(config: Configuration) -> Dict[str, Any]:
     all_files_dict = {}
     for k, v in config.solver.input_files.dict().items():
-        typer.echo(f"Loading {k} at {v.get('path')}")
         path = v.get("path", "")
+        typer.echo(f"Loading {k} at {path}")
         storage_options = v.get("storage_options", {})
 
         fs = _get_filesystem(path, storage_options)
