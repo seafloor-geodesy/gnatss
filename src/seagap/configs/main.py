@@ -128,17 +128,11 @@ def load_configuration(config_yaml: Optional[str] = None):
         warnings.warn(
             "Loading attempt failed, trying to load configuration from file path given."
         )
-        if config_yaml is None:
+        if config_yaml is None or not Path(config_yaml).exists():
             raise FileNotFoundError(
                 "Configuration file not found. Unable to create configuration"
             )
 
-        config_path = Path(config_yaml)
-        if not config_path.exists():
-            raise FileNotFoundError(
-                "Configuration file not found. Unable to create configuration"
-            )
-
-        yaml_dict = yaml.safe_load(config_path.read_text("utf-8"))
+        yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
         config = Configuration(**yaml_dict)
     return config
