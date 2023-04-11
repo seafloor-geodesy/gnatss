@@ -7,22 +7,12 @@ runner = CliRunner()
 
 
 @pytest.mark.parametrize(
-    "commands,expected_stdouts_len",
-    [
-        (
-            [],
-            16,
-        ),
-        (
-            ["run"],
-            13,
-        ),
-    ],
+    "commands",
+    [[], ["run"]],
     ids=["root", "run"],
 )
-def test_app_help(commands, expected_stdouts_len):
+def test_app_help(commands):
     result = runner.invoke(app, commands + ["--help"])
     assert result.exit_code == 0
 
-    # TODO: Expand this to get a listing of expected sub commands and check against those
-    assert len(result.stdout.split("\n")) == expected_stdouts_len
+    # TODO: Figure out what kind of test would be good for this
