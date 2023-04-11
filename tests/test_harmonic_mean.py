@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from seagap.constants import SP_DEPTH, SP_SOUND_SPEED
 from seagap.harmonic_mean import _compute_hm, sv_harmonic_mean
 
 from . import TEST_DATA_FOLDER
@@ -37,7 +38,7 @@ def test__compute_hm(start_idx, end_idx, expected_hm):
 
     # Get partial of the data from test index
     partdf = svdf[start_idx:end_idx].copy()
-    start_depth, end_depth = partdf.iloc[0]["dd"], partdf.iloc[-1]["dd"]
+    start_depth, end_depth = partdf.iloc[0][SP_DEPTH], partdf.iloc[-1][SP_DEPTH]
     result_hm = round(_compute_hm(svdf, start_depth, end_depth), 3)
 
     # Check for result to match expected
@@ -51,7 +52,7 @@ def test__compute_hm(start_idx, end_idx, expected_hm):
     # H is the resulting harmonic mean
     # w is the weight value, in this case, the depth differences
     # x is the input value, in this case, the sound speed
-    w = partdf["dd"].diff()
-    x = partdf["sv"]
+    w = partdf[SP_DEPTH].diff()
+    x = partdf[SP_SOUND_SPEED]
     H = w.dropna().sum() / (w / x).dropna().sum()
     assert result_hm == round(H, 3)

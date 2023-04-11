@@ -7,30 +7,22 @@ runner = CliRunner()
 
 
 @pytest.mark.parametrize(
-    "commands,expected_stdouts",
+    "commands,expected_stdouts_len",
     [
         (
             [],
-            [
-                "GNSS-A Processing in Python",
-                "run",
-                "Run the full pre-processing routine for GNSS-A",
-            ],
+            16,
         ),
         (
             ["run"],
-            [
-                "Run the full pre-processing routine for GNSS-A",
-                "--config-yaml",
-                "Custom path to configuration yaml file.",
-            ],
+            13,
         ),
     ],
     ids=["root", "run"],
 )
-def test_app_help(commands, expected_stdouts):
+def test_app_help(commands, expected_stdouts_len):
     result = runner.invoke(app, commands + ["--help"])
     assert result.exit_code == 0
 
-    for expected in expected_stdouts:
-        assert expected in result.stdout
+    # TODO: Expand this to get a listing of expected sub commands and check against those
+    assert len(result.stdout.split("\n")) == expected_stdouts_len

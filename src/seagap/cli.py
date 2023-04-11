@@ -5,6 +5,7 @@ import typer
 
 from . import package_name
 from .configs.main import Configuration, load_configuration
+from .constants import SP_DEPTH, SP_SOUND_SPEED
 from .harmonic_mean import sv_harmonic_mean
 from .utilities.io import _get_filesystem
 
@@ -31,12 +32,14 @@ def load_files(config: Configuration) -> Dict[str, Any]:
 def main(config: Configuration, all_files_dict: Dict[str, Any]):
     import pandas as pd
 
+    column_names = [SP_DEPTH, SP_SOUND_SPEED]
+
     # Read sound speed
     svdf = pd.read_csv(
         all_files_dict["sound_speed"],
         delim_whitespace=True,
         header=None,
-        names=["dd", "sv"],
+        names=column_names,
     )
     transponders = config.solver.transponders
     start_depth = config.solver.harmonic_mean_start_depth
