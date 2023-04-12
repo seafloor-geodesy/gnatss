@@ -1,6 +1,8 @@
 import pandas as pd
 import scipy.stats
 
+from .constants import SP_DEPTH, SP_SOUND_SPEED
+
 
 def _compute_hm(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> float:
     """
@@ -28,18 +30,18 @@ def _compute_hm(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> flo
         The end depth for calculation
 
     """  # noqa
-    for col in ["dd", "sv"]:
+    for col in [SP_DEPTH, SP_SOUND_SPEED]:
         if col not in svdf.columns:
             raise ValueError(f"{col} column must exist in the input dataframe!")
 
     filtdf = svdf[
-        (svdf["dd"].round() >= start_depth) & (svdf["dd"].round() <= end_depth)
+        (svdf[SP_DEPTH].round() >= start_depth) & (svdf[SP_DEPTH].round() <= end_depth)
     ]
 
     # Get weights
-    weights = filtdf["dd"].diff()
+    weights = filtdf[SP_DEPTH].diff()
 
-    return scipy.stats.hmean(filtdf["sv"], weights=weights, nan_policy="omit")
+    return scipy.stats.hmean(filtdf[SP_SOUND_SPEED], weights=weights, nan_policy="omit")
 
 
 def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> float:
@@ -62,7 +64,7 @@ def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -
         The sound speed harmonic mean value
     """
     # Clean up the sound speed value, ensuring that there's no negative value
-    svdf = svdf[svdf["sv"] > 0].reset_index(drop=True)
+    svdf = svdf[svdf[SP_SOUND_SPEED] > 0].reset_index(drop=True)
     # Make all of the values absolute values, so we're only dealing with positives
     abs_start = abs(start_depth)
     abs_end = abs(end_depth)
