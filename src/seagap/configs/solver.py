@@ -37,6 +37,7 @@ class ArrayCenter(BaseModel):
 
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
+    alt: float = Field(0.0, description="Altitude")
 
 
 class SolverInputs(BaseModel):
@@ -166,4 +167,7 @@ class Solver(BaseModel):
             "Maximum residual in centimeters beyond "
             "which data points will be excluded from solution"
         ),
+    )
+    travel_times_correction: float = Field(
+        0.0, description="Correction to times in travel times (secs.)"
     )

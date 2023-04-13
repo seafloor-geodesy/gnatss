@@ -25,9 +25,12 @@ dependencies = [
     "fsspec>=2023.3.0",
     "numba>=0.56.4",
     "numpy>=1.23.5",
+    "cftime>=1.6.2",
     "pandas>=1.5.3",
     "pydantic>=1.10.6",
+    "pyyaml>=5.4",
     "pluggy>=1.0.0",
+    "pyproj>=3.5.0",
     "scipy>=1.10.1",
     "typer>=0.7.0"
 ]
