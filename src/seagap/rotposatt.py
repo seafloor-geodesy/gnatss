@@ -1,4 +1,5 @@
 import math
+
 import numpy as np
 
 
@@ -9,8 +10,7 @@ def rotposatt(
     pitch: float,
     heading: float,
     *position_format: str,
-) -> np.ndarray:   
-
+) -> np.ndarray:
     """
     Computes position of the surface platform transducer
     given the antenna position, the instantaneous roll,
@@ -38,43 +38,36 @@ def rotposatt(
 
     # Calculate offset between antenna and transducer
     # in ENU components.
-    # This requires applying rotation matrices to the 
+    # This requires applying rotation matrices to the
     # body-frame offsets.
     # Assume: offset = R_heading * R_pitch * R_roll * body_frame_offsets
 
-    
     # Calculate rotation matrix for roll:
     si = np.sin(np.deg2rad(-roll))
     ci = np.cos(np.deg2rad(-roll))
-    R_roll = np.array({[1,0,0],[0,ci,si],[0,-si,ci]})
-
+    R_roll = np.array({[1, 0, 0], [0, ci, si], [0, -si, ci]})
 
     # Calculate rotation matrix for pitch:
     si = np.sin(np.deg2rad(-pitch))
     ci = np.cos(np.deg2rad(-pitch))
-    R_pitch = np.array({[ci,0,-si],[0,1,0],[si,0,ci]})
-
+    R_pitch = np.array({[ci, 0, -si], [0, 1, 0], [si, 0, ci]})
 
     # Calculate rotation matrix for roll:
-    si = np.sin(np.deg2rad(heading-360))
-    ci = np.cos(np.deg2rad(heading-360))
-    R_heading = np.array({[ci,si,0],[-si,ci,0],[0,0,1]})
-
+    si = np.sin(np.deg2rad(heading - 360))
+    ci = np.cos(np.deg2rad(heading - 360))
+    R_heading = np.array({[ci, si, 0], [-si, ci, 0], [0, 0, 1]})
 
     # Rotate body frame offsets
     # First rotate for roll
 
-    offset = np.matmul(R_roll,body_frame_offsets)
+    offset = np.matmul(R_roll, body_frame_offsets)
 
     # Next rotate for pitch
 
-    offset = np.matmul(R_pitch,offset)
+    offset = np.matmul(R_pitch, offset)
 
     # Next rotate for heading
 
-    offset = np.matmul(R_heading,offset)
+    offset = np.matmul(R_heading, offset)
 
     return position_in + offset
-
-
-
