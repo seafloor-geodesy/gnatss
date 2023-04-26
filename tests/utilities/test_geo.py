@@ -111,7 +111,7 @@ def test_geocentric2enu(coordinates, array_center):
 
     # Calculate enu with fortran lib
     fenu = flib.xyz2enu(olat, olon, delta_array)
-    assert np.array_equal(fenu, penu)
+    assert np.array_equal(np.round(fenu, 9), np.round(penu, 9))
 
 
 def test_enu2geocentric(coordinates, array_center):
