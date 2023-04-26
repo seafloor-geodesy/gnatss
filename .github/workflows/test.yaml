@@ -24,6 +24,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install project
       run: pip install ".[test]"
+    - name: Prepare fortran modules
+      run: cd tests/fortran && f2py -c -m flib *.f && cd -
     - name: Run unit tests
       env:
         FORCE_COLOR: 3
