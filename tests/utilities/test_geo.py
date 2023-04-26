@@ -77,9 +77,7 @@ def test_geodetic2geocentric(coordinates):
     )  # round to 3 decimal places
 
     # Calls on the python code
-    px, py, pz = np.round(
-        geodetic2geocentric(lon, lat, alt), 3
-    )  # round to 3 decimal places
+    px, py, pz = geodetic2geocentric(lon, lat, alt)
 
     assert (fx, fy, fz) == (x, y, z)
     assert (px, py, pz) == (x, y, z)
@@ -92,9 +90,7 @@ def test_geocentric2geodetic(coordinates):
     """Test for geocentric to geodetic conversion"""
     (lat, lon, alt), (x, y, z), _ = coordinates
 
-    plon, plat, palt = np.round(
-        geocentric2geodetic(x, y, z), 9
-    )  # round to 9 decimal places
+    plon, plat, palt = geocentric2geodetic(x, y, z)
 
     assert (plat, plon, palt) == (lat, lon, alt)
 
