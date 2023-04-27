@@ -1,3 +1,4 @@
+import platform
 import re
 import subprocess
 from pathlib import Path
@@ -62,9 +63,10 @@ def test_geodetic2geocentric(coordinates):
     """Test for geodetic to geocentric conversion, comparing to fortran code"""
     (lat, lon, alt), (x, y, z), _ = coordinates
     input_data = f"{AE} {RF}\n{lat} {lon} {alt}".encode("utf-8")
+    fortran_program = f"plh2xyz-{platform.machine().lower()}"
     # Calls on fortran code
     result = subprocess.run(
-        [str((HERE.parent / "fortran" / "plh2xyz").absolute())],
+        [str((HERE.parent / "fortran" / fortran_program).absolute())],
         input=input_data,
         capture_output=True,
     )
@@ -92,7 +94,9 @@ def test_geocentric2geodetic(coordinates):
 
     plon, plat, palt = geocentric2geodetic(x, y, z)
 
-    assert (plat, plon, palt) == (lat, lon, alt)
+    assert np.allclose(
+        np.array((plat, plon, palt)), np.array((lat, lon, alt)), rtol=1e-10, atol=1e-10
+    )
 
 
 def test_geocentric2enu(coordinates, array_center):
