@@ -7,7 +7,7 @@ def rotposatt(
     roll: float,
     pitch: float,
     heading: float,
-    *position_format: str,
+    position_format: Literal["ENU", "XYZ"] = "ENU",
 ) -> np.ndarray:
     """
     Computes position of the surface platform transducer
