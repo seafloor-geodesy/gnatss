@@ -92,7 +92,7 @@ def __get_rotation_matrix(
     )
 
 
-def geocentric2enu(x, y, z, lon_org, lat_org, alt_org):
+def geocentric2enu(x: float, y: float, z: float, lon_org: float, lat_org: float, alt_org: float) -> Tuple[float, float, float]:
     """
     Transform Geocentric coordinate (x,y,z) to a local ENU coordinate(east, north, up)
     based on a reference point in Geodetic coordinate (lon, lat, alt)
@@ -127,7 +127,7 @@ def geocentric2enu(x, y, z, lon_org, lat_org, alt_org):
     return np.dot(R, delta_xyz)  # E(3, 1)
 
 
-def enu2geocentric(e, n, u, lat_org, lon_org, alt_org):
+def enu2geocentric(e: float, n: float, u: float, lat_org: float, lon_org: float, alt_org: float) -> Tuple[float, float, float]:
     """
     Transform local ENU coordinate(east, north, up) to Geocentric coordinate (x,y,z)
     based on a reference point in Geodetic coordinate (lon, lat, alt)
