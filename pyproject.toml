@@ -3,9 +3,9 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "seagap"
+name = "gnatss"
 dynamic = ["version"]
-description = "Community Seafloor Global Navigation Satellite Systems - Acoustic (GNSS-A) Positioning Software"
+description = "Community Seafloor Global Navigation Satellite Systems - Acoustic (GNSS-A) Transponder Surveying Software"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.8"
@@ -70,10 +70,10 @@ test = [
 Homepage = "https://github.com/uw-ssec/offshore-geodesy"
 
 [project.scripts]
-seagap = "seagap.cli:app"
+gnatss = "gnatss.cli:app"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/seagap/version.py"
+version-file = "src/gnatss/version.py"

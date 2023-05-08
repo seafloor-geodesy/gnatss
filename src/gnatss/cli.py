@@ -1,4 +1,4 @@
-"""The main command line interface for seagap"""
+"""The main command line interface for gnatss"""
 from typing import Any, Dict, Optional
 
 import typer

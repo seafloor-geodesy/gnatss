@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from seagap.utilities.geo import (
+from gnatss.utilities.geo import (
     enu2geocentric,
     geocentric2enu,
     geocentric2geodetic,

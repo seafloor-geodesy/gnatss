@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from seagap.constants import SP_DEPTH, SP_SOUND_SPEED
-from seagap.harmonic_mean import _compute_hm, sv_harmonic_mean
+from gnatss.constants import SP_DEPTH, SP_SOUND_SPEED
+from gnatss.harmonic_mean import _compute_hm, sv_harmonic_mean
 
 from . import TEST_DATA_FOLDER
 
