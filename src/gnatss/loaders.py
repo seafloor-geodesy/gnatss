@@ -152,8 +152,11 @@ def load_gps_solutions(files: List[str]) -> pd.DataFrame:
     These files are often called `POS_FREED_TRANS_TWTT`.
     """
     columns = [GPS_TIME, GPS_X, GPS_Y, GPS_Z] + GPS_COV
+    # Real all gps solutions
     gps_solutions = [pd.read_csv(i, delim_whitespace=True, header=None) for i in files]
     all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
+
+    # Set column names to standard
     all_gps_solutions.columns = columns
 
     return all_gps_solutions
