@@ -4,19 +4,20 @@ from typing import Any, Dict, Optional
 import typer
 
 from . import package_name
-from .configs.main import Configuration, load_configuration
+from .configs.main import Configuration
 from .constants import SP_DEPTH, SP_SOUND_SPEED
 from .harmonic_mean import sv_harmonic_mean
+from .loaders import load_configuration
 from .utilities.io import _get_filesystem
 
 app = typer.Typer(name=package_name)
 
 
-def load_files(config: Configuration) -> Dict[str, Any]:
+def gather_files(config: Configuration) -> Dict[str, Any]:
     all_files_dict = {}
     for k, v in config.solver.input_files.dict().items():
         path = v.get("path", "")
-        typer.echo(f"Loading {k} at {path}")
+        typer.echo(f"Gathering {k} at {path}")
         storage_options = v.get("storage_options", {})
 
         fs = _get_filesystem(path, storage_options)
@@ -76,6 +77,6 @@ def run(
     typer.echo("Loading configuration ...")
     config = load_configuration(config_yaml)
     typer.echo("Configuration loaded.")
-    all_files_dict = load_files(config)
+    all_files_dict = gather_files(config)
 
     main(config, all_files_dict)
