@@ -29,3 +29,23 @@ GPS_ALT = "alt"  # Geodetic altitude
 GPS_EAST = "east"  # Local tangent East
 GPS_NORTH = "north"  # Local tangent North
 GPS_UP = "up"  # Local tangent Up
+GPS_COV_XX = "xx"
+GPS_COV_XY = "xy"
+GPS_COV_XZ = "xz"
+GPS_COV_YX = "yx"
+GPS_COV_YY = "yy"
+GPS_COV_YZ = "yz"
+GPS_COV_ZX = "zx"
+GPS_COV_ZY = "zy"
+GPS_COV_ZZ = "zz"
+GPS_COV = [
+    GPS_COV_XX,
+    GPS_COV_XY,
+    GPS_COV_XZ,
+    GPS_COV_YX,
+    GPS_COV_YY,
+    GPS_COV_YZ,
+    GPS_COV_ZX,
+    GPS_COV_ZY,
+    GPS_COV_ZZ,
+]  # Covariance matrix columns
