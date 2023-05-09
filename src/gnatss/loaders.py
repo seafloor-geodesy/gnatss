@@ -9,10 +9,8 @@ from pydantic.error_wrappers import ValidationError
 from .configs.main import Configuration
 from .constants import (
     GPS_COV,
+    GPS_GEOCENTRIC,
     GPS_TIME,
-    GPS_X,
-    GPS_Y,
-    GPS_Z,
     SP_DEPTH,
     SP_SOUND_SPEED,
     TIME_ASTRO,
@@ -112,7 +110,8 @@ def load_travel_times(
     PARSED_FILE = "parsed"
     DATETIME_FORMAT = "%d-%b-%y %H:%M:%S.%f"
 
-    columns = [TT_DATE, TT_TIME] + [TT_TRANSPONDER(tid) for tid in transponder_ids]
+    transponder_labels = [TT_TRANSPONDER(tid) for tid in transponder_ids]
+    columns = [TT_DATE, TT_TIME, *transponder_labels]
     # Read all travel times
     travel_times = [
         pd.read_csv(i, delim_whitespace=True, header=None)
@@ -178,7 +177,7 @@ def load_gps_solutions(files: List[str]) -> pd.DataFrame:
 
     These files are often called `POS_FREED_TRANS_TWTT`.
     """
-    columns = [GPS_TIME, GPS_X, GPS_Y, GPS_Z] + GPS_COV
+    columns = [GPS_TIME, *GPS_GEOCENTRIC, *GPS_COV]
     # Real all gps solutions
     gps_solutions = [
         pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
