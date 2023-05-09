@@ -1,9 +1,35 @@
-from typing import List
+import warnings
+from pathlib import Path
+from typing import List, Optional
 
 import pandas as pd
+import yaml
+from pydantic.error_wrappers import ValidationError
 
+from .configs.main import Configuration
 from .constants import TIME_ASTRO, TT_DATE, TT_TIME, TT_TRANSPONDER
 from .utilities.time import AstroTime
+
+
+def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
+    """
+    Loads configuration yaml file into a Config object
+    to be used throughout the pre-processing
+    """
+    try:
+        config = Configuration()
+    except ValidationError:
+        warnings.warn(
+            "Loading attempt failed, trying to load configuration from file path given."
+        )
+        if config_yaml is None or not Path(config_yaml).exists():
+            raise FileNotFoundError(
+                "Configuration file not found. Unable to create configuration"
+            )
+
+        yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
+        config = Configuration(**yaml_dict)
+    return config
 
 
 def load_travel_times(
