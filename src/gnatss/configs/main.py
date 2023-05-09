@@ -95,7 +95,7 @@ class BaseConfiguration(BaseSettings):
     class Config:
         env_file_encoding = "utf-8"
         env_nested_delimiter = "__"
-        env_prefix = "seagap_"
+        env_prefix = "gnatss_"
 
         @classmethod
         def customise_sources(

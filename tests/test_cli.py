@@ -1,7 +1,7 @@
 import pytest
 from typer.testing import CliRunner
 
-from seagap.cli import app
+from gnatss.cli import app
 
 runner = CliRunner()
 

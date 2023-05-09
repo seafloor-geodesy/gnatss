@@ -3,7 +3,7 @@ name: Test
 on: [push, pull_request]
 
 env:
-  PROJECT_NAME: 'seagap'
+  PROJECT_NAME: 'gnatss'
 
 jobs:
   unit_test:

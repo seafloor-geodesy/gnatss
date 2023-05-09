@@ -1,6 +1,6 @@
-# Welcome to seagap!
+# Welcome to GNATSS!
 
-Seagap is an open-source software for processing Global Navigation Satellite Systems - Acoustic (GNSS-A) data for seafloor horizontal positioning.
+GNATSS is an open-source software for processing Global Navigation Satellite Systems - Acoustic (GNSS-A) data for seafloor horizontal positioning.
 The software is a redevelopment of existing FORTRAN codes and shell scripts developed by C. David Chadwell for processing data including measurements made with Wave Gliders.
 Existing code, which includes proprietary routines, is developed and maintained by John DeSanto.
 

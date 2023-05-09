@@ -6,9 +6,9 @@ from tempfile import TemporaryDirectory, mkstemp
 import fsspec
 import pytest
 
-from seagap.utilities.io import check_file_exists, check_permission
+from gnatss.utilities.io import check_file_exists, check_permission
 
-PREFIX = "seagap-"
+PREFIX = "gnatss-"
 NON_EXISTENT = "non_existent"
 
 
