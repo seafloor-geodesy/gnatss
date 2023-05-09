@@ -38,6 +38,7 @@ GPS_COV_YZ = "yz"
 GPS_COV_ZX = "zx"
 GPS_COV_ZY = "zy"
 GPS_COV_ZZ = "zz"
+GPS_COV_DIAG = [GPS_COV_XX, GPS_COV_YY, GPS_COV_ZZ]  # Covariance matrix diagonal values
 GPS_COV = [
     GPS_COV_XX,
     GPS_COV_XY,
