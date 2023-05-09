@@ -13,6 +13,8 @@ from .constants import (
     GPS_X,
     GPS_Y,
     GPS_Z,
+    SP_DEPTH,
+    SP_SOUND_SPEED,
     TIME_ASTRO,
     TT_DATE,
     TT_TIME,
@@ -40,6 +42,31 @@ def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
         yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
         config = Configuration(**yaml_dict)
     return config
+
+
+def load_sound_speed(sv_file: str) -> pd.DataFrame:
+    """
+    Loads sound speed file data into pandas dataframe
+
+    Parameters
+    ----------
+    sv_file : str
+        Path to the sound speed file to be loaded
+
+    Returns
+    -------
+    pd.DataFrame
+        Sound speed profile pandas dataframe
+    """
+    columns = [SP_DEPTH, SP_SOUND_SPEED]
+
+    # Read sound speed
+    return pd.read_csv(
+        sv_file,
+        delim_whitespace=True,
+        header=None,
+        names=columns,
+    )
 
 
 def load_travel_times(
@@ -153,10 +180,9 @@ def load_gps_solutions(files: List[str]) -> pd.DataFrame:
     """
     columns = [GPS_TIME, GPS_X, GPS_Y, GPS_Z] + GPS_COV
     # Real all gps solutions
-    gps_solutions = [pd.read_csv(i, delim_whitespace=True, header=None) for i in files]
+    gps_solutions = [
+        pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
+    ]
     all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
-
-    # Set column names to standard
-    all_gps_solutions.columns = columns
 
     return all_gps_solutions
