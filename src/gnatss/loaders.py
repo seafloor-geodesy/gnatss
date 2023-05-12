@@ -146,6 +146,9 @@ def load_travel_times(
     # Set standard column name
     all_travel_times.columns = columns
 
+    # Convert microseconds to seconds for delay times
+    all_travel_times[transponder_labels] = all_travel_times[transponder_labels] * 1e-6
+
     # Skip time conversion if it's already j2000 time
     if not is_j2k:
         from .utilities.time import AstroTime
