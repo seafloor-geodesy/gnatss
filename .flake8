@@ -2,3 +2,7 @@
 max-line-length = 100
 output-file = flake8_log.txt
 tee = True
+
+# Ignore 722: current limitation of nptyping https://github.com/ramonhagenaars/nptyping/issues/63
+extend-ignore =
+    F722
