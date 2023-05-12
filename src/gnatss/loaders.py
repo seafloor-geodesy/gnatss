@@ -18,7 +18,6 @@ from .constants import (
     TT_TIME,
     TT_TRANSPONDER,
 )
-from .utilities.time import AstroTime
 
 
 def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
@@ -70,6 +69,7 @@ def load_sound_speed(sv_file: str) -> pd.DataFrame:
 def load_travel_times(
     files: List[str],
     transponder_ids: List[str],
+    is_j2k: bool = False,
 ) -> pd.DataFrame:
     """
     Loads travel times data into a pandas dataframe from a list of files.
@@ -86,6 +86,10 @@ def load_travel_times(
         A list of transponder ids corresponding to the transponder data
         within the travel times. Note that ids order must match to travel times
         column order for transponders
+    is_j2k : bool
+        A flag to signify to expect j2000 time column only rather
+        than date and time. No conversion will be performed if this
+        is the case.
 
     Returns
     -------
@@ -95,7 +99,9 @@ def load_travel_times(
 
     Notes
     -----
-    The input travel time data is assumed to follow the structure below:
+    The input travel time data is assumed to follow the structure below.
+
+    Structure 1:
 
     Date, Time, TT Transponder 1, TT Transponder 2, ..., TT Transponder N
 
@@ -103,7 +109,16 @@ def load_travel_times(
     - Time is a time string. e.g. '17:37:45.00'
     - TT is the 2 way travel times in microseconds (µs). e.g. 2263261
 
-    These files are often called `pxp_tt`.
+    Structure 2:
+
+    Time, TT Transponder 1, TT Transponder 2, ..., TT Transponder N
+
+    - Time is a J2000 epoch time float (seconds since Jan 1, 2000 12:00 UTC).
+      e.g. '712215465.000'
+    - TT is the 2 way travel times in microseconds (µs). e.g. 2263261
+
+    These files are often called `pxp_tt` or `pxp_tt_j2k`.
+
     Additionally, there's an assumption that wave glider delays
     have been removed from the data.
     """
@@ -112,6 +127,9 @@ def load_travel_times(
 
     transponder_labels = [TT_TRANSPONDER(tid) for tid in transponder_ids]
     columns = [TT_DATE, TT_TIME, *transponder_labels]
+    if is_j2k:
+        # If it's already j2k then pop off date column, idx 0
+        columns.pop(0)
     # Read all travel times
     travel_times = [
         pd.read_csv(i, delim_whitespace=True, header=None)
@@ -128,20 +146,24 @@ def load_travel_times(
     # Set standard column name
     all_travel_times.columns = columns
 
-    # Determine j2000 time from date and time string
-    all_travel_times.loc[:, TIME_ASTRO] = all_travel_times.apply(
-        lambda row: AstroTime.strptime(
-            f"{row[TT_DATE].lower()} {row[TT_TIME]}", DATETIME_FORMAT
-        ),
-        axis=1,
-    )
-    # Replace time to j2000 rather than time string
-    all_travel_times[TT_TIME] = all_travel_times.apply(
-        lambda row: row[TIME_ASTRO].unix_j2000, axis=1
-    )
+    # Skip time conversion if it's already j2000 time
+    if not is_j2k:
+        from .utilities.time import AstroTime
 
-    # Drop unused columns for downstream computation
-    all_travel_times = all_travel_times.drop([TT_DATE, TIME_ASTRO], axis=1)
+        # Determine j2000 time from date and time string
+        all_travel_times.loc[:, TIME_ASTRO] = all_travel_times.apply(
+            lambda row: AstroTime.strptime(
+                f"{row[TT_DATE].lower()} {row[TT_TIME]}", DATETIME_FORMAT
+            ),
+            axis=1,
+        )
+        # Replace time to j2000 rather than time string
+        all_travel_times[TT_TIME] = all_travel_times.apply(
+            lambda row: row[TIME_ASTRO].unix_j2000, axis=1
+        )
+
+        # Drop unused columns for downstream computation
+        all_travel_times = all_travel_times.drop([TT_DATE, TIME_ASTRO], axis=1)
 
     return all_travel_times
 
