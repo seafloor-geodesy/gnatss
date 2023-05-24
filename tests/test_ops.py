@@ -4,7 +4,13 @@ import pytest
 
 from gnatss.configs.solver import ArrayCenter
 from gnatss.constants import GPS_GEOCENTRIC, GPS_GEODETIC, GPS_LOCAL_TANGENT, GPS_TIME
-from gnatss.ops import calc_std_and_verify, calc_uv, compute_enu_series, find_gps_record
+from gnatss.ops import (
+    calc_std_and_verify,
+    calc_uv,
+    clean_zeros,
+    compute_enu_series,
+    find_gps_record,
+)
 
 GPS_DATASET = [
     {
@@ -196,8 +202,26 @@ def test_calc_weight_matrix():
     ...
 
 
-def test_clean_zeros():
-    ...
+@pytest.mark.parametrize(
+    "input_array,expected",
+    [
+        # 2-D case
+        (
+            np.array([[1, 1, 1, 0, 0, 0], [2, 2, 2, 0, 0, 0], [3, 4, 5, 0, 0, 0]]),
+            np.array([[1, 1, 1], [2, 2, 2], [3, 4, 5]]),
+        ),
+        # 1-D case
+        (np.array([1, 3, 4, 0, 7, 8, 0, 0, 0]), np.array([1, 3, 4, 0, 7, 8])),
+        # 3-D case, fails
+        (np.ones(shape=(2, 2, 3)), ValueError),
+    ],
+)
+def test_clean_zeros(input_array, expected):
+    try:
+        result = clean_zeros(input_array=input_array)
+        assert np.array_equal(result, expected)
+    except Exception as e:
+        assert isinstance(e, expected)
 
 
 def test_calc_lsq_contrained():

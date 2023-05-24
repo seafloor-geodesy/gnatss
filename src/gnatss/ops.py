@@ -286,7 +286,24 @@ def calc_weight_matrix(
     return np.linalg.inv(covariance_std)
 
 
-def clean_zeros(input_array) -> np.ndarray:
+def clean_zeros(input_array: NDArray) -> NDArray:
+    """
+    Trim the leading and/or trailing zeros from a 1-D or 2-D arrays.
+
+    Parameters
+    ----------
+    input_array : (N,) ndarray or (N,N) ndarray
+
+    Returns
+    -------
+    ndarray
+        The resulting N-D array with leading or trailing zeroes trimmed
+
+    Raises
+    ------
+    ValueError
+        If the ``input_array`` not a 1 or 2-D array
+    """
     num_dims = len(input_array.shape)
     if num_dims == 1:
         # 1D array
@@ -296,8 +313,8 @@ def clean_zeros(input_array) -> np.ndarray:
         return np.array(
             [np.trim_zeros(arr) for arr in input_array if np.trim_zeros(arr).size > 0]
         )
-    else:
-        raise ValueError("Only 1 or 2-D arrays are supported")
+
+    raise ValueError("Only 1 or 2-D arrays are supported")
 
 
 def calc_lsq_contrained(ATWA, ATWF, Q):
