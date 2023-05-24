@@ -20,6 +20,9 @@ from .utilities.geo import geocentric2enu, geocentric2geodetic
 def find_gps_record(
     gps_solutions: pd.DataFrame, travel_time: pd.Timestamp
 ) -> pd.Series:
+    """
+    Finds matching GPS record based on travel time
+    """
     match = gps_solutions.iloc[
         gps_solutions[GPS_TIME]
         .apply(lambda row: (row - travel_time))
@@ -34,6 +37,33 @@ def find_gps_record(
 def calc_std_and_verify(
     gps_series: pd.Series, std_dev: bool = True, sigma_limit: float = 0.05
 ) -> float:
+    """
+    Calculate the 3d standard deviation and verify the value based on limit
+
+    Parameters
+    ----------
+    gps_series : pd.Series
+        The data input to check as a pandas series.
+        The following keys are expected: 'xx', 'yy', 'zz'
+    std_dev : bool
+        Flag to indicate if the inputs are standard deviation or variance
+    sigma_limit : float
+        The allowable sigma limit to check against
+
+    Returns
+    -------
+    float
+        The calculated sigma 3d
+
+    Raises
+    ------
+    ValueError
+        If 3D Standard Deviation exceeds the GPS Sigma limit
+    """
+    # Checks for GPS Covariance Diagonal values
+    if not all(item in gps_series for item in GPS_COV_DIAG):
+        raise KeyError(f"Not all values for {','.join(GPS_COV_DIAG)} exists.")
+
     # Compute the 3d std (sum variances of GPS components and take sqrt)
     sig_3d = np.sqrt(np.sum(gps_series[GPS_COV_DIAG] ** (2 if std_dev else 1)))
 
