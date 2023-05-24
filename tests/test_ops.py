@@ -1,7 +1,9 @@
 import pandas as pd
 import pytest
 
-from gnatss.ops import calc_std_and_verify, find_gps_record
+from gnatss.configs.solver import ArrayCenter
+from gnatss.constants import GPS_GEOCENTRIC, GPS_GEODETIC, GPS_LOCAL_TANGENT, GPS_TIME
+from gnatss.ops import calc_std_and_verify, compute_enu_series, find_gps_record
 
 GPS_DATASET = [
     {
@@ -64,11 +66,11 @@ GPS_DATASET = [
         "zy": -3.258009041e-06,
         "zz": 0.0008847786993,
     },
+    # This should be missing yy and z
     {
         "time": 712215525.0,
         "x": -2575253.07,
         "y": -3682595.498,
-        "z": 4511065.769,
         "xx": 0.0007639192564,
         "xy": -2.477204992e-07,
         "xz": -2.233920204e-06,
@@ -88,6 +90,16 @@ TRAVEL_TIMES_DATASET = [
     7.12215525e08,
     7.12215540e08,
 ]
+
+
+@pytest.fixture(
+    params=[
+        ArrayCenter(lat=45.3023, lon=-124.9656, alt=0.0),
+        dict(lat=45.3023, lon=-124.9656, alt=0.0),
+    ]
+)
+def array_center(request):
+    return request.param
 
 
 @pytest.fixture(params=GPS_DATASET)
@@ -129,4 +141,21 @@ def test_calc_std_and_verify(gps_dataseries, gps_sigma_limit):
         elif gps_sigma_limit == 0.001:
             # This is a really small sigma limit
             # it will fail
+            assert isinstance(e, ValueError)
+
+
+def test_compute_enu_series(gps_dataseries, array_center):
+    """Tests the ``compute_enu_series`` function"""
+    location_columns = [GPS_TIME, *GPS_GEOCENTRIC]
+    try:
+        enu_series = compute_enu_series(
+            input_series=gps_dataseries, array_center=array_center
+        )
+        expected_columns = [*location_columns, *GPS_GEODETIC, *GPS_LOCAL_TANGENT]
+
+        assert all(col in enu_series for col in expected_columns)
+    except Exception as e:
+        if "z" not in gps_dataseries:
+            assert isinstance(e, KeyError)
+        elif isinstance(array_center, dict):
             assert isinstance(e, ValueError)

@@ -78,6 +78,34 @@ def calc_std_and_verify(
 
 
 def compute_enu_series(input_series: pd.Series, array_center: ArrayCenter) -> pd.Series:
+    """
+    Computes the longitude, latitude, and altitude values as well as the
+    east, north, up from ECEF (Geocentric) coordinates and add to the
+    input data series.
+
+    Parameters
+    ----------
+    input_series : pd.Series
+        The pandas data series that includes the x, y, z coordinates values
+    array_center : ArrayCenter
+        The array center object to be used for east, north, up calculation
+        as the origin coordinates
+
+    Returns
+    -------
+    pd.Series
+        A copy of the input data series with lon, lat, alt and east, north, up
+        columns added
+    """
+    for item in GPS_GEOCENTRIC:
+        if item not in input_series:
+            # Catch if some of the coordinate columns are missing
+            raise KeyError(f"{item} coordinate value not found in the `input_series`")
+
+    if not isinstance(array_center, ArrayCenter):
+        # Catch if not ArrayCenter obj
+        raise ValueError(f"`array_center` input must be {type(ArrayCenter)} object")
+
     array_center_coords = [array_center.lon, array_center.lat, array_center.alt]
 
     location_series = input_series.copy()
