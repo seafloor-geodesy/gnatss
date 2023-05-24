@@ -23,6 +23,7 @@ def find_gps_record(
     """
     Finds matching GPS record based on travel time
     """
+    # TODO: Probably will change this function to perform some merging
     match = gps_solutions.iloc[
         gps_solutions[GPS_TIME]
         .apply(lambda row: (row - travel_time))
