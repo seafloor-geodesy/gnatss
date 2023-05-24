@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Any, Tuple
 
 import numba
 import numpy as np
@@ -126,11 +126,28 @@ def compute_enu_series(input_series: pd.Series, array_center: ArrayCenter) -> pd
     return location_series
 
 
-def calc_uv(input_vector: np.ndarray) -> np.ndarray:
-    """Calculate unit vector"""
+def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
+    """
+    Calculate unit vector for a 1-D input vector of size 3
 
-    if len(input_vector.shape) > 1:
-        raise ValueError("Unit vector calculation must be 1-D array!")
+    Parameters
+    ----------
+    input_vector : (3,) ndarray
+        A 1-D input vector as numpy array
+
+    Returns
+    -------
+    (3,) ndarray
+        The resulting unit vector as numpy array
+
+    Raises
+    ------
+    ValueError
+        If the input vector is not a 1-D array
+    """
+
+    if input_vector.shape != (3,):
+        raise ValueError("Unit vector calculation must be 1-D array of shape 3!")
 
     vector_norm = np.linalg.norm(input_vector)
 

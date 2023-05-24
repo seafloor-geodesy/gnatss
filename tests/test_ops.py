@@ -1,9 +1,10 @@
+import numpy as np
 import pandas as pd
 import pytest
 
 from gnatss.configs.solver import ArrayCenter
 from gnatss.constants import GPS_GEOCENTRIC, GPS_GEODETIC, GPS_LOCAL_TANGENT, GPS_TIME
-from gnatss.ops import calc_std_and_verify, compute_enu_series, find_gps_record
+from gnatss.ops import calc_std_and_verify, calc_uv, compute_enu_series, find_gps_record
 
 GPS_DATASET = [
     {
@@ -159,3 +160,45 @@ def test_compute_enu_series(gps_dataseries, array_center):
             assert isinstance(e, KeyError)
         elif isinstance(array_center, dict):
             assert isinstance(e, ValueError)
+
+
+@pytest.mark.parametrize(
+    "input_vector,expected",
+    [
+        (np.array([0, 0, 0]), np.array([2.0, 0.0, 0.0])),
+        (np.array([1, 1, 1]), np.array([0.57735027, 0.57735027, 0.57735027])),
+        (np.array([-1, -2, 2]), np.array([-0.33333333, -0.66666667, 0.66666667])),
+        (np.array([[-1, 1, 3], [1, 1, 4]]), ValueError),
+        (np.array([-1, 2]), ValueError),
+    ],
+)
+def test_calc_uv(input_vector, expected):
+    try:
+        unit_vector = calc_uv(input_vector=input_vector)
+        assert np.allclose(unit_vector, expected)
+    except Exception as e:
+        assert isinstance(e, expected)
+
+
+def test_calc_twtt_model():
+    ...
+
+
+def test_calc_tt_residual():
+    ...
+
+
+def test_calc_partials():
+    ...
+
+
+def test_calc_weight_matrix():
+    ...
+
+
+def test_clean_zeros():
+    ...
+
+
+def test_calc_lsq_contrained():
+    ...
