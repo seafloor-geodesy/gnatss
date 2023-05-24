@@ -1,6 +1,5 @@
 from typing import Any, Tuple
 
-import numba
 import numpy as np
 import pandas as pd
 import scipy
@@ -172,7 +171,6 @@ def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
     return input_vector / vector_norm
 
 
-@numba.njit
 def calc_twtt_model(
     transmit_vectors: NDArray[Shape["3, *"], Float64],
     reply_vectors: NDArray[Shape["3, *"], Float64],

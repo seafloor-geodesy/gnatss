@@ -6,6 +6,7 @@ from gnatss.configs.solver import ArrayCenter
 from gnatss.constants import GPS_GEOCENTRIC, GPS_GEODETIC, GPS_LOCAL_TANGENT, GPS_TIME
 from gnatss.ops import (
     calc_std_and_verify,
+    calc_twtt_model,
     calc_uv,
     clean_zeros,
     compute_enu_series,
@@ -124,6 +125,11 @@ def gps_sigma_limit(request):
     return request.param
 
 
+@pytest.fixture
+def mean_sv():
+    return [1481.542, 1481.513, 1481.5]
+
+
 def test_find_gps_record(travel_time):
     gps_df = pd.DataFrame.from_records(GPS_DATASET)
 
@@ -179,6 +185,7 @@ def test_compute_enu_series(gps_dataseries, array_center):
     ],
 )
 def test_calc_uv(input_vector, expected):
+    """Test calculating unit vector"""
     try:
         unit_vector = calc_uv(input_vector=input_vector)
         assert np.allclose(unit_vector, expected)
@@ -186,8 +193,70 @@ def test_calc_uv(input_vector, expected):
         assert isinstance(e, expected)
 
 
-def test_calc_twtt_model():
-    ...
+@pytest.mark.parametrize(
+    "transmit_vectors,reply_vectors,expected",
+    [
+        (
+            np.array(
+                [
+                    [-375.921, 1193.236, -900.247],
+                    [550.164, -141.056, -1414.852],
+                    [1160.014, 812.795, -277.465],
+                ]
+            ),
+            np.array(
+                [
+                    [-376.828, 1194.152, -900.553],
+                    [549.157, -140.103, -1415.148],
+                    [1158.996, 813.753, -277.761],
+                ]
+            ),
+            np.array([2.08140459, 2.05803764, 1.94834694]),
+        ),
+        (
+            np.array(
+                [
+                    [-383.357, 1199.569, -898.868],
+                    [542.728, -134.723, -1413.473],
+                    [1152.578, 819.128, -276.086],
+                ]
+            ),
+            np.array(
+                [
+                    [-384.879, 1199.434, -898.625],
+                    [541.175, -134.871, -1413.261],
+                    [1151.021, 818.979, -275.88],
+                ]
+            ),
+            np.array([2.08875182, 2.0515515, 1.94400265]),
+        ),
+        (
+            np.array(
+                [
+                    [-392.409, 1209.597, -897.82],
+                    [533.676, -124.695, -1412.425],
+                    [1143.526, 829.156, -275.038],
+                ]
+            ),
+            np.array(
+                [
+                    [-393.932, 1211.999, -895.664],
+                    [532.113, -122.293, -1410.229],
+                    [1141.949, 831.558, -272.829],
+                ]
+            ),
+            np.array([2.10208738, 2.04335558, 1.9424679]),
+        ),
+    ],
+)
+def test_calc_twtt_model(transmit_vectors, reply_vectors, expected, mean_sv):
+    """Test calculating two way travel time model"""
+    result = calc_twtt_model(
+        transmit_vectors=transmit_vectors,
+        reply_vectors=reply_vectors,
+        transponders_mean_sv=mean_sv,
+    )
+    assert np.allclose(result, expected)
 
 
 def test_calc_tt_residual():
