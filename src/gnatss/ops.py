@@ -16,6 +16,21 @@ from .constants import (
 )
 from .utilities.geo import geocentric2enu, geocentric2geodetic
 
+# Constrain matrix Q
+Q_MATRIX = np.array(
+    [
+        [-1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    ]
+)
+
 
 def find_gps_record(
     gps_solutions: pd.DataFrame, travel_time: pd.Timestamp
@@ -317,7 +332,7 @@ def clean_zeros(input_array: NDArray) -> NDArray:
     raise ValueError("Only 1 or 2-D arrays are supported")
 
 
-def calc_lsq_contrained(ATWA, ATWF, Q):
+def calc_lsq_contrained(ATWA, ATWF, Q=Q_MATRIX):
     """
     Performs least-squares estimation with linear constraints.
     """
