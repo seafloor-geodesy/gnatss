@@ -6,6 +6,7 @@ from gnatss.configs.solver import ArrayCenter
 from gnatss.constants import GPS_GEOCENTRIC, GPS_GEODETIC, GPS_LOCAL_TANGENT, GPS_TIME
 from gnatss.ops import (
     calc_std_and_verify,
+    calc_tt_residual,
     calc_twtt_model,
     calc_uv,
     clean_zeros,
@@ -13,6 +14,7 @@ from gnatss.ops import (
     find_gps_record,
 )
 
+# Datasets
 GPS_DATASET = [
     {
         "time": 712215465.0,
@@ -99,6 +101,72 @@ TRAVEL_TIMES_DATASET = [
     7.12215540e08,
 ]
 
+TT_DELAY_SECONDS = [
+    np.array([2.281219, 2.377755, 2.388229]),
+    np.array([2.288577, 2.371308, 2.383921]),
+    np.array([2.301908, 2.363096, 2.382359]),
+]
+
+TWTT_MODEL = [
+    np.array([2.08140459, 2.05803764, 1.94834694]),
+    np.array([2.08875182, 2.0515515, 1.94400265]),
+    np.array([2.10208738, 2.04335558, 1.9424679]),
+]
+
+TT_RESIDUAL = [
+    np.array([-0.00018559, -0.00028264, -0.00011794]),
+    np.array([-1.74815363e-04, -2.43499730e-04, -8.16499168e-05]),
+    np.array([-0.00017938, -0.00025958, -0.0001089]),
+]
+
+TRANSMIT_VECTORS = [
+    np.array(
+        [
+            [-375.921, 1193.236, -900.247],
+            [550.164, -141.056, -1414.852],
+            [1160.014, 812.795, -277.465],
+        ]
+    ),
+    np.array(
+        [
+            [-383.357, 1199.569, -898.868],
+            [542.728, -134.723, -1413.473],
+            [1152.578, 819.128, -276.086],
+        ]
+    ),
+    np.array(
+        [
+            [-392.409, 1209.597, -897.82],
+            [533.676, -124.695, -1412.425],
+            [1143.526, 829.156, -275.038],
+        ]
+    ),
+]
+
+REPLY_VECTORS = [
+    np.array(
+        [
+            [-376.828, 1194.152, -900.553],
+            [549.157, -140.103, -1415.148],
+            [1158.996, 813.753, -277.761],
+        ]
+    ),
+    np.array(
+        [
+            [-384.879, 1199.434, -898.625],
+            [541.175, -134.871, -1413.261],
+            [1151.021, 818.979, -275.88],
+        ]
+    ),
+    np.array(
+        [
+            [-393.932, 1211.999, -895.664],
+            [532.113, -122.293, -1410.229],
+            [1141.949, 831.558, -272.829],
+        ]
+    ),
+]
+
 
 @pytest.fixture(
     params=[
@@ -128,6 +196,11 @@ def gps_sigma_limit(request):
 @pytest.fixture
 def mean_sv():
     return [1481.542, 1481.513, 1481.5]
+
+
+@pytest.fixture
+def transponders_delay():
+    return [0.2, 0.32, 0.44]
 
 
 def test_find_gps_record(travel_time):
@@ -195,59 +268,7 @@ def test_calc_uv(input_vector, expected):
 
 @pytest.mark.parametrize(
     "transmit_vectors,reply_vectors,expected",
-    [
-        (
-            np.array(
-                [
-                    [-375.921, 1193.236, -900.247],
-                    [550.164, -141.056, -1414.852],
-                    [1160.014, 812.795, -277.465],
-                ]
-            ),
-            np.array(
-                [
-                    [-376.828, 1194.152, -900.553],
-                    [549.157, -140.103, -1415.148],
-                    [1158.996, 813.753, -277.761],
-                ]
-            ),
-            np.array([2.08140459, 2.05803764, 1.94834694]),
-        ),
-        (
-            np.array(
-                [
-                    [-383.357, 1199.569, -898.868],
-                    [542.728, -134.723, -1413.473],
-                    [1152.578, 819.128, -276.086],
-                ]
-            ),
-            np.array(
-                [
-                    [-384.879, 1199.434, -898.625],
-                    [541.175, -134.871, -1413.261],
-                    [1151.021, 818.979, -275.88],
-                ]
-            ),
-            np.array([2.08875182, 2.0515515, 1.94400265]),
-        ),
-        (
-            np.array(
-                [
-                    [-392.409, 1209.597, -897.82],
-                    [533.676, -124.695, -1412.425],
-                    [1143.526, 829.156, -275.038],
-                ]
-            ),
-            np.array(
-                [
-                    [-393.932, 1211.999, -895.664],
-                    [532.113, -122.293, -1410.229],
-                    [1141.949, 831.558, -272.829],
-                ]
-            ),
-            np.array([2.10208738, 2.04335558, 1.9424679]),
-        ),
-    ],
+    list(zip(TRANSMIT_VECTORS, REPLY_VECTORS, TWTT_MODEL)),
 )
 def test_calc_twtt_model(transmit_vectors, reply_vectors, expected, mean_sv):
     """Test calculating two way travel time model"""
@@ -259,8 +280,20 @@ def test_calc_twtt_model(transmit_vectors, reply_vectors, expected, mean_sv):
     assert np.allclose(result, expected)
 
 
-def test_calc_tt_residual():
-    ...
+@pytest.mark.parametrize(
+    "tt_delay_seconds,twtt_model,expected_residual",
+    list(zip(TT_DELAY_SECONDS, TWTT_MODEL, TT_RESIDUAL)),
+)
+def test_calc_tt_residual(
+    tt_delay_seconds, twtt_model, expected_residual, transponders_delay
+):
+    """Test calculating travel time residual"""
+    res = calc_tt_residual(
+        delays=tt_delay_seconds,
+        transponder_delays=transponders_delay,
+        twtt_model=twtt_model,
+    )
+    assert np.allclose(res, expected_residual)
 
 
 def test_calc_partials():
