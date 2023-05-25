@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -31,6 +31,14 @@ Q_MATRIX = np.array(
 )
 
 DEFAULT_VECTOR_NORM = np.array([2.0, 0.0, 0.0])
+
+
+def _check_cols_in_series(input_series: pd.Series, columns: List[str]) -> None:
+    """Private func to check if the columns exists in data series"""
+    for col in columns:
+        if col not in input_series:
+            # Catch if some of thecolumns are missing
+            raise KeyError(f"``{col}`` not found in the data series provided.")
 
 
 def find_gps_record(
@@ -78,8 +86,7 @@ def calc_std_and_verify(
         If 3D Standard Deviation exceeds the GPS Sigma limit
     """
     # Checks for GPS Covariance Diagonal values
-    if not all(item in gps_series for item in GPS_COV_DIAG):
-        raise KeyError(f"Not all values for {','.join(GPS_COV_DIAG)} exists.")
+    _check_cols_in_series(input_series=gps_series, columns=GPS_COV_DIAG)
 
     # Compute the 3d std (sum variances of GPS components and take sqrt)
     sig_3d = np.sqrt(np.sum(gps_series[GPS_COV_DIAG] ** (2 if std_dev else 1)))
@@ -113,10 +120,8 @@ def compute_enu_series(input_series: pd.Series, array_center: ArrayCenter) -> pd
         A copy of the input data series with lon, lat, alt and east, north, up
         columns added
     """
-    for item in GPS_GEOCENTRIC:
-        if item not in input_series:
-            # Catch if some of the coordinate columns are missing
-            raise KeyError(f"{item} coordinate value not found in the `input_series`")
+    # Catch if some of the coordinate columns are missing
+    _check_cols_in_series(input_series=input_series, columns=GPS_GEOCENTRIC)
 
     if not isinstance(array_center, ArrayCenter):
         # Catch if not ArrayCenter obj

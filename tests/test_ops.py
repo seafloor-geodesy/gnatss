@@ -12,6 +12,7 @@ from gnatss.constants import (
 )
 from gnatss.ops import (
     DEFAULT_VECTOR_NORM,
+    _check_cols_in_series,
     calc_lsq_contrained,
     calc_partials,
     calc_std_and_verify,
@@ -96,6 +97,28 @@ def num_transponders():
 @pytest.fixture
 def travel_times_variance():
     return 1e-10
+
+
+@pytest.mark.parametrize(
+    "input_data",
+    {
+        "c": 1,
+        "d": 2,
+        "e": 3,
+        "f": 4,
+        "g": 5,
+        "a": 6,
+        "b": 7,
+    },
+)
+@pytest.mark.parametrize("check_columns", [["a", "b", "c"], ["e", "z"], ["x"]])
+def test__check_cols_in_series(input_data, check_columns):
+    try:
+        input_series = pd.Series(input_data)
+        _check_cols_in_series(input_series=input_series, columns=check_columns)
+    except Exception as e:
+        if ("z" in check_columns) or ("x" in check_columns):
+            assert isinstance(e, KeyError)
 
 
 def test_find_gps_record(travel_time):
