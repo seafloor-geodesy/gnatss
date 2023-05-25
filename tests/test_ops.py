@@ -25,10 +25,10 @@ from gnatss.ops import (
 
 from .ops_data import (
     A_PARTIALS,
-    ATWA_SAMPLES,
-    ATWF_SAMPLES,
+    ATWA_SAMPLE,
+    ATWF_SAMPLE,
     GPS_DATASET,
-    LSQ_RESULTS,
+    LSQ_RESULT,
     REPLY_VECTORS,
     TRANSMIT_VECTORS,
     TRAVEL_TIMES_DATASET,
@@ -264,13 +264,13 @@ def test_clean_zeros(input_array, expected):
         assert isinstance(e, expected)
 
 
-@pytest.mark.parametrize(
-    "ATWA,ATWF,expected",
-    list(zip(ATWA_SAMPLES, ATWF_SAMPLES, LSQ_RESULTS)),
-)
-def test_calc_lsq_contrained(ATWA, ATWF, expected):
-    X, XP, MX, MXP = calc_lsq_contrained(ATWA, ATWF)
-    assert np.allclose(X, expected[0], atol=1e-4)
-    assert np.allclose(XP, expected[1], atol=1e-4)
-    assert np.allclose(MX, expected[2], atol=1e-4)
-    assert np.allclose(MXP, expected[3], atol=1e-4)
+def test_calc_lsq_contrained():
+    X, XP, MX, MXP = calc_lsq_contrained(ATWA_SAMPLE, ATWF_SAMPLE)
+
+    # The results are in meters and we'd like to ensure cm
+    # precision, so 1e-4 should be very precise,
+    # might even be overkill
+    assert np.allclose(X, LSQ_RESULT[0], atol=1e-4)
+    assert np.allclose(XP, LSQ_RESULT[1], atol=1e-4)
+    assert np.allclose(MX, LSQ_RESULT[2], atol=1e-4)
+    assert np.allclose(MXP, LSQ_RESULT[3], atol=1e-4)
