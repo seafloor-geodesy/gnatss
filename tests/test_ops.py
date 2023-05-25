@@ -25,6 +25,8 @@ from gnatss.ops import (
 
 from .ops_data import (
     A_PARTIALS,
+    ATWA_SAMPLES,
+    ATWF_SAMPLES,
     GPS_DATASET,
     LSQ_RESULTS,
     REPLY_VECTORS,
@@ -263,12 +265,10 @@ def test_clean_zeros(input_array, expected):
 
 
 @pytest.mark.parametrize(
-    "tt_residual,a_partials,weight_matrix,expected",
-    list(zip(TT_RESIDUAL, A_PARTIALS, WEIGHT_MATRIX, LSQ_RESULTS)),
+    "ATWA,ATWF,expected",
+    list(zip(ATWA_SAMPLES, ATWF_SAMPLES, LSQ_RESULTS)),
 )
-def test_calc_lsq_contrained(tt_residual, a_partials, weight_matrix, expected):
-    ATWA = a_partials.T @ weight_matrix @ a_partials
-    ATWF = a_partials.T @ weight_matrix @ tt_residual
+def test_calc_lsq_contrained(ATWA, ATWF, expected):
     X, XP, MX, MXP = calc_lsq_contrained(ATWA, ATWF)
     assert np.allclose(X, expected[0])
     assert np.allclose(XP, expected[1])
