@@ -359,7 +359,7 @@ def clean_zeros(input_array: NDArray) -> NDArray:
 
     Raises
     ------
-    ValueError
+    NotImplementedError
         If the ``input_array`` not a 1 or 2-D array
     """
     num_dims = len(input_array.shape)
@@ -372,7 +372,9 @@ def clean_zeros(input_array: NDArray) -> NDArray:
             [np.trim_zeros(arr) for arr in input_array if np.trim_zeros(arr).size > 0]
         )
 
-    raise ValueError("Only 1 or 2-D arrays are supported")
+    raise NotImplementedError(
+        f"Only 1 or 2-D arrays are supported, instead for {num_dims} dimensions"
+    )
 
 
 # TODO: Q is currently hardcoded... this might change with

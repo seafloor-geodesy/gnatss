@@ -253,7 +253,7 @@ def test_calc_weight_matrix(
         # 1-D case
         (np.array([1, 3, 4, 0, 7, 8, 0, 0, 0]), np.array([1, 3, 4, 0, 7, 8])),
         # 3-D case, fails
-        (np.ones(shape=(2, 2, 3)), ValueError),
+        (np.ones(shape=(2, 2, 3)), NotImplementedError),
     ],
 )
 def test_clean_zeros(input_array, expected):
