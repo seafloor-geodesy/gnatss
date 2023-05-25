@@ -3,13 +3,20 @@ import pandas as pd
 import pytest
 
 from gnatss.configs.solver import ArrayCenter
-from gnatss.constants import GPS_GEOCENTRIC, GPS_GEODETIC, GPS_LOCAL_TANGENT, GPS_TIME
+from gnatss.constants import (
+    GPS_COV,
+    GPS_GEOCENTRIC,
+    GPS_GEODETIC,
+    GPS_LOCAL_TANGENT,
+    GPS_TIME,
+)
 from gnatss.ops import (
     calc_partials,
     calc_std_and_verify,
     calc_tt_residual,
     calc_twtt_model,
     calc_uv,
+    calc_weight_matrix,
     clean_zeros,
     compute_enu_series,
     find_gps_record,
@@ -194,6 +201,30 @@ A_PARTIALS = [
     ),
 ]
 
+WEIGHT_MATRIX = [
+    np.array(
+        [
+            [1.28820086e09, -3.10127429e08, -4.18300222e08],
+            [-3.10115288e08, 1.33928090e09, -3.37561871e08],
+            [-4.18276506e08, -3.37555947e08, 1.43612753e09],
+        ]
+    ),
+    np.array(
+        [
+            [1.29215004e09, -3.11218615e08, -4.23212929e08],
+            [-3.11206431e08, 1.33929681e09, -3.32301611e08],
+            [-4.23188934e08, -3.32295780e08, 1.43595791e09],
+        ]
+    ),
+    np.array(
+        [
+            [1.29461648e09, -3.13126871e08, -4.29881914e08],
+            [-3.13114613e08, 1.33597475e09, -3.25935063e08],
+            [-4.29857541e08, -3.25929343e08, 1.43244696e09],
+        ]
+    ),
+]
+
 
 @pytest.fixture(
     params=[
@@ -222,12 +253,12 @@ def gps_sigma_limit(request):
 
 @pytest.fixture
 def mean_sv():
-    return [1481.542, 1481.513, 1481.5]
+    return np.array([1481.542, 1481.513, 1481.5])
 
 
 @pytest.fixture
 def transponders_delay():
-    return [0.2, 0.32, 0.44]
+    return np.array([0.2, 0.32, 0.44])
 
 
 @pytest.fixture
@@ -244,6 +275,11 @@ def b_cov():
 @pytest.fixture
 def num_transponders():
     return 3
+
+
+@pytest.fixture
+def travel_times_variance():
+    return 1e-10
 
 
 def test_find_gps_record(travel_time):
@@ -363,8 +399,32 @@ def test_calc_partials(
     assert np.array_equal(B_cov, b_cov)
 
 
-def test_calc_weight_matrix():
-    ...
+@pytest.mark.parametrize(
+    "gps_dict,transmit_vectors,expected_wm",
+    list(zip(GPS_DATASET[2:], TRANSMIT_VECTORS, WEIGHT_MATRIX)),
+)
+def test_calc_weight_matrix(
+    gps_dict, transmit_vectors, expected_wm, mean_sv, b_cov, travel_times_variance
+):
+    gps_dataseries = pd.Series(gps_dict)
+    # Add missing data
+    if "z" not in gps_dataseries:
+        gps_dataseries["z"] = 4511065.769
+    if "yy" not in gps_dataseries:
+        gps_dataseries["yy"] = 0.001007144325
+
+    gps_covariance_matrix = np.array(np.array_split(gps_dataseries[GPS_COV], 3)).astype(
+        "float64"
+    )
+    transmit_uv = np.array([calc_uv(v) for v in transmit_vectors])
+    weight_matrix = calc_weight_matrix(
+        transmit_uv=transmit_uv,
+        gps_covariance_matrix=gps_covariance_matrix,
+        transponders_mean_sv=mean_sv,
+        b_cov=b_cov,
+        travel_times_variance=travel_times_variance,
+    )
+    assert np.allclose(weight_matrix, expected_wm)
 
 
 @pytest.mark.parametrize(

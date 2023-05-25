@@ -285,13 +285,34 @@ def calc_partials(
 
 
 def calc_weight_matrix(
-    transmit_uv,
-    gps_covariance_matrix,
-    transponders_mean_sv,
-    b_cov,
-    travel_times_variance,
+    transmit_uv: NDArray[Shape["3, *"], Float64],
+    gps_covariance_matrix: NDArray[Shape["3, 3"], Float64],
+    transponders_mean_sv: NDArray[Shape["*"], Float64],
+    b_cov: NDArray,
+    travel_times_variance: float,
 ):
-    """Calculate the weight matrix"""
+    """
+    Calculate the weight matrix
+
+    Parameters
+    ----------
+    transmit_uv : (3,N) ndarray
+        The transmit array of unit vectors
+    gps_covariance_matrix : (3,3) ndarray
+        The covariance matrix from the gps data.
+        These are the values from "xx,xy,xz,yx,yy,yz,zx,zy,zz"
+    transponders_mean_sv : (N,) ndarray
+        The transponders mean sound speed
+    b_cov : (num_transponders,num_transponders*3) ndarray
+        The B covariance matrix
+    travel_times_variance : float
+        The user specified travel time variance value
+
+    Returns
+    -------
+    (num_transponders,num_transponders) ndarray
+        The resulting weight matrix
+    """
     # Calculate covariance matrix for partlp vectors (COVF) Units m^2
     covariance_matrix = np.abs((transmit_uv @ gps_covariance_matrix @ transmit_uv.T))
 
