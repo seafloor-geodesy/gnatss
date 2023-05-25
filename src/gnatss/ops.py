@@ -375,9 +375,36 @@ def clean_zeros(input_array: NDArray) -> NDArray:
     raise ValueError("Only 1 or 2-D arrays are supported")
 
 
-def calc_lsq_contrained(ATWA, ATWF, Q=Q_MATRIX):
+# TODO: Q is currently hardcoded... this might change with
+# different transponders number, need adjustment
+def calc_lsq_contrained(
+    ATWA: NDArray[Shape["*, *"], Float64],
+    ATWF: NDArray[Shape["*"], Float64],
+    Q: NDArray[Shape["*, *"], Float64] = Q_MATRIX,
+):
     """
     Performs least-squares estimation with linear constraints.
+    This function has been translated almost directly from ``lscd2.f`` code.
+
+    Parameters
+    ----------
+    ATWA : ndarray
+        ATWA matrix from (A partials matrix)^T * Weight matrix * A partials matrix
+    ATWF : ndarray
+        ATWF matrix from (A partials matrix)^T * Weight matrix * Travel time residuals
+    Q : ndarray, optional
+      The Q constraint matrix
+
+    Returns
+    -------
+    X : (N,) ndarray
+        Solution vector without constraints
+    XP : (N,) ndarray
+        Solution vector with constraints
+    MX : (N,N) ndarray
+        Covariance matrix of solution without constraints
+    MXP : (N,N) ndarray
+        Covariance matrix of solution with constraints
     """
     # Unconstrained
     X = scipy.optimize.lsq_linear(ATWA, ATWF).x
