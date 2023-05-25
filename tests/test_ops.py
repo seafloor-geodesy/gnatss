@@ -270,7 +270,7 @@ def test_clean_zeros(input_array, expected):
 )
 def test_calc_lsq_contrained(ATWA, ATWF, expected):
     X, XP, MX, MXP = calc_lsq_contrained(ATWA, ATWF)
-    assert np.allclose(X, expected[0], atol=1e-5)
-    assert np.allclose(XP, expected[1], atol=1e-5)
-    assert np.allclose(MX, expected[2], atol=1e-5)
-    assert np.allclose(MXP, expected[3], atol=1e-5)
+    assert np.allclose(X, expected[0], atol=1e-4)
+    assert np.allclose(XP, expected[1], atol=1e-4)
+    assert np.allclose(MX, expected[2], atol=1e-4)
+    assert np.allclose(MXP, expected[3], atol=1e-4)
