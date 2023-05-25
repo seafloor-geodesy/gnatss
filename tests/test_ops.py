@@ -5,6 +5,7 @@ import pytest
 from gnatss.configs.solver import ArrayCenter
 from gnatss.constants import GPS_GEOCENTRIC, GPS_GEODETIC, GPS_LOCAL_TANGENT, GPS_TIME
 from gnatss.ops import (
+    calc_partials,
     calc_std_and_verify,
     calc_tt_residual,
     calc_twtt_model,
@@ -13,6 +14,8 @@ from gnatss.ops import (
     compute_enu_series,
     find_gps_record,
 )
+
+# TODO: Figure out how to test with multiple number of transponders data
 
 # Datasets
 GPS_DATASET = [
@@ -167,6 +170,30 @@ REPLY_VECTORS = [
     ),
 ]
 
+A_PARTIALS = [
+    np.array(
+        [
+            [-0.00032953, 0.00104515, -0.00078836, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.00048672, -0.00012449, -0.00125301, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00108455, 0.00076072, -0.00025968],
+        ]
+    ),
+    np.array(
+        [
+            [-0.00033513, 0.00104654, -0.00078414, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.00048141, -0.00011974, -0.00125553, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00107975, 0.00076784, -0.00025873],
+        ]
+    ),
+    np.array(
+        [
+            [-0.00034085, 0.00104969, -0.00077743, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.00047527, -0.00011014, -0.00125874, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0010721, 0.00077905, -0.00025701],
+        ]
+    ),
+]
+
 
 @pytest.fixture(
     params=[
@@ -201,6 +228,22 @@ def mean_sv():
 @pytest.fixture
 def transponders_delay():
     return [0.2, 0.32, 0.44]
+
+
+@pytest.fixture
+def b_cov():
+    return np.array(
+        [
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ]
+    )
+
+
+@pytest.fixture
+def num_transponders():
+    return 3
 
 
 def test_find_gps_record(travel_time):
@@ -296,8 +339,28 @@ def test_calc_tt_residual(
     assert np.allclose(res, expected_residual)
 
 
-def test_calc_partials():
-    ...
+@pytest.mark.parametrize(
+    "transmit_vectors,reply_vectors,tt_delays,expected_a",
+    list(zip(TRANSMIT_VECTORS, REPLY_VECTORS, TT_DELAY_SECONDS, A_PARTIALS)),
+)
+def test_calc_partials(
+    transmit_vectors,
+    reply_vectors,
+    tt_delays,
+    expected_a,
+    num_transponders,
+    mean_sv,
+    b_cov,
+):
+    A_partials, B_cov, _, _ = calc_partials(
+        transmit_vectors=transmit_vectors,
+        reply_vectors=reply_vectors,
+        transponders_mean_sv=mean_sv,
+        delays=tt_delays,
+        num_transponders=num_transponders,
+    )
+    assert np.allclose(A_partials, expected_a)
+    assert np.array_equal(B_cov, b_cov)
 
 
 def test_calc_weight_matrix():

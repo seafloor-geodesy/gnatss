@@ -238,6 +238,30 @@ def calc_partials(
 ) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Calculate the partial derivative matrices
+
+    Parameters
+    ----------
+    transmit_vectors : (3,N) ndarray
+        The transmit array of vectors
+    reply_vectors : (3,N) ndarray
+        The reply array of vectors
+    transponders_mean_sv : (N,) ndarray
+        The transponders mean sound speed
+    delays : (N,) ndarray
+        The measured travel time delays from data (sec)
+    num_transponders : int
+        The total number of transponders
+
+    Returns
+    -------
+    A_partials : (num_transponders,num_transponders*3) ndarray
+        The A partial derivatives matrix
+    B_cov : (num_transponders,num_transponders*3) ndarray
+        The B covariance matrix
+    transmit_uv : (3,N) ndarray
+        The transmit array of unit vectors
+    reply_uv : (3,N) ndarray
+        The reply array of unit vectors
     """
 
     transmit_uv = np.array([calc_uv(v) for v in transmit_vectors])
