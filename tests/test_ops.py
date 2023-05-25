@@ -11,6 +11,7 @@ from gnatss.constants import (
     GPS_TIME,
 )
 from gnatss.ops import (
+    DEFAULT_VECTOR_NORM,
     calc_lsq_contrained,
     calc_partials,
     calc_std_and_verify,
@@ -144,7 +145,7 @@ def test_compute_enu_series(gps_dataseries, array_center):
 @pytest.mark.parametrize(
     "input_vector,expected",
     [
-        (np.array([0, 0, 0]), np.array([2.0, 0.0, 0.0])),
+        (np.array([0, 0, 0]), DEFAULT_VECTOR_NORM),
         (np.array([1, 1, 1]), np.array([0.57735027, 0.57735027, 0.57735027])),
         (np.array([-1, -2, 2]), np.array([-0.33333333, -0.66666667, 0.66666667])),
         (np.array([[-1, 1, 3], [1, 1, 4]]), ValueError),

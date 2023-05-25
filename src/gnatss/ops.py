@@ -30,6 +30,8 @@ Q_MATRIX = np.array(
     ]
 )
 
+DEFAULT_VECTOR_NORM = np.array([2.0, 0.0, 0.0])
+
 
 def find_gps_record(
     gps_solutions: pd.DataFrame, travel_time: pd.Timestamp
@@ -166,7 +168,7 @@ def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
     vector_norm = np.linalg.norm(input_vector)
 
     if vector_norm == 0:
-        return np.array([2.0, 0.0, 0.0])
+        return DEFAULT_VECTOR_NORM
 
     return input_vector / vector_norm
 
