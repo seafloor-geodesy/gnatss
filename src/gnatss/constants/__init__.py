@@ -4,6 +4,7 @@ Module for storing constants used in package
 """
 # General constants
 SIG_3D = "sig_3d"
+DELAY_TIME_PRECISION = 6
 
 # Data columns for sound profile
 SP_DEPTH = "depth"
