@@ -9,6 +9,10 @@ SIG_3D = "sig_3d"
 SP_DEPTH = "depth"
 SP_SOUND_SPEED = "speed"
 
+# Data columns for deletion file
+DEL_STARTTIME = "starttime"
+DEL_ENDTIME = "endtime"
+
 # Data columns for time
 TIME_ASTRO = "astro_time"  # astropy time obj
 TIME_TAI = "tai_time"  # unix tai (includes leap seconds)
