@@ -118,3 +118,13 @@ class Configuration(BaseConfiguration):
     # TODO: Separate settings out to core plugin
     solver: Optional[Solver] = Field(None, description="Solver configurations")
     output: OutputPath
+
+    def __init__(__pydantic_self__, **data):
+        super().__init__(**data)
+
+        # Set the transponders pxp id based on the site id
+        transponders = __pydantic_self__.solver.transponders
+        for idx in range(len(transponders)):
+            transponders[idx].pxp_id = "-".join(
+                [__pydantic_self__.site_id, str(idx + 1)]
+            )
