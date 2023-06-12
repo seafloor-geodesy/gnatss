@@ -1,19 +1,21 @@
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
-import scipy
 from nptyping import Float64, NDArray, Shape
 
-from .configs.solver import ArrayCenter
-from .constants import (
+from ..configs.solver import ArrayCenter
+from ..constants import (
     GPS_COV_DIAG,
     GPS_GEOCENTRIC,
     GPS_GEODETIC,
     GPS_LOCAL_TANGENT,
     GPS_TIME,
 )
-from .utilities.geo import geocentric2enu, geocentric2geodetic
+from ..utilities.geo import geocentric2enu, geocentric2geodetic
+from .utils import calc_uv
+
+__all__ = ["calc_uv"]
 
 # Constrain matrix Q
 Q_MATRIX = np.array(
@@ -29,8 +31,6 @@ Q_MATRIX = np.array(
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
     ]
 )
-
-DEFAULT_VECTOR_NORM = np.array([2.0, 0.0, 0.0])
 
 
 def _check_cols_in_series(input_series: pd.Series, columns: List[str]) -> None:
@@ -60,7 +60,7 @@ def find_gps_record(
 
 
 def calc_std_and_verify(
-    gps_series: pd.Series, std_dev: bool = True, sigma_limit: float = 0.05
+    gps_series: pd.Series, std_dev: bool = True, sigma_limit: float = 0.05, verify=True
 ) -> float:
     """
     Calculate the 3d standard deviation and verify the value based on limit
@@ -74,6 +74,8 @@ def calc_std_and_verify(
         Flag to indicate if the inputs are standard deviation or variance
     sigma_limit : float
         The allowable sigma limit to check against
+    verify : bool
+        Flag to run verification or not
 
     Returns
     -------
@@ -91,8 +93,8 @@ def calc_std_and_verify(
     # Compute the 3d std (sum variances of GPS components and take sqrt)
     sig_3d = np.sqrt(np.sum(gps_series[GPS_COV_DIAG] ** (2 if std_dev else 1)))
 
-    # Verify sigma value, throw error if greater than gps sigma limit
-    if sig_3d > sigma_limit:
+    if verify and (sig_3d > sigma_limit):
+        # Verify sigma value, throw error if greater than gps sigma limit
         raise ValueError(
             f"3D Standard Deviation of {sig_3d} exceeds GPS Sigma Limit of {sigma_limit}!"
         )
@@ -145,95 +147,6 @@ def compute_enu_series(input_series: pd.Series, array_center: ArrayCenter) -> pd
         location_series[GPS_LOCAL_TANGENT[idx]] = v
 
     return location_series
-
-
-def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
-    """
-    Calculate unit vector for a 1-D input vector of size 3
-
-    Parameters
-    ----------
-    input_vector : (3,) ndarray
-        A 1-D input vector as numpy array
-
-    Returns
-    -------
-    (3,) ndarray
-        The resulting unit vector as numpy array
-
-    Raises
-    ------
-    ValueError
-        If the input vector is not a 1-D array
-    """
-
-    if input_vector.shape != (3,):
-        raise ValueError("Unit vector calculation must be 1-D array of shape 3!")
-
-    vector_norm = np.linalg.norm(input_vector)
-
-    if vector_norm == 0:
-        return DEFAULT_VECTOR_NORM
-
-    return input_vector / vector_norm
-
-
-def calc_twtt_model(
-    transmit_vectors: NDArray[Shape["3, *"], Float64],
-    reply_vectors: NDArray[Shape["3, *"], Float64],
-    transponders_mean_sv: NDArray[Shape["*"], Float64],
-) -> NDArray[Shape["*"], Float64]:
-    """
-    Calculate the Modeled TWTT (Two way travel time) in seconds
-
-
-    Parameters
-    ----------
-    transmit_vector : (3,N) ndarray
-        The transmit array of vectors
-    reply_vector : (3,N) ndarray
-        The reply array of vectors
-    transponders_mean_sv : (N,) ndarray
-        The transponders mean sound speed
-
-    Returns
-    -------
-    (N,) ndarray
-        The modeled two way travel times in seconds
-
-    """
-    # Calculate distances in meters
-    transmit_distance = np.array(
-        [np.linalg.norm(vector) for vector in transmit_vectors]
-    )
-    reply_distance = np.array([np.linalg.norm(vector) for vector in reply_vectors])
-
-    return (transmit_distance + reply_distance) / transponders_mean_sv
-
-
-def calc_tt_residual(
-    delays, transponder_delays, twtt_model
-) -> NDArray[Shape["*"], Float64]:
-    """
-    Calculate the travel time residual in seconds
-
-    Parameters
-    ----------
-    delays : (N,) ndarray
-        The measured travel time delays from data (sec)
-    transponder_delays : (N,) ndarray
-        The set transponder delays as defined in configuration file (sec)
-    twtt_model : (N,) ndarray
-        The modeled two way travel times (sec)
-
-    Returns
-    -------
-    (N,) ndarray
-        The travel time residual
-    """
-
-    # dA = Ameas - Amod
-    return (delays - transponder_delays) - twtt_model
 
 
 def calc_partials(
@@ -319,6 +232,8 @@ def calc_weight_matrix(
     -------
     (num_transponders,num_transponders) ndarray
         The resulting weight matrix
+    ndarray
+        The sigma delay array
     """
     # Calculate covariance matrix for partlp vectors (COVF) Units m^2
     covariance_matrix = np.abs((transmit_uv @ gps_covariance_matrix @ transmit_uv.T))
@@ -334,12 +249,8 @@ def calc_weight_matrix(
         covariance_matrix, covariance_matrix.diagonal() + travel_times_variance
     )
 
-    # TODO: Compute ADSIG
-    # IF (ADELAY(I).GT.0.0D0)  THEN
-    #   ADSIG(NEP,I) = DSQRT(COVF(I,I))
-    # ELSE
-    #   ADSIG(NEP,I) = 0.0D0       ! Unequivocal data flag
-    # END IF
+    # Compute delay sigma
+    sigma_delay = np.sqrt(covariance_matrix.diagonal())
 
     # Reshape B_cov to be the same with COVF
     cm_shape = covariance_matrix.shape
@@ -348,7 +259,7 @@ def calc_weight_matrix(
     # Compute COV_SD [COV_SD = B_COV * COVF * B_COV^T]
     covariance_std = b_cov @ covariance_matrix @ b_cov.T
 
-    return np.linalg.inv(covariance_std)
+    return np.linalg.inv(covariance_std), sigma_delay
 
 
 def clean_zeros(input_array: NDArray) -> NDArray:
@@ -382,63 +293,3 @@ def clean_zeros(input_array: NDArray) -> NDArray:
     raise NotImplementedError(
         f"Only 1 or 2-D arrays are supported, instead for {num_dims} dimensions"
     )
-
-
-# TODO: Q is currently hardcoded... this might change with
-# different transponders number, need adjustment
-def calc_lsq_contrained(
-    ATWA: NDArray[Shape["*, *"], Float64],
-    ATWF: NDArray[Shape["*"], Float64],
-    Q: NDArray[Shape["*, *"], Float64] = Q_MATRIX,
-):
-    """
-    Performs least-squares estimation with linear constraints.
-    This function has been translated almost directly from ``lscd2.f`` code.
-
-    Parameters
-    ----------
-    ATWA : ndarray
-        ATWA matrix from (A partials matrix)^T * Weight matrix * A partials matrix
-    ATWF : ndarray
-        ATWF matrix from (A partials matrix)^T * Weight matrix * Travel time residuals
-    Q : ndarray, optional
-      The Q constraint matrix
-
-    Returns
-    -------
-    X : (N,) ndarray
-        Solution vector without constraints
-    XP : (N,) ndarray
-        Solution vector with constraints
-    MX : (N,N) ndarray
-        Covariance matrix of solution without constraints
-    MXP : (N,N) ndarray
-        Covariance matrix of solution with constraints
-    """
-    # Unconstrained
-    X = scipy.optimize.lsq_linear(ATWA, ATWF).x
-
-    # Constrained
-    Zerr = 0 - (Q @ X)
-    Zerr = clean_zeros(Zerr)
-
-    MX = np.linalg.inv(ATWA)
-
-    MXQT = MX @ Q.T
-    MXQT = clean_zeros(MXQT)
-
-    QMXQT = Q @ MXQT
-    QMXQT = clean_zeros(QMXQT)
-
-    QMX = Q @ MX
-    QMX = clean_zeros(QMX)
-
-    QMXQTIQMX = np.linalg.inv(QMXQT) @ QMX
-
-    XDEL = clean_zeros(Zerr).T @ QMXQTIQMX
-    XP = X + XDEL
-
-    DELMX = MXQT @ QMXQTIQMX
-    MXP = MX - DELMX
-
-    return X, XP, MX, MXP
