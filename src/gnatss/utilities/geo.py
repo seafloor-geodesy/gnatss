@@ -65,7 +65,7 @@ def geodetic2geocentric(
     return np.round(coordinates, GEOCENTRIC_PRECISION)
 
 
-def __get_rotation_matrix(
+def _get_rotation_matrix(
     lat_org: float, lon_org: float, to_enu: bool = True
 ) -> np.ndarray:
     """Helper function for ECEF to ENU and vice versa"""
@@ -125,7 +125,7 @@ def geocentric2enu(
     delta_xyz = np.column_stack([np.array([x, y, z]) - origin_xyz])  # D(3, 1)
 
     # Rotation matrix R(3, 3)
-    R = __get_rotation_matrix(lat_org, lon_org)
+    R = _get_rotation_matrix(lat_org, lon_org)
     return np.dot(R, delta_xyz)  # E(3, 1)
 
 
@@ -163,7 +163,7 @@ def enu2geocentric(
     )  # O(3, 1)
     enu = np.column_stack([np.array([e, n, u])])  # E(3, 1)
     # Rotation matrix R(3, 3)
-    R = __get_rotation_matrix(lat_org, lon_org, to_enu=False)
+    R = _get_rotation_matrix(lat_org, lon_org, to_enu=False)
     return np.dot(R, enu) + origin_xyz  # X(3, 1)
 
 
