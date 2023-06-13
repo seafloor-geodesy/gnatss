@@ -7,7 +7,6 @@ from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 
 from . import constants
 from .configs.main import Configuration
-from .constants import garpos
 from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
     load_deletions,
@@ -108,7 +107,7 @@ def get_transmit_times(cleaned_travel_times, all_gps_solutions, gps_sigma_limit)
 
     # Adds a 0 to column names for transmit values
     transmit_times.columns = [
-        f"{col}0" if col != constants.TT_TIME else garpos.ST
+        f"{col}0" if col != constants.TT_TIME else constants.garpos.ST
         for col in transmit_times.columns
     ]
 
@@ -119,20 +118,25 @@ def get_reply_times(
     cleaned_travel_times, all_gps_solutions, gps_sigma_limit, transponder_ids
 ):
     reply_times = cleaned_travel_times[transponder_ids]
-    reply_times[garpos.ST] = cleaned_travel_times[constants.TT_TIME]
+    reply_times[constants.garpos.ST] = cleaned_travel_times[constants.TT_TIME]
 
     # Pivot the table by stacking
-    reply_times = reply_times.set_index(garpos.ST).stack()
-    reply_times = reply_times.rename(garpos.TT)
-    reply_times.index = reply_times.index.rename([garpos.ST, garpos.MT])
+    reply_times = reply_times.set_index(constants.garpos.ST).stack()
+    reply_times = reply_times.rename(constants.garpos.TT)
+    reply_times.index = reply_times.index.rename(
+        [constants.garpos.ST, constants.garpos.MT]
+    )
     reply_times = reply_times.to_frame().reset_index()
     # Set RT
-    reply_times[garpos.RT] = reply_times.apply(
-        lambda row: row[garpos.ST] + row[garpos.TT], axis=1
+    reply_times[constants.garpos.RT] = reply_times.apply(
+        lambda row: row[constants.garpos.ST] + row[constants.garpos.TT], axis=1
     )
     # Merge with gps solutions
     reply_times = pd.merge(
-        reply_times, all_gps_solutions, left_on=garpos.RT, right_on=constants.GPS_TIME
+        reply_times,
+        all_gps_solutions,
+        left_on=constants.garpos.RT,
+        right_on=constants.GPS_TIME,
     )
     reply_times = reply_times.drop(constants.GPS_TIME, axis="columns")
 
@@ -140,16 +144,24 @@ def get_reply_times(
     reply_times = check_sig3d(data=reply_times, gps_sigma_limit=gps_sigma_limit)
 
     # Currently looks for even value counts... check fortran code what to do here?
-    time_counts = reply_times[garpos.ST].value_counts()
+    time_counts = reply_times[constants.garpos.ST].value_counts()
     reply_times = reply_times[
-        reply_times[garpos.ST].isin(
+        reply_times[constants.garpos.ST].isin(
             time_counts[time_counts == len(transponder_ids)].index
         )
     ]
 
     # Adds a 1 to column names for reply values
     reply_times.columns = [
-        f"{col}1" if col not in [garpos.ST, garpos.MT, garpos.RT, garpos.TT] else col
+        f"{col}1"
+        if col
+        not in [
+            constants.garpos.ST,
+            constants.garpos.MT,
+            constants.garpos.RT,
+            constants.garpos.TT,
+        ]
+        else col
         for col in reply_times.columns
     ]
     return reply_times
@@ -217,7 +229,7 @@ def main(config: Configuration, all_files_dict: Dict[str, Any]):
     )
 
     # Merge times
-    all_observations = pd.merge(transmit_times, reply_times, on=garpos.ST)
+    all_observations = pd.merge(transmit_times, reply_times, on=constants.garpos.ST)
 
     # TODO: Get lat lon alt and enu
     # Get geocentric x,y,z for array center

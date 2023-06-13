@@ -4,7 +4,6 @@ from numba.typed import List as NumbaList
 from pymap3d import ecef2enu, ecef2geodetic
 
 from .. import constants
-from ..constants import garpos
 from .utils import _prep_col_names
 
 TRANSMIT_LOC_COLS = _prep_col_names(constants.GPS_GEOCENTRIC)
@@ -49,7 +48,7 @@ def get_data_inputs(all_observations, config):
         reply_xyz = group[REPLY_LOC_COLS].values
 
         # Get observed delays
-        observed_delays = group[garpos.TT].values
+        observed_delays = group[constants.garpos.TT].values
 
         # Get transmit cov matrix
         cov_values = group[_prep_col_names(constants.GPS_COV, True)].values[0]

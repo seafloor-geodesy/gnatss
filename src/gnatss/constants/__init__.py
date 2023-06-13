@@ -2,6 +2,10 @@
 
 Module for storing constants used in package
 """
+from . import garpos
+
+__all__ = ["garpos"]
+
 # General constants
 SIG_3D = "sig_3d"
 DELAY_TIME_PRECISION = 6
