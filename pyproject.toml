@@ -31,6 +31,7 @@ dependencies = [
     "pandas>=1.5.3",
     "pydantic>=1.10.6",
     "pyyaml>=5.4",
+    "pymap3d>=3.0.1",
     "pluggy>=1.0.0",
     "pyproj>=3.5.0",
     "scipy>=1.10.1",
