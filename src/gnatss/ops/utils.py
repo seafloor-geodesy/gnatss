@@ -31,7 +31,7 @@ def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
         If the input vector is not a 1-D array
     """
 
-    if input_vector.shape != (3,):
+    if input_vector.ndim != 1 or input_vector.shape != (3,):
         raise ValueError("Unit vector calculation must be 1-D array of shape 3!")
 
     vector_norm = np.linalg.norm(input_vector)

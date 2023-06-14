@@ -4,15 +4,7 @@ import numpy as np
 import pandas as pd
 from nptyping import Float64, NDArray, Shape
 
-from ..configs.solver import ArrayCenter
-from ..constants import (
-    GPS_COV_DIAG,
-    GPS_GEOCENTRIC,
-    GPS_GEODETIC,
-    GPS_LOCAL_TANGENT,
-    GPS_TIME,
-)
-from ..utilities.geo import geocentric2enu, geocentric2geodetic
+from ..constants import GPS_COV_DIAG, GPS_TIME
 from .utils import calc_uv
 
 __all__ = ["calc_uv"]
@@ -100,53 +92,6 @@ def calc_std_and_verify(
         )
 
     return sig_3d
-
-
-def compute_enu_series(input_series: pd.Series, array_center: ArrayCenter) -> pd.Series:
-    """
-    Computes the longitude, latitude, and altitude values as well as the
-    east, north, up from ECEF (Geocentric) coordinates and add to the
-    input data series.
-
-    Parameters
-    ----------
-    input_series : pd.Series
-        The pandas data series that includes the x, y, z coordinates values
-    array_center : ArrayCenter
-        The array center object to be used for east, north, up calculation
-        as the origin coordinates
-
-    Returns
-    -------
-    pd.Series
-        A copy of the input data series with lon, lat, alt and east, north, up
-        columns added
-    """
-    # Catch if some of the coordinate columns are missing
-    _check_cols_in_series(input_series=input_series, columns=GPS_GEOCENTRIC)
-
-    if not isinstance(array_center, ArrayCenter):
-        # Catch if not ArrayCenter obj
-        raise ValueError(f"`array_center` input must be {type(ArrayCenter)} object")
-
-    array_center_coords = [array_center.lon, array_center.lat, array_center.alt]
-
-    location_series = input_series.copy()
-
-    geodetic_coords = geocentric2geodetic(*location_series[GPS_GEOCENTRIC].values)
-    enu_coords = geocentric2enu(
-        *location_series[GPS_GEOCENTRIC].values, *array_center_coords
-    ).flatten()
-
-    # Set geodetic lon,lat,alt to the series
-    for idx, v in enumerate(geodetic_coords):
-        location_series[GPS_GEODETIC[idx]] = v
-
-    # Set local tangent e,n,u to the series
-    for idx, v in enumerate(enu_coords):
-        location_series[GPS_LOCAL_TANGENT[idx]] = v
-
-    return location_series
 
 
 def calc_partials(
