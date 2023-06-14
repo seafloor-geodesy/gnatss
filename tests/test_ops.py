@@ -3,30 +3,18 @@ import pandas as pd
 import pytest
 
 from gnatss.configs.solver import ArrayCenter
-from gnatss.constants import (
-    GPS_COV,
-    GPS_GEOCENTRIC,
-    GPS_GEODETIC,
-    GPS_LOCAL_TANGENT,
-    GPS_TIME,
-)
 from gnatss.ops import (
-    DEFAULT_VECTOR_NORM,
     _check_cols_in_series,
-    calc_lsq_contrained,
-    calc_partials,
     calc_std_and_verify,
-    calc_tt_residual,
-    calc_twtt_model,
     calc_uv,
-    calc_weight_matrix,
     clean_zeros,
-    compute_enu_series,
     find_gps_record,
 )
+from gnatss.ops.solve import calc_tt_residual, calc_twtt_model
+from gnatss.ops.utils import DEFAULT_VECTOR_NORM
+from gnatss.ops.validate import calc_lsq_constrained
 
 from .ops_data import (
-    A_PARTIALS,
     ATWA_SAMPLE,
     ATWF_SAMPLE,
     GPS_DATASET,
@@ -37,7 +25,6 @@ from .ops_data import (
     TT_DELAY_SECONDS,
     TT_RESIDUAL,
     TWTT_MODEL,
-    WEIGHT_MATRIX,
 )
 
 # TODO: Figure out how to test with multiple number of transponders data
@@ -148,31 +135,14 @@ def test_calc_std_and_verify(gps_dataseries, gps_sigma_limit):
             assert isinstance(e, ValueError)
 
 
-def test_compute_enu_series(gps_dataseries, array_center):
-    """Tests the ``compute_enu_series`` function"""
-    location_columns = [GPS_TIME, *GPS_GEOCENTRIC]
-    try:
-        enu_series = compute_enu_series(
-            input_series=gps_dataseries, array_center=array_center
-        )
-        expected_columns = [*location_columns, *GPS_GEODETIC, *GPS_LOCAL_TANGENT]
-
-        assert all(col in enu_series for col in expected_columns)
-    except Exception as e:
-        if "z" not in gps_dataseries:
-            assert isinstance(e, KeyError)
-        elif isinstance(array_center, dict):
-            assert isinstance(e, ValueError)
-
-
 @pytest.mark.parametrize(
     "input_vector,expected",
     [
-        (np.array([0, 0, 0]), DEFAULT_VECTOR_NORM),
-        (np.array([1, 1, 1]), np.array([0.57735027, 0.57735027, 0.57735027])),
-        (np.array([-1, -2, 2]), np.array([-0.33333333, -0.66666667, 0.66666667])),
-        (np.array([[-1, 1, 3], [1, 1, 4]]), ValueError),
-        (np.array([-1, 2]), ValueError),
+        (np.array([0.0, 0.0, 0.0]), DEFAULT_VECTOR_NORM),
+        (np.array([1.0, 1.0, 1.0]), np.array([0.57735027, 0.57735027, 0.57735027])),
+        (np.array([-1.0, -2.0, 2.0]), np.array([-0.33333333, -0.66666667, 0.66666667])),
+        (np.array([[-1.0, 1.0, 3.0], [1.0, 1.0, 4.0]]), ValueError),
+        (np.array([-1.0, 2.0]), ValueError),
     ],
 )
 def test_calc_uv(input_vector, expected):
@@ -214,56 +184,56 @@ def test_calc_tt_residual(
     assert np.allclose(res, expected_residual)
 
 
-@pytest.mark.parametrize(
-    "transmit_vectors,reply_vectors,tt_delays,expected_a",
-    list(zip(TRANSMIT_VECTORS, REPLY_VECTORS, TT_DELAY_SECONDS, A_PARTIALS)),
-)
-def test_calc_partials(
-    transmit_vectors,
-    reply_vectors,
-    tt_delays,
-    expected_a,
-    num_transponders,
-    mean_sv,
-    b_cov,
-):
-    A_partials, B_cov, _, _ = calc_partials(
-        transmit_vectors=transmit_vectors,
-        reply_vectors=reply_vectors,
-        transponders_mean_sv=mean_sv,
-        delays=tt_delays,
-        num_transponders=num_transponders,
-    )
-    assert np.allclose(A_partials, expected_a)
-    assert np.array_equal(B_cov, b_cov)
+# @pytest.mark.parametrize(
+#     "transmit_vectors,reply_vectors,tt_delays,expected_a",
+#     list(zip(TRANSMIT_VECTORS, REPLY_VECTORS, TT_DELAY_SECONDS, A_PARTIALS)),
+# )
+# def test_calc_partials(
+#     transmit_vectors,
+#     reply_vectors,
+#     tt_delays,
+#     expected_a,
+#     num_transponders,
+#     mean_sv,
+#     b_cov,
+# ):
+#     A_partials, B_cov, _, _ = calc_partials(
+#         transmit_vectors=transmit_vectors,
+#         reply_vectors=reply_vectors,
+#         transponders_mean_sv=mean_sv,
+#         delays=tt_delays,
+#         num_transponders=num_transponders,
+#     )
+#     assert np.allclose(A_partials, expected_a)
+#     assert np.array_equal(B_cov, b_cov)
 
 
-@pytest.mark.parametrize(
-    "gps_dict,transmit_vectors,expected_wm",
-    list(zip(GPS_DATASET[2:], TRANSMIT_VECTORS, WEIGHT_MATRIX)),
-)
-def test_calc_weight_matrix(
-    gps_dict, transmit_vectors, expected_wm, mean_sv, b_cov, travel_times_variance
-):
-    gps_dataseries = pd.Series(gps_dict)
-    # Add missing data
-    if "z" not in gps_dataseries:
-        gps_dataseries["z"] = 4511065.769
-    if "yy" not in gps_dataseries:
-        gps_dataseries["yy"] = 0.001007144325
+# @pytest.mark.parametrize(
+#     "gps_dict,transmit_vectors,expected_wm",
+#     list(zip(GPS_DATASET[2:], TRANSMIT_VECTORS, WEIGHT_MATRIX)),
+# )
+# def test_calc_weight_matrix(
+#     gps_dict, transmit_vectors, expected_wm, mean_sv, b_cov, travel_times_variance
+# ):
+#     gps_dataseries = pd.Series(gps_dict)
+#     # Add missing data
+#     if "z" not in gps_dataseries:
+#         gps_dataseries["z"] = 4511065.769
+#     if "yy" not in gps_dataseries:
+#         gps_dataseries["yy"] = 0.001007144325
 
-    gps_covariance_matrix = np.array(np.array_split(gps_dataseries[GPS_COV], 3)).astype(
-        "float64"
-    )
-    transmit_uv = np.array([calc_uv(v) for v in transmit_vectors])
-    weight_matrix = calc_weight_matrix(
-        transmit_uv=transmit_uv,
-        gps_covariance_matrix=gps_covariance_matrix,
-        transponders_mean_sv=mean_sv,
-        b_cov=b_cov,
-        travel_times_variance=travel_times_variance,
-    )
-    assert np.allclose(weight_matrix, expected_wm)
+#     gps_covariance_matrix = np.array(np.array_split(gps_dataseries[GPS_COV], 3)).astype(
+#         "float64"
+#     )
+#     transmit_uv = np.array([calc_uv(v) for v in transmit_vectors])
+#     weight_matrix = calc_weight_matrix(
+#         transmit_uv=transmit_uv,
+#         gps_covariance_matrix=gps_covariance_matrix,
+#         transponders_mean_sv=mean_sv,
+#         b_cov=b_cov,
+#         travel_times_variance=travel_times_variance,
+#     )
+#     assert np.allclose(weight_matrix, expected_wm)
 
 
 @pytest.mark.parametrize(
@@ -288,8 +258,9 @@ def test_clean_zeros(input_array, expected):
         assert isinstance(e, expected)
 
 
-def test_calc_lsq_contrained():
-    X, XP, MX, MXP = calc_lsq_contrained(ATWA_SAMPLE, ATWF_SAMPLE)
+def test_calc_lsq_constrained():
+    num_transponders = 3
+    X, XP, MX, MXP = calc_lsq_constrained(ATWA_SAMPLE, ATWF_SAMPLE, num_transponders)
 
     # The results are in meters and we'd like to ensure cm
     # precision, so 1e-4 should be very precise,

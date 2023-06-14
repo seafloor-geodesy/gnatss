@@ -31,10 +31,10 @@ def test_sv_harmonic_mean(end_depth, expected_hm, sound_profile_data):
     [(0, 3, 1501.535), (0, 6, 1501.07), (2, 5, 1500.915), (4, 7, 1500.295)],
 )
 def test__compute_hm(start_idx, end_idx, expected_hm):
-    dd = np.arange(7) * 10
-    sv = np.arange(1502, 1500, step=-0.31)
+    depth = np.arange(7) * 10
+    speed = np.arange(1502, 1500, step=-0.31)
 
-    svdf = pd.DataFrame(dict(dd=dd, sv=sv))
+    svdf = pd.DataFrame({SP_DEPTH: depth, SP_SOUND_SPEED: speed})
 
     # Get partial of the data from test index
     partdf = svdf[start_idx:end_idx].copy()

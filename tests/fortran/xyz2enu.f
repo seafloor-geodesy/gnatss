@@ -7,6 +7,10 @@
             pi = 4.d0*datan(1.d0)
             dtr = pi/180.d0
 
+c           Convert to radians from decimal degrees
+            la = la*dtr
+            lg = lg*dtr
+
             ca = dcos(la)
             sa = dsin(la)
 
