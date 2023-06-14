@@ -231,7 +231,12 @@ def main(config: Configuration, all_files_dict: Dict[str, Any]):
     # Merge times
     all_observations = pd.merge(transmit_times, reply_times, on=constants.garpos.ST)
 
-    # TODO: Get lat lon alt and enu
+    # TODO: Get lat lon alt and enu, and azimuth
+    # Calculate transmit azimuth angle in degrees
+    # transmit_azimuth = np.degrees(
+    #   np.arctan2(transmit_location[GPS_EAST], transmit_location[GPS_NORTH])
+    # )
+
     # Get geocentric x,y,z for array center
     # array_center = config.solver.array_center
     # array_center_xyz = np.array(
