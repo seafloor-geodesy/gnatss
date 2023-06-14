@@ -6,18 +6,8 @@ import pandas as pd
 import yaml
 from pydantic.error_wrappers import ValidationError
 
+from . import constants
 from .configs.main import Configuration
-from .constants import (
-    GPS_COV,
-    GPS_GEOCENTRIC,
-    GPS_TIME,
-    SP_DEPTH,
-    SP_SOUND_SPEED,
-    TIME_ASTRO,
-    TT_DATE,
-    TT_TIME,
-    TT_TRANSPONDER,
-)
 
 
 def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
@@ -55,7 +45,7 @@ def load_sound_speed(sv_file: str) -> pd.DataFrame:
     pd.DataFrame
         Sound speed profile pandas dataframe
     """
-    columns = [SP_DEPTH, SP_SOUND_SPEED]
+    columns = [constants.SP_DEPTH, constants.SP_SOUND_SPEED]
 
     # Read sound speed
     return pd.read_csv(
@@ -125,8 +115,8 @@ def load_travel_times(
     PARSED_FILE = "parsed"
     DATETIME_FORMAT = "%d-%b-%y %H:%M:%S.%f"
 
-    transponder_labels = [TT_TRANSPONDER(tid) for tid in transponder_ids]
-    columns = [TT_DATE, TT_TIME, *transponder_labels]
+    transponder_labels = [constants.TT_TRANSPONDER(tid) for tid in transponder_ids]
+    columns = [constants.TT_DATE, constants.TT_TIME, *transponder_labels]
     if is_j2k:
         # If it's already j2k then pop off date column, idx 0
         columns.pop(0)
@@ -154,19 +144,22 @@ def load_travel_times(
         from .utilities.time import AstroTime
 
         # Determine j2000 time from date and time string
-        all_travel_times.loc[:, TIME_ASTRO] = all_travel_times.apply(
+        all_travel_times.loc[:, constants.TIME_ASTRO] = all_travel_times.apply(
             lambda row: AstroTime.strptime(
-                f"{row[TT_DATE].lower()} {row[TT_TIME]}", DATETIME_FORMAT
+                f"{row[constants.TT_DATE].lower()} {row[constants.TT_TIME]}",
+                DATETIME_FORMAT,
             ),
             axis=1,
         )
         # Replace time to j2000 rather than time string
-        all_travel_times[TT_TIME] = all_travel_times.apply(
-            lambda row: row[TIME_ASTRO].unix_j2000, axis=1
+        all_travel_times[constants.TT_TIME] = all_travel_times.apply(
+            lambda row: row[constants.TIME_ASTRO].unix_j2000, axis=1
         )
 
         # Drop unused columns for downstream computation
-        all_travel_times = all_travel_times.drop([TT_DATE, TIME_ASTRO], axis=1)
+        all_travel_times = all_travel_times.drop(
+            [constants.TT_DATE, constants.TIME_ASTRO], axis=1
+        )
 
     return all_travel_times
 
@@ -202,7 +195,7 @@ def load_gps_solutions(files: List[str]) -> pd.DataFrame:
 
     These files are often called `POS_FREED_TRANS_TWTT`.
     """
-    columns = [GPS_TIME, *GPS_GEOCENTRIC, *GPS_COV]
+    columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
     # Real all gps solutions
     gps_solutions = [
         pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
