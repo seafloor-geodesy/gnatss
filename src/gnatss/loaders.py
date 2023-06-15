@@ -115,8 +115,7 @@ def load_travel_times(
     PARSED_FILE = "parsed"
     DATETIME_FORMAT = "%d-%b-%y %H:%M:%S.%f"
 
-    transponder_labels = [constants.TT_TRANSPONDER(tid) for tid in transponder_ids]
-    columns = [constants.TT_DATE, constants.TT_TIME, *transponder_labels]
+    columns = [constants.TT_DATE, constants.TT_TIME, *transponder_ids]
     if is_j2k:
         # If it's already j2k then pop off date column, idx 0
         columns.pop(0)
@@ -137,14 +136,14 @@ def load_travel_times(
     all_travel_times.columns = columns
 
     # Convert microseconds to seconds for delay times
-    all_travel_times[transponder_labels] = all_travel_times[transponder_labels] * 1e-6
+    all_travel_times[transponder_ids] = all_travel_times[transponder_ids] * 1e-6
 
     # Skip time conversion if it's already j2000 time
     if not is_j2k:
         from .utilities.time import AstroTime
 
         # Determine j2000 time from date and time string
-        all_travel_times.loc[:, constants.TIME_ASTRO] = all_travel_times.apply(
+        all_travel_times[constants.TIME_ASTRO] = all_travel_times.apply(
             lambda row: AstroTime.strptime(
                 f"{row[constants.TT_DATE].lower()} {row[constants.TT_TIME]}",
                 DATETIME_FORMAT,
@@ -203,3 +202,38 @@ def load_gps_solutions(files: List[str]) -> pd.DataFrame:
     all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
 
     return all_gps_solutions
+
+
+def load_deletions(file_path: str) -> pd.DataFrame:
+    """
+    Loads the raw deletion text file into a pandas dataframe
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the deletion file to be loaded
+
+    Returns
+    -------
+    pd.DataFrame
+        Deletion ranges data pandas dataframe
+    """
+    from .utilities.time import AstroTime
+
+    cut_df = pd.read_fwf(file_path, header=None)
+    cut_df[constants.DEL_STARTTIME] = pd.to_datetime(cut_df[0] + "T" + cut_df[1])
+    cut_df[constants.DEL_ENDTIME] = pd.to_datetime(cut_df[2] + "T" + cut_df[3])
+    # Got rid of the other columns
+    # TODO: Parse the other columns
+    cut_columns = cut_df.columns[0:-2]
+    cut_df.drop(columns=cut_columns, inplace=True)
+
+    # Convert time to j2000
+    cut_df[constants.DEL_STARTTIME] = cut_df[constants.DEL_STARTTIME].apply(
+        lambda row: AstroTime(row).unix_j2000
+    )
+    cut_df[constants.DEL_ENDTIME] = cut_df[constants.DEL_ENDTIME].apply(
+        lambda row: AstroTime(row).unix_j2000
+    )
+
+    return cut_df
