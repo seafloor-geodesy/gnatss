@@ -45,6 +45,7 @@ docs = [
     "sphinx-panels",
     "sphinx_rtd_theme",
     "sphinxcontrib-mermaid",
+    "autodoc_pydantic"
 ]
 lint = [
     "black",

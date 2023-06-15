@@ -30,3 +30,16 @@ repository:
 html:
   use_issues_button: true
   use_repository_button: true
+
+sphinx:
+  extra_extensions: [
+    'sphinx_automodapi.automodapi',
+    'numpydoc',
+    'sphinxcontrib.autodoc_pydantic',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.githubpages',
+    'sphinxcontrib.mermaid'
+  ]
