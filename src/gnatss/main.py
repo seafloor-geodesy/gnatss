@@ -223,7 +223,12 @@ def prepare_and_solve(all_observations, config):
 
         process_dict[n_iter]["data"] = data
 
-        # Print out some stats
+        # Compute one way travel time residual in centimeter
+        # This uses a constant assume sound speed of 1500 m/s
+        # since this is only used for quality control.
+        process_dict[n_iter]["rescm"] = (100 * 1500 * np.array(data["address"])) / 2
+
+        # Print out some stats below
 
         # This assumes that all data is ADSIG > 0
         RMSRES = np.sum(np.array(data["address"]) ** 2)
@@ -317,6 +322,7 @@ def prepare_and_solve(all_observations, config):
                     )
                 )
                 typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
+            return process_dict
         typer.echo()
 
 
@@ -395,4 +401,5 @@ def load_data(all_files_dict, config):
 
 def main(config: Configuration, all_files_dict: Dict[str, Any]):
     all_observations = load_data(all_files_dict, config)
-    prepare_and_solve(all_observations, config)
+    all_epochs = all_observations[constants.garpos.ST].unique()
+    return all_epochs, prepare_and_solve(all_observations, config)
