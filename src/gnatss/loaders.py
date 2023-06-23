@@ -163,7 +163,9 @@ def load_travel_times(
     return all_travel_times
 
 
-def load_gps_solutions(files: List[str]) -> pd.DataFrame:
+def load_gps_solutions(
+    files: List[str], time_round=constants.DELAY_TIME_PRECISION
+) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.
 
@@ -171,6 +173,8 @@ def load_gps_solutions(files: List[str]) -> pd.DataFrame:
     ----------
     files : list
         The list of path string to files to load
+    time_round : int
+        The precision value to round the time values
 
     Returns
     -------
@@ -200,6 +204,13 @@ def load_gps_solutions(files: List[str]) -> pd.DataFrame:
         pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
     ]
     all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
+
+    # Round to match the delays precision
+    # TODO: Find a way to determine this precision dynamically?
+    if isinstance(time_round, int) and time_round > 0:
+        all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
+            constants.GPS_TIME
+        ].round(time_round)
 
     return all_gps_solutions
 

@@ -28,7 +28,7 @@ Q_MATRIX = np.array(
 )
 
 
-@numba.njit
+@numba.njit(cache=True)
 def _calc_qmxqt(atwa: NDArray, q: NDArray) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
     mx = np.linalg.inv(atwa)
 
@@ -39,21 +39,21 @@ def _calc_qmxqt(atwa: NDArray, q: NDArray) -> Tuple[NDArray, NDArray, NDArray, N
     return qmxqt, qmx, mx, mxqt
 
 
-@numba.njit
+@numba.njit(cache=True)
 def _calc_xp(x: NDArray, qmxqtiqmx: NDArray, zerr: NDArray) -> NDArray:
     xdel = zerr.T @ qmxqtiqmx
     xp = x + xdel
     return xp
 
 
-@numba.njit
+@numba.njit(cache=True)
 def _calc_mxp(mx: NDArray, qmxqtiqmx: NDArray, mxqt: NDArray) -> NDArray:
     delmx = mxqt @ qmxqtiqmx
     mxp = mx - delmx
     return mxp
 
 
-@numba.njit
+@numba.njit(cache=True)
 def _sum_all(input_list):
     total = np.zeros_like(input_list[0])
     for arr in input_list:
@@ -61,7 +61,7 @@ def _sum_all(input_list):
     return total
 
 
-@numba.njit
+@numba.njit(cache=True)
 def _create_q_matrix(num_transponders: int) -> NDArray:
     mpars = 3 * num_transponders
     q = np.zeros(shape=(mpars, mpars))
@@ -76,7 +76,7 @@ def _create_q_matrix(num_transponders: int) -> NDArray:
     return q
 
 
-@numba.njit
+@numba.njit(cache=True)
 def _combine_results(all_results):
     all_atwa = NumbaList()
     all_atwf = NumbaList()

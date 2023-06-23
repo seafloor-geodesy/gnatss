@@ -41,28 +41,36 @@ def calc_lla_and_enu(all_observations, array_center):
     return all_observations
 
 
-def get_data_inputs(all_observations, config):
+def get_data_inputs(all_observations):
     data_inputs = NumbaList()
-    for _, group in all_observations.groupby(constants.garpos.ST):
-        transmit_xyz = group[TRANSMIT_LOC_COLS].values[0]
-        reply_xyz = group[REPLY_LOC_COLS].values
 
-        # Get observed delays
-        observed_delays = group[constants.garpos.TT].values
+    # Group obs by the transmit time
+    grouped_obs = all_observations.groupby(constants.garpos.ST)
 
-        # Get transmit cov matrix
-        cov_values = group[_prep_col_names(constants.GPS_COV, True)].values[0]
-        gps_covariance_matrix = _split_cov(cov_values)
+    # Get transmit xyz
+    transmit_xyz = grouped_obs[TRANSMIT_LOC_COLS].first().to_numpy()
 
-        # Get travel times variance
-        travel_times_variance = config.solver.travel_times_variance
-        data_inputs.append(
-            (
-                transmit_xyz,
-                reply_xyz,
-                gps_covariance_matrix,
-                observed_delays,
-                travel_times_variance,
-            )
-        )
+    # Get reply xyz
+    reply_xyz_list = []
+    grouped_obs[REPLY_LOC_COLS].apply(
+        lambda group: reply_xyz_list.append(group.to_numpy())
+    )
+
+    # Get observed delays
+    observed_delay_list = []
+    grouped_obs[constants.garpos.TT].apply(
+        lambda group: observed_delay_list.append(group.to_numpy())
+    )
+
+    # Get transmit cov matrices
+    cov_vals_df = grouped_obs[_prep_col_names(constants.GPS_COV, True)].first()
+    gps_covariance_matrices = [
+        _split_cov(row.to_numpy()) for idx, row in cov_vals_df.iterrows()
+    ]
+
+    # Merge all inputs
+    for data in zip(
+        transmit_xyz, reply_xyz_list, gps_covariance_matrices, observed_delay_list
+    ):
+        data_inputs.append(data)
     return data_inputs

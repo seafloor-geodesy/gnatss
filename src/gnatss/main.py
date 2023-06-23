@@ -15,7 +15,7 @@ from .loaders import (
     load_travel_times,
 )
 from .ops.data import get_data_inputs
-from .ops.solve import _perform_solve
+from .ops.solve import perform_solve
 from .ops.validate import check_sig3d, check_solutions
 from .utilities.geo import _get_rotation_matrix
 from .utilities.io import _get_filesystem
@@ -167,82 +167,8 @@ def get_reply_times(
     return reply_times
 
 
-def main(config: Configuration, all_files_dict: Dict[str, Any]):
-    # Read sound speed
-    typer.echo("Load sound speed profile data...")
-    svdf = load_sound_speed(all_files_dict["sound_speed"])
+def prepare_and_solve(all_observations, config):
     transponders = config.solver.transponders
-    start_depth = config.solver.harmonic_mean_start_depth
-
-    # Compute harmonic mean of each transponder
-    typer.echo("Computing harmonic mean...")
-    for transponder in transponders:
-        # Compute the harmonic mean and round to 3 decimal places
-        harmonic_mean = round(
-            sv_harmonic_mean(svdf, start_depth, transponder.height), 3
-        )
-        transponder.sv_mean = harmonic_mean
-        typer.echo(transponder)
-    typer.echo("Finished computing harmonic mean")
-
-    # Read deletion file
-    typer.echo("Load deletions data...")
-    cut_df = load_deletions(all_files_dict["deletions"])
-
-    # Load travel times data
-    typer.echo("Load travel times...")
-    transponder_ids = [t.pxp_id for t in transponders]
-    all_travel_times = load_travel_times(
-        files=all_files_dict["travel_times"], transponder_ids=transponder_ids
-    )
-
-    # Cleaning travel times
-    typer.echo("Cleaning travel times data...")
-    cleaned_travel_times = clean_tt(
-        all_travel_times,
-        cut_df,
-        transponder_ids,
-        config.solver.travel_times_correction,
-        config.solver.transducer_delay_time,
-    )
-
-    # Load gps solutions data
-    typer.echo("Load GPS data...")
-    all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
-    # Round to match the delays precision
-    # TODO: Find a way to determine this precision dynamically?
-    all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
-        constants.GPS_TIME
-    ].round(constants.DELAY_TIME_PRECISION)
-
-    typer.echo("Cross referencing transmit, reply, and gps solutions...")
-    # Parse transmit times
-    transmit_times = get_transmit_times(
-        cleaned_travel_times, all_gps_solutions, config.solver.gps_sigma_limit
-    )
-    # Parse reply times
-    reply_times = get_reply_times(
-        cleaned_travel_times,
-        all_gps_solutions,
-        config.solver.gps_sigma_limit,
-        transponder_ids,
-    )
-
-    # Merge times
-    all_observations = pd.merge(transmit_times, reply_times, on=constants.garpos.ST)
-
-    # TODO: Get lat lon alt and enu, and azimuth
-    # Calculate transmit azimuth angle in degrees
-    # transmit_azimuth = np.degrees(
-    #   np.arctan2(transmit_location[GPS_EAST], transmit_location[GPS_NORTH])
-    # )
-
-    # Get geocentric x,y,z for array center
-    # array_center = config.solver.array_center
-    # array_center_xyz = np.array(
-    #     geodetic2ecef(array_center.lat, array_center.lon, array_center.alt)
-    # )
-
     # convert orthonomal heights of PXPs into ellipsoidal heights and convert to x,y,z
     transponders_xyz = None
     if transponders_xyz is None:
@@ -255,19 +181,22 @@ def main(config: Configuration, all_files_dict: Dict[str, Any]):
     transponders_mean_sv = np.array([t.sv_mean for t in transponders])
     transponders_delay = np.array([t.internal_delay for t in transponders])
 
+    # Get travel times variance
+    travel_times_variance = config.solver.travel_times_variance
+
     # Store original xyz
     original_positions = transponders_xyz.copy()
 
     typer.echo("Preparing data inputs...")
-    data_inputs = get_data_inputs(all_observations, config)
+    data_inputs = get_data_inputs(all_observations)
 
     typer.echo("Perform solve...")
-    typer.echo("---")
     is_converged = False
     n_iter = 0
     num_transponders = len(transponders)
     process_dict = {}
     num_data = len(all_observations)
+    typer.echo(f"--- {len(data_inputs)} epochs, {num_data} measurements ---")
     while not is_converged:
         # TODO: Add max converge attempt failure
         # if n_iter > max_iter:
@@ -279,13 +208,15 @@ def main(config: Configuration, all_files_dict: Dict[str, Any]):
         # Keep track of process
         process_dict[n_iter] = {"transponders_xyz": transponders_xyz}
 
-        all_results = _perform_solve(
+        # Perform solving
+        all_results = perform_solve(
             data_inputs,
             transponders_mean_sv,
             transponders_xyz,
             transponders_delay,
-            num_transponders,
+            travel_times_variance,
         )
+
         is_converged, transponders_xyz, data = check_solutions(
             all_results, transponders_xyz
         )
@@ -387,3 +318,81 @@ def main(config: Configuration, all_files_dict: Dict[str, Any]):
                 )
                 typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
         typer.echo()
+
+
+def load_data(all_files_dict, config):
+    # Read sound speed
+    typer.echo("Load sound speed profile data...")
+    svdf = load_sound_speed(all_files_dict["sound_speed"])
+    transponders = config.solver.transponders
+    start_depth = config.solver.harmonic_mean_start_depth
+
+    # Compute harmonic mean of each transponder
+    typer.echo("Computing harmonic mean...")
+    for transponder in transponders:
+        # Compute the harmonic mean and round to 3 decimal places
+        harmonic_mean = round(
+            sv_harmonic_mean(svdf, start_depth, transponder.height), 3
+        )
+        transponder.sv_mean = harmonic_mean
+        typer.echo(transponder)
+    typer.echo("Finished computing harmonic mean")
+
+    # Read deletion file
+    typer.echo("Load deletions data...")
+    cut_df = load_deletions(all_files_dict["deletions"])
+
+    # Load travel times data
+    typer.echo("Load travel times...")
+    transponder_ids = [t.pxp_id for t in transponders]
+    all_travel_times = load_travel_times(
+        files=all_files_dict["travel_times"], transponder_ids=transponder_ids
+    )
+
+    # Cleaning travel times
+    typer.echo("Cleaning travel times data...")
+    cleaned_travel_times = clean_tt(
+        all_travel_times,
+        cut_df,
+        transponder_ids,
+        config.solver.travel_times_correction,
+        config.solver.transducer_delay_time,
+    )
+
+    # Load gps solutions data
+    typer.echo("Load GPS data...")
+    all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
+
+    typer.echo("Cross referencing transmit, reply, and gps solutions...")
+    # Parse transmit times
+    transmit_times = get_transmit_times(
+        cleaned_travel_times, all_gps_solutions, config.solver.gps_sigma_limit
+    )
+    # Parse reply times
+    reply_times = get_reply_times(
+        cleaned_travel_times,
+        all_gps_solutions,
+        config.solver.gps_sigma_limit,
+        transponder_ids,
+    )
+
+    # Merge times
+    all_observations = pd.merge(transmit_times, reply_times, on=constants.garpos.ST)
+
+    # TODO: Get lat lon alt and enu, and azimuth
+    # Calculate transmit azimuth angle in degrees
+    # transmit_azimuth = np.degrees(
+    #   np.arctan2(transmit_location[GPS_EAST], transmit_location[GPS_NORTH])
+    # )
+
+    # Get geocentric x,y,z for array center
+    # array_center = config.solver.array_center
+    # array_center_xyz = np.array(
+    #     geodetic2ecef(array_center.lat, array_center.lon, array_center.alt)
+    # )
+    return all_observations
+
+
+def main(config: Configuration, all_files_dict: Dict[str, Any]):
+    all_observations = load_data(all_files_dict, config)
+    prepare_and_solve(all_observations, config)
