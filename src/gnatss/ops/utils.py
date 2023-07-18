@@ -10,7 +10,7 @@ DEFAULT_VECTOR_NORM = np.array([2.0, 0.0, 0.0])
 # Numba utilities
 
 
-@numba.njit
+@numba.njit(cache=True)
 def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
     """
     Calculate unit vector for a 1-D input vector of size 3

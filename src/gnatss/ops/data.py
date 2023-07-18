@@ -10,7 +10,7 @@ TRANSMIT_LOC_COLS = _prep_col_names(constants.GPS_GEOCENTRIC)
 REPLY_LOC_COLS = _prep_col_names(constants.GPS_GEOCENTRIC, transmit=False)
 
 
-@numba.njit
+@numba.njit(cache=True)
 def _split_cov(cov_values):
     n = 3
     cov = np.zeros((n, n))
