@@ -11,6 +11,7 @@ from .. import constants
 from . import calc_std_and_verify
 from .utils import clean_zeros
 
+
 @numba.njit(cache=True)
 def _calc_qmxqt(atwa: NDArray, q: NDArray) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
     mx = np.linalg.inv(atwa)
@@ -60,7 +61,9 @@ def _create_q_matrix(num_transponders: int) -> NDArray:
 
 
 @numba.njit(cache=True)
-def _combine_results(all_results: NumbaList) -> Tuple[NumbaList, NumbaList, NumbaList, NumbaList]:
+def _combine_results(
+    all_results: NumbaList,
+) -> Tuple[NumbaList, NumbaList, NumbaList, NumbaList]:
     all_atwa = NumbaList()
     all_atwf = NumbaList()
     travel_time_residuals = NumbaList()
