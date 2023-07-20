@@ -277,6 +277,7 @@ def prepare_and_solve(all_observations, config):
 
         if is_converged:
             typer.echo()
+            typer.echo("---- FINAL SOLUTION ----")
             for idx, tp in enumerate(transponders):
                 typer.echo(pxp_id)
                 x, y, z = transponders_xyz[idx]
@@ -322,8 +323,9 @@ def prepare_and_solve(all_observations, config):
                     )
                 )
                 typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
+            typer.echo("------------------------")
+            typer.echo()
             return process_dict
-        typer.echo()
 
 
 def load_data(all_files_dict, config):
