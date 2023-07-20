@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -399,7 +399,83 @@ def load_data(all_files_dict, config):
     return all_observations
 
 
-def main(config: Configuration, all_files_dict: Dict[str, Any]):
+def extract_latest_residuals(
+    config: Configuration, all_epochs: List[float], process_data: Dict[str, Any]
+) -> pd.DataFrame:
+    """
+    Extracts the latest residuals from process data,
+    and convert them into a pandas dataframe.
+
+    Parameters
+    ----------
+    config : Configuration
+        The configuration object
+    all_epochs : List[float]
+        A list of all the epoch values
+    process_data : Dict[str, Any]
+        The full processing data results
+
+    Returns
+    -------
+    pd.DataFrame
+        The final dataframe for residuals
+    """
+    from .utilities.time import AstroTime  # noqa
+
+    def to_iso(astro_time):
+        return [t.strftime("%Y-%m-%dT%H:%M:%S.%f") for t in astro_time]
+
+    # Convert j2000 seconds time to astro time and then convert to iso
+    astro_epochs = np.apply_along_axis(AstroTime, 0, all_epochs, format="unix_j2000")
+    iso_epochs = np.apply_along_axis(to_iso, 0, astro_epochs)
+
+    # Get the latest process data
+    process_info = process_data[max(process_data.keys())]
+
+    # Retrieve residuals data
+    all_residuals_data = []
+    for ep, iso, address in zip(all_epochs, iso_epochs, process_info["rescm"]):
+        all_residuals_data.append([ep, iso] + list(address))
+
+    return pd.DataFrame(
+        all_residuals_data,
+        columns=[constants.TIME_J2000, constants.TIME_ISO]
+        + [t.pxp_id for t in config.solver.transponders],
+    )
+
+
+def main(
+    config: Configuration,
+    all_files_dict: Dict[str, Any],
+    extract_res: bool = False,
+) -> Tuple[List[float], Dict[str, Any], Union[pd.DataFrame, None]]:
+    """
+    The main function that performs the full pre-processing
+
+    Parameters
+    ----------
+    config : Configuration
+        The configuration object
+    all_files_dict : Dict[str, Any]
+        A dictionary of file paths for the input data
+    extract_res : bool, optional
+        A flag to extract latest residual data as dataframe, by default False
+
+    Returns
+    -------
+    all_epochs : List[float]
+        A list of all the epoch values
+    process_data : Dict[str, Any]
+        The full processing data results
+    resdf : Union[pd.DataFrame, None]]
+        Extracted latest residuals as dataframe, by default None
+    """
     all_observations = load_data(all_files_dict, config)
     all_epochs = all_observations[constants.garpos.ST].unique()
-    return all_epochs, prepare_and_solve(all_observations, config)
+    process_data = prepare_and_solve(all_observations, config)
+
+    # Extracts latest residuals when specified
+    resdf = None
+    if extract_res:
+        resdf = extract_latest_residuals(config, all_epochs, process_data)
+    return all_epochs, process_data, resdf

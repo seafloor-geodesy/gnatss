@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from nptyping import Float64, NDArray, Shape
 
-from ..constants import GPS_COV_DIAG, GPS_TIME
+from .. import constants
 from .utils import calc_uv
 
 __all__ = ["calc_uv"]
@@ -31,24 +31,6 @@ def _check_cols_in_series(input_series: pd.Series, columns: List[str]) -> None:
         if col not in input_series:
             # Catch if some of thecolumns are missing
             raise KeyError(f"``{col}`` not found in the data series provided.")
-
-
-def find_gps_record(
-    gps_solutions: pd.DataFrame, travel_time: pd.Timestamp
-) -> pd.Series:
-    """
-    Finds matching GPS record based on travel time
-    """
-    # TODO: Probably will change this function to perform some merging
-    match = gps_solutions.iloc[
-        gps_solutions[GPS_TIME]
-        .apply(lambda row: (row - travel_time))
-        .abs()
-        .argsort()[0],
-        :,
-    ]
-
-    return match
 
 
 def calc_std_and_verify(
@@ -80,10 +62,12 @@ def calc_std_and_verify(
         If 3D Standard Deviation exceeds the GPS Sigma limit
     """
     # Checks for GPS Covariance Diagonal values
-    _check_cols_in_series(input_series=gps_series, columns=GPS_COV_DIAG)
+    _check_cols_in_series(input_series=gps_series, columns=constants.GPS_COV_DIAG)
 
     # Compute the 3d std (sum variances of GPS components and take sqrt)
-    sig_3d = np.sqrt(np.sum(gps_series[GPS_COV_DIAG] ** (2 if std_dev else 1)))
+    sig_3d = np.sqrt(
+        np.sum(gps_series[constants.GPS_COV_DIAG] ** (2 if std_dev else 1))
+    )
 
     if verify and (sig_3d > sigma_limit):
         # Verify sigma value, throw error if greater than gps sigma limit
