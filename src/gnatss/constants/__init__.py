@@ -2,10 +2,21 @@
 
 Module for storing constants used in package
 """
+from . import garpos
+
+__all__ = ["garpos"]
+
+# General constants
+SIG_3D = "sig_3d"
+DELAY_TIME_PRECISION = 6
 
 # Data columns for sound profile
-SP_DEPTH = "dd"
-SP_SOUND_SPEED = "sv"
+SP_DEPTH = "depth"
+SP_SOUND_SPEED = "speed"
+
+# Data columns for deletion file
+DEL_STARTTIME = "starttime"
+DEL_ENDTIME = "endtime"
 
 # Data columns for time
 TIME_ASTRO = "astro_time"  # astropy time obj
@@ -16,7 +27,6 @@ TIME_J2000 = "time"  # Default J2000 time (sec since 2000-01-01 12:00:00)
 # Travel times columns
 TT_TIME = TIME_J2000  # Time string that will become J2000
 TT_DATE = "date"  # Date string
-TT_TRANSPONDER = "transponder-{}".format  # Transponder id. ex. TT_TRANSPONDER('01')
 
 # GPS solutions columns
 GPS_TIME = TIME_J2000  # Default J2000 time (sec since 2000-01-01 12:00:00)

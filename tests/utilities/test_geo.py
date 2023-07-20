@@ -5,13 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
-from gnatss.utilities.geo import (
-    enu2geocentric,
-    geocentric2enu,
-    geocentric2geodetic,
-    geodetic2geocentric,
-)
+from pymap3d import ecef2enu, geodetic2ecef
 
 from ..fortran import flib
 
@@ -59,9 +53,9 @@ def array_center():
     return (45.3023, -124.9656, 0.0)
 
 
-def test_geodetic2geocentric(coordinates):
+def test_plh2xyz(coordinates):
     """Test for geodetic to geocentric conversion, comparing to fortran code"""
-    (lat, lon, alt), (x, y, z), _ = coordinates
+    (lat, lon, alt), _, _ = coordinates
     input_data = f"{AE} {RF}\n{lat} {lon} {alt}".encode("utf-8")
     fortran_program = f"plh2xyz-{platform.machine().lower()}"
     # Calls on fortran code
@@ -79,46 +73,22 @@ def test_geodetic2geocentric(coordinates):
     )  # round to 3 decimal places
 
     # Calls on the python code
-    px, py, pz = geodetic2geocentric(lon, lat, alt)
-
-    assert (fx, fy, fz) == (x, y, z)
-    assert (px, py, pz) == (x, y, z)
+    px, py, pz = np.round(geodetic2ecef(lat, lon, alt), 3)
 
     # Compare fortran and python values
     assert (fx, fy, fz) == (px, py, pz)
 
 
-def test_geocentric2geodetic(coordinates):
-    """Test for geocentric to geodetic conversion"""
-    (lat, lon, alt), (x, y, z), _ = coordinates
-
-    plon, plat, palt = geocentric2geodetic(x, y, z)
-
-    assert np.allclose(
-        np.array((plat, plon, palt)), np.array((lat, lon, alt)), rtol=1e-10, atol=1e-10
-    )
-
-
-def test_geocentric2enu(coordinates, array_center):
+def test_xyz2enu(coordinates, array_center):
     _, (x, y, z), _ = coordinates
     olat, olon, oalt = array_center
     # Python enu
-    penu = geocentric2enu(x, y, z, olon, olat, oalt)
+    penu = ecef2enu(x, y, z, olat, olon, oalt)
 
     # Find delta array first
-    origin_array = geodetic2geocentric(olon, olat, oalt)
+    origin_array = geodetic2ecef(olat, olon, oalt)
     delta_array = np.column_stack([np.array([x, y, z]) - origin_array])
 
     # Calculate enu with fortran lib
     fenu = flib.xyz2enu(olat, olon, delta_array)
-    assert np.array_equal(np.round(fenu, 9), np.round(penu, 9))
-
-
-def test_enu2geocentric(coordinates, array_center):
-    _, (x, y, z), (e, n, u) = coordinates
-    olat, olon, oalt = array_center
-
-    pxyz = enu2geocentric(e, n, u, olat, olon, oalt)
-    expected = np.column_stack([np.array([x, y, z])])
-
-    assert np.array_equal(pxyz, expected)
+    assert np.array_equal(np.round(fenu.flatten(), 9), np.round(penu, 9))

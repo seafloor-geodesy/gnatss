@@ -51,6 +51,9 @@ class SolverInputs(BaseModel):
     gps_solution: InputData = Field(
         ..., description="GPS solution data path specification."
     )
+    deletions: InputData = Field(
+        ..., description="Deletions file for unwanted data points."
+    )
 
 
 class SolverGlobal(BaseModel):
@@ -97,10 +100,8 @@ class SolverTransponder(BaseModel):
     def __init__(__pydantic_self__, **data: Any) -> None:
         super().__init__(**data)
 
+        # A solver transponder unique identifier
         __pydantic_self__._uuid = uuid4().hex
-
-        # ID is 7 characters based on the uuid
-        __pydantic_self__.pxp_id = __pydantic_self__._uuid[:7]
 
 
 class Solver(BaseModel):
