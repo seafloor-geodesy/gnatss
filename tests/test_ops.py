@@ -3,13 +3,7 @@ import pandas as pd
 import pytest
 
 from gnatss.configs.solver import ArrayCenter
-from gnatss.ops import (
-    _check_cols_in_series,
-    calc_std_and_verify,
-    calc_uv,
-    clean_zeros,
-    find_gps_record,
-)
+from gnatss.ops import _check_cols_in_series, calc_std_and_verify, calc_uv, clean_zeros
 from gnatss.ops.solve import calc_tt_residual, calc_twtt_model
 from gnatss.ops.utils import DEFAULT_VECTOR_NORM
 from gnatss.ops.validate import calc_lsq_constrained
@@ -106,14 +100,6 @@ def test__check_cols_in_series(input_data, check_columns):
     except Exception as e:
         if ("z" in check_columns) or ("x" in check_columns):
             assert isinstance(e, KeyError)
-
-
-def test_find_gps_record(travel_time):
-    gps_df = pd.DataFrame.from_records(GPS_DATASET)
-
-    gps_ds = find_gps_record(gps_solutions=gps_df, travel_time=travel_time)
-
-    assert isinstance(gps_ds, pd.Series)
 
 
 def test_calc_std_and_verify(gps_dataseries, gps_sigma_limit):
