@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 import fsspec
 
 
-def _get_filesystem(input_path: str, storage_options: Dict[str, Any] = {}):
+def _get_filesystem(input_path: str, storage_options: Dict[str, Any] = {}) -> Any:
     """Retrieves filesystem from `input_path`"""
     parsed_url = urlparse(input_path)
     return fsspec.filesystem(parsed_url.scheme, **storage_options)
