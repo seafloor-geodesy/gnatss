@@ -232,8 +232,13 @@ def load_deletions(file_path: str) -> pd.DataFrame:
     from .utilities.time import AstroTime
 
     cut_df = pd.read_fwf(file_path, header=None)
-    cut_df[constants.DEL_STARTTIME] = pd.to_datetime(cut_df[0] + "T" + cut_df[1])
-    cut_df[constants.DEL_ENDTIME] = pd.to_datetime(cut_df[2] + "T" + cut_df[3])
+    # Date example: 28-JUL-22 12:30:00
+    cut_df[constants.DEL_STARTTIME] = pd.to_datetime(
+        cut_df[0] + "T" + cut_df[1], format="%d-%b-%yT%H:%M:%S"
+    )
+    cut_df[constants.DEL_ENDTIME] = pd.to_datetime(
+        cut_df[2] + "T" + cut_df[3], format="%d-%b-%yT%H:%M:%S"
+    )
     # Got rid of the other columns
     # TODO: Parse the other columns
     cut_columns = cut_df.columns[0:-2]
