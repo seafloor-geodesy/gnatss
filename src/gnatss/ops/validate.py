@@ -11,23 +11,6 @@ from .. import constants
 from . import calc_std_and_verify
 from .utils import clean_zeros
 
-# Constrain matrix Q
-# Hardcoded constant for 3 transponders
-Q_MATRIX = np.array(
-    [
-        [-1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    ]
-)
-
-
 @numba.njit(cache=True)
 def _calc_qmxqt(atwa: NDArray, q: NDArray) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
     mx = np.linalg.inv(atwa)
@@ -54,7 +37,7 @@ def _calc_mxp(mx: NDArray, qmxqtiqmx: NDArray, mxqt: NDArray) -> NDArray:
 
 
 @numba.njit(cache=True)
-def _sum_all(input_list):
+def _sum_all(input_list: NumbaList) -> NDArray:
     total = np.zeros_like(input_list[0])
     for arr in input_list:
         total += arr
@@ -77,7 +60,7 @@ def _create_q_matrix(num_transponders: int) -> NDArray:
 
 
 @numba.njit(cache=True)
-def _combine_results(all_results):
+def _combine_results(all_results: NumbaList) -> Tuple[NumbaList, NumbaList, NumbaList, NumbaList]:
     all_atwa = NumbaList()
     all_atwf = NumbaList()
     travel_time_residuals = NumbaList()

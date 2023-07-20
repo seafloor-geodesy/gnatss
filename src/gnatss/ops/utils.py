@@ -43,7 +43,7 @@ def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
 
 
 # Regular Python Utilities
-def _prep_col_names(col_names, transmit: bool = True) -> List[str]:
+def _prep_col_names(col_names: List[str], transmit: bool = True) -> List[str]:
     """Prepare column names for either transmission or reply by adding 0 or 1"""
     suffix = "0" if transmit else "1"
     return [name + suffix for name in col_names]

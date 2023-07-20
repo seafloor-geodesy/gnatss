@@ -164,7 +164,7 @@ def load_travel_times(
 
 
 def load_gps_solutions(
-    files: List[str], time_round=constants.DELAY_TIME_PRECISION
+    files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
 ) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.

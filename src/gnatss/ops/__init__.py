@@ -30,7 +30,7 @@ def _check_cols_in_series(input_series: pd.Series, columns: List[str]) -> None:
     for col in columns:
         if col not in input_series:
             # Catch if some of thecolumns are missing
-            raise KeyError(f"``{col}`` not found in the data series provided.")
+            raise KeyError(f"{col} not found in the data series provided.")
 
 
 def calc_std_and_verify(
@@ -167,7 +167,7 @@ def calc_weight_matrix(
     # Calculate covariance matrix for partlp vectors (COVF) Units m^2
     covariance_matrix = np.abs((transmit_uv @ gps_covariance_matrix @ transmit_uv.T))
 
-    # Weighting factor equal to 2/sv_mean
+    # Weighting factor equal to 2/sv_mean^2
     weight_factor = 2.0 / (transponders_mean_sv**2)
 
     # Convert to covariance of acoustic delays Units seconds^2

@@ -25,7 +25,7 @@ def run(
         help="Custom path to configuration yaml file. **Currently only support local files!**",
     ),
     extract_res: Optional[bool] = typer.Option(
-        False, help="Flag to extract residual files from run, by default False."
+        False, help="Flag to extract residual files from run."
     ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
