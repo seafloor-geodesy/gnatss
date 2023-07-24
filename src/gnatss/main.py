@@ -22,6 +22,18 @@ from .utilities.io import _get_filesystem
 
 
 def gather_files(config: Configuration) -> Dict[str, Any]:
+    """Gather file paths for the various dataset files
+
+    Parameters
+    ----------
+    config : Configuration
+        A configuration object
+
+    Returns
+    -------
+    Dict[str, Any]
+        A dictionary containing the various datasets file paths
+    """
     all_files_dict = {}
     for k, v in config.solver.input_files.dict().items():
         path = v.get("path", "")
@@ -39,14 +51,33 @@ def gather_files(config: Configuration) -> Dict[str, Any]:
 
 
 def clean_tt(
-    all_travel_times,
-    cut_df,
-    transponder_ids,
-    travel_times_correction,
-    transducer_delay_time,
-):
+    all_travel_times: pd.DataFrame,
+    cut_df: pd.DataFrame,
+    transponder_ids: List[str],
+    travel_times_correction: float,
+    transducer_delay_time: float,
+) -> pd.DataFrame:
     """
-    Clean travel times
+    Clean travel times using deletions data
+
+    Parameters
+    ----------
+    all_travel_times : pd.DataFrame
+        The original travel times data
+    cut_df : pd.DataFrame
+        The deletions data to be removed
+    transponder_ids : List[str]
+        A list of the transponder ids that matches the order
+        with all_travel_times data
+    travel_times_correction : float
+        Correction to times in travel times (secs.)
+    transducer_delay_time : float
+        Transducer Delay Time - delay at surface transducer (secs).
+
+    Returns
+    -------
+    pd.DataFrame
+        The cleaned travel times data
 
     Notes
     -----
@@ -93,7 +124,29 @@ def clean_tt(
     return cleaned_travel_times
 
 
-def get_transmit_times(cleaned_travel_times, all_gps_solutions, gps_sigma_limit):
+def get_transmit_times(
+    cleaned_travel_times: pd.DataFrame,
+    all_gps_solutions: pd.DataFrame,
+    gps_sigma_limit: float,
+) -> pd.DataFrame:
+    """
+    Merges cleaned transmit times with gps solutions into one
+    dataframe and check for 3d std deviation
+
+    Parameters
+    ----------
+    cleaned_travel_times : pd.DataFrame
+        The full cleaned travel times data
+    all_gps_solutions : pd.DataFrame
+        The full gps solutions data
+    gps_sigma_limit : float
+        Maximum positional sigma allowed to use GPS positions
+
+    Returns
+    -------
+    pd.DataFrame
+        The transmit times data with gps solutions included
+    """
     # Merge with gps solutions
     transmit_times = pd.merge(
         cleaned_travel_times[[constants.TT_TIME]],
@@ -115,8 +168,32 @@ def get_transmit_times(cleaned_travel_times, all_gps_solutions, gps_sigma_limit)
 
 
 def get_reply_times(
-    cleaned_travel_times, all_gps_solutions, gps_sigma_limit, transponder_ids
+    cleaned_travel_times: pd.DataFrame,
+    all_gps_solutions: pd.DataFrame,
+    gps_sigma_limit: float,
+    transponder_ids: List[str],
 ):
+    """
+    Merges cleaned reply times with gps solutions into one
+    dataframe and check for 3d std deviation
+
+    Parameters
+    ----------
+    cleaned_travel_times : pd.DataFrame
+        The full cleaned travel times data
+    all_gps_solutions : pd.DataFrame
+        The full gps solutions data
+    gps_sigma_limit : float
+        Maximum positional sigma allowed to use GPS positions
+    transponder_ids : List[str]
+        A list of the transponder ids that matches the order
+        with ``cleaned_travel_times`` data
+
+    Returns
+    -------
+    pd.DataFrame
+        The reply times data with gps solutions included
+    """
     reply_times = cleaned_travel_times[transponder_ids]
     reply_times[constants.garpos.ST] = cleaned_travel_times[constants.TT_TIME]
 
@@ -167,7 +244,26 @@ def get_reply_times(
     return reply_times
 
 
-def prepare_and_solve(all_observations, config):
+def prepare_and_solve(
+    all_observations: pd.DataFrame, config: Configuration
+) -> Dict[int, Any]:
+    """
+    Prepare data inputs and perform solving algorithm
+
+    Parameters
+    ----------
+    all_observations : pd.DataFrame
+        The whole dataset that includes,
+        transmit, reply, and gps solutions data
+    config : Configuration
+        The configuration object
+
+    Returns
+    -------
+    Dict[int, Any]
+        The process dictionary that contains stats and data results,
+        for all of the iterations
+    """
     transponders = config.solver.transponders
     # convert orthonomal heights of PXPs into ellipsoidal heights and convert to x,y,z
     transponders_xyz = None
@@ -328,7 +424,23 @@ def prepare_and_solve(all_observations, config):
             return process_dict
 
 
-def load_data(all_files_dict, config):
+def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataFrame:
+    """
+    Loads all of the necessary datasets for processing into a singular
+    pandas dataframe object.
+
+    Parameters
+    ----------
+    all_files_dict : Dict[str, Any]
+        A dictionary containing the various datasets file paths
+    config : Configuration
+        The configuration file object
+
+    Returns
+    -------
+    pd.DataFrame
+        All observations dataframe
+    """
     # Read sound speed
     typer.echo("Load sound speed profile data...")
     svdf = load_sound_speed(all_files_dict["sound_speed"])
