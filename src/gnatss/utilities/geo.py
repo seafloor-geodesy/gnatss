@@ -3,12 +3,12 @@
 Geospatial utilities module
 """
 import numpy as np
-from nptyping import NDArray
+from nptyping import Float64, NDArray, Shape
 
 
 def _get_rotation_matrix(
     lat_org: float, lon_org: float, to_enu: bool = True
-) -> NDArray:
+) -> NDArray[Shape["3, 3"], Float64]:
     """Helper function for ECEF to ENU and vice versa"""
     # Setup
     cos_lat = np.cos(lat_org)
