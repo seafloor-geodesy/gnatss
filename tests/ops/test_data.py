@@ -21,7 +21,7 @@ def all_observations() -> pd.DataFrame:
     return pd.read_csv(obs_csv)
 
 
-def test_calc_lla_and_enu(all_observations) -> None:
+def test_calc_lla_and_enu(all_observations: pd.DataFrame) -> None:
     array_center = ArrayCenter(lat=0, lon=0, alt=0)
     final_obs = calc_lla_and_enu(all_observations, array_center=array_center)
     assert isinstance(final_obs, pd.DataFrame)
@@ -43,7 +43,7 @@ def test__split_cov() -> None:
     assert cov_matrix.shape == (3, 3)
 
 
-def test_get_data_inputs(all_observations) -> None:
+def test_get_data_inputs(all_observations: pd.DataFrame) -> None:
     data_inputs = get_data_inputs(all_observations)
 
     assert isinstance(data_inputs, NumbaList)
