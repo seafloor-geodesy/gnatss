@@ -33,6 +33,9 @@ def _calc_tr_vectors(
     reply_vectors : (N,3) ndarray
         The reply array of vectors
     """
+    # Ensure transponders xyz and reply xyz have the same shape
+    assert transponders_xyz.shape == reply_xyz.shape
+
     transmit_vectors = transponders_xyz - transmit_xyz
     reply_vectors = transponders_xyz - reply_xyz
     return transmit_vectors, reply_vectors
