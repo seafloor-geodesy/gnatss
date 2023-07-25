@@ -13,7 +13,7 @@ def _calc_tr_vectors(
     transponders_xyz: NDArray[Shape["*, 3"], Float64],  # noqa
     transmit_xyz: NDArray[Shape["3"], Float64],
     reply_xyz: NDArray[Shape["*, 3"], Float64],  # noqa
-) -> Tuple[NDArray[Shape["*, 3"]], NDArray[Shape["*, 3"]]]:  # noqa
+) -> Tuple[NDArray[Shape["*, 3"], Float64], NDArray[Shape["*, 3"], Float64]]:  # noqa
     """
     Calculate the transmit and reply vectors
 
@@ -34,7 +34,9 @@ def _calc_tr_vectors(
         The reply array of vectors
     """
     # Ensure transponders xyz and reply xyz have the same shape
-    assert transponders_xyz.shape == reply_xyz.shape
+    m, n = transponders_xyz.shape
+    o, p = reply_xyz.shape
+    assert (m, n) == (o, p), f"Mismatch shape found: ({m},{n}) != ({o},{p})"
 
     transmit_vectors = transponders_xyz - transmit_xyz
     reply_vectors = transponders_xyz - reply_xyz
