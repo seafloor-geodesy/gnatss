@@ -10,17 +10,28 @@ from .utils import calc_uv
 
 @numba.njit(cache=True)
 def _calc_tr_vectors(
-    transponders_xyz: NDArray[Shape["*, 3"], Float64],
+    transponders_xyz: NDArray[Shape["*, 3"], Float64],  # noqa
     transmit_xyz: NDArray[Shape["3"], Float64],
-    reply_xyz: NDArray[Shape["*, 3"], Float64],
-) -> Tuple[NDArray, NDArray]:
+    reply_xyz: NDArray[Shape["*, 3"], Float64],  # noqa
+) -> Tuple[NDArray[Shape["*, 3"]], NDArray[Shape["*, 3"]]]:  # noqa
     """
-    Calculate transmit and reply vector
+    Calculate the transmit and reply vectors
 
     Parameters
     ----------
     transponders_xyz : (N,3) ndarray
-        The
+        The transponders xyz locations
+    transmit_xyz : (3,) ndarray
+        The transmit xyz location
+    reply_xyz : (N,3) ndarray
+        The reply xyz locations
+
+    Returns
+    -------
+    transmit_vectors : (N,3) ndarray
+        The transmit array of vectors
+    reply_vectors : (N,3) ndarray
+        The reply array of vectors
     """
     transmit_vectors = transponders_xyz - transmit_xyz
     reply_vectors = transponders_xyz - reply_xyz
