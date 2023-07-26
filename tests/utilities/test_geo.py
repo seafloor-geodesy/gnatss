@@ -5,7 +5,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from nptyping import Float64, NDArray, Shape
 from pymap3d import ecef2enu, geodetic2ecef
+
+from gnatss.utilities.geo import _get_rotation_matrix
 
 from ..fortran import flib
 
@@ -92,3 +95,18 @@ def test_xyz2enu(coordinates, array_center):
     # Calculate enu with fortran lib
     fenu = flib.xyz2enu(olat, olon, delta_array)
     assert np.array_equal(np.round(fenu.flatten(), 9), np.round(penu, 9))
+
+
+@pytest.mark.parametrize(
+    "to_enu, expected",
+    [
+        (True, np.array([[-0.0, 1.0, 0.0], [-0.0, -0.0, 1.0], [1.0, 0.0, 0.0]])),
+        (False, np.array([[-0.0, -0.0, 1.0], [1.0, -0.0, 0.0], [0.0, 1.0, 0.0]])),
+    ],
+)
+def test__get_rotation_matrix(
+    to_enu: bool, expected: NDArray[Shape["3, 3"], Float64]
+) -> None:
+    lat, lon = 0.0, 0.0
+    res_array = _get_rotation_matrix(lat, lon, to_enu)
+    assert np.array_equal(res_array, expected)
