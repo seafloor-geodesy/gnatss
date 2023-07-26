@@ -56,3 +56,29 @@ def test__compute_hm(start_idx, end_idx, expected_hm):
     x = partdf[SP_SOUND_SPEED]
     H = w.dropna().sum() / (w / x).dropna().sum()
     assert result_hm == round(H, 3)
+
+
+@pytest.mark.parametrize(
+    "end_depth,expected_hm",
+    [("invalid_value", None)],  # Invalid end_depth input will raise ValueError
+)
+def test_sv_harmonic_mean_invalid_input(end_depth, expected_hm, sound_profile_data):
+    svdf = sound_profile_data
+    start_depth = -4
+    with pytest.raises(ValueError):
+        sv_harmonic_mean(svdf, start_depth, end_depth)
+
+
+@pytest.mark.parametrize(
+    "start_idx,end_idx,expected_hm",
+    [("invalid_value", None)],  # Invalid end_depth input will raise ValueError
+)
+def test__compute_hm_invalid_input(start_idx, end_idx, expected_hm):
+    depth = np.arange(7) * 10
+    speed = np.arange(1502, 1500, step=-0.31)
+
+    svdf = pd.DataFrame({SP_DEPTH: depth, SP_SOUND_SPEED: speed})
+
+    start_depth = 0
+    with pytest.raises(ValueError):
+        _compute_hm(svdf, start_depth, end_idx)
