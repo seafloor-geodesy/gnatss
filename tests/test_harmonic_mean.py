@@ -71,7 +71,7 @@ def test_sv_harmonic_mean_invalid_input(end_depth, expected_hm, sound_profile_da
 
 @pytest.mark.parametrize(
     "start_idx,end_idx,expected_hm",
-    [("invalid_value", None)],  # Invalid end_depth input will raise ValueError
+    [("invalid_value", "invalid_value", None)],
 )
 def test__compute_hm_invalid_input(start_idx, end_idx, expected_hm):
     depth = np.arange(7) * 10
@@ -79,6 +79,5 @@ def test__compute_hm_invalid_input(start_idx, end_idx, expected_hm):
 
     svdf = pd.DataFrame({SP_DEPTH: depth, SP_SOUND_SPEED: speed})
 
-    start_depth = 0
     with pytest.raises(ValueError):
-        _compute_hm(svdf, start_depth, end_idx)
+        _compute_hm(svdf, start_idx, end_idx)
