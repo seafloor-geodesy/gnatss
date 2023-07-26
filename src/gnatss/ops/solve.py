@@ -51,6 +51,16 @@ def _calc_unit_vectors(
     Calculates the unit vectors from an array of vectors.
     This function will go through each vector array,
     and compute its unit vector.
+
+    Parameters
+    ----------
+    vectors : (N,3) ndarray
+        The array of vectors
+
+    Returns
+    -------
+    (N,3) ndarray
+        The resulting array of unit vectors
     """
     u_vectors = np.empty_like(vectors)
     n = len(vectors)
