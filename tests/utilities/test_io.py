@@ -12,7 +12,7 @@ PREFIX = "gnatss-"
 NON_EXISTENT = "non_existent"
 
 
-@pytest.fixture(params=["single", "glob", "random"])
+@pytest.fixture(params=["single", "glob", "random", "no_files_found"])
 def input_path(request):
     # TODO: Add remote file test
     _, tmp_file = mkstemp(prefix=PREFIX)
@@ -20,12 +20,15 @@ def input_path(request):
     if request.param == "single":
         file_path = str(file_path)
     elif request.param == "glob":
-        # Get file directory 2 level above
+        # Get file directory 2 levels above
         file_dir = file_path.parent
         dir_path = file_dir.parent / "**" / file_path.name
         file_path = str(dir_path)
     elif request.param == "random":
         file_path = f"./{NON_EXISTENT}"
+    elif request.param == "no_files_found":
+        # Create a unique directory path that does not exist
+        file_path = f"./non_existent_directory/**/{NON_EXISTENT}"
 
     yield file_path
 
