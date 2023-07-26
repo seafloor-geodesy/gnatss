@@ -4,7 +4,7 @@ from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays as st_arrays
 from nptyping import Float64, NDArray, Shape
 
-from gnatss.ops.solve import _calc_tr_vectors
+from gnatss.ops.solve import _calc_tr_vectors, _calc_unit_vectors
 
 
 @given(
@@ -49,3 +49,19 @@ def test__calc_tr_vectors(
     except AssertionError:
         # The shape should be different
         assert transponders_xyz.shape[0] != reply_xyz.shape[0]
+
+
+@given(
+    vectors=st_arrays(
+        dtype=np.float64,
+        shape=st.tuples(
+            st.integers(min_value=1, max_value=6), st.integers(min_value=3, max_value=3)
+        ),
+        elements=st.floats(min_value=0.0, max_value=100.0),
+    )
+)
+@settings(deadline=None)
+def test__calc_unit_vectors(vectors) -> None:
+    result_array = _calc_unit_vectors(vectors)
+
+    assert result_array.shape == vectors.shape
