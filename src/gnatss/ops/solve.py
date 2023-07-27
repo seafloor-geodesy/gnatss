@@ -83,23 +83,43 @@ def _calc_partial_derivatives(
 
     Parameters
     ----------
-    transmit_uv : (3,N) ndarray
+    transmit_uv : (N,3) ndarray
         The transmit array of unit vectors
-    reply_uv : (3,N) ndarray
+    reply_uv : (N,3) ndarray
         The reply array of unit vectors
 
     Returns
     -------
-    (3,N) ndarray
+    (N,3) ndarray
         The resulting partial derivatives matrix
     """
+    # TODO: May need to modify to work with multiple transponders...
+    # seems like currently only works for 3!
     return (transmit_uv + reply_uv) / transponders_mean_sv
 
 
 @numba.njit(cache=True)
-def _setup_ab(delays, num_transponders, partial_derivatives):
+def _setup_ab(
+    delays: NDArray, num_transponders: int, partial_derivatives: NDArray
+) -> Tuple[NDArray[Shape["*,*"], Float64], NDArray[Shape["*,*"], Float64]]:
     """
-    Setup a partials and b cov
+    Setup the A partial derivative matrix and B covariance matrix
+
+    Parameters
+    ----------
+    delays : (N,) ndarray
+        The observed delay values
+    num_transponders : int
+        The number of transponders
+    partial_derivatives : (N,3) ndarray
+        The partial derivatives matrix
+
+    Returns
+    -------
+    A_partials : (N,N*3) ndarray
+        The A partials matrix
+    B_cov : (N,N*3) ndarray
+        The B covariance matrix
     """
     A_partials = np.zeros(shape=(num_transponders, num_transponders * 3))
     B_cov = np.zeros(shape=(num_transponders, num_transponders * 3))
@@ -117,11 +137,31 @@ def _setup_ab(delays, num_transponders, partial_derivatives):
 
 @numba.njit(cache=True)
 def _calc_cov(
-    transmit_uv, gps_covariance_matrix, travel_times_variance, transponders_mean_sv
-):
+    transmit_uv: NDArray[Shape["*,3"], Float64],
+    gps_covariance_matrix: NDArray[Shape["3,3"], Float64],
+    travel_times_variance: float,
+    transponders_mean_sv: NDArray[Shape["*"], Float64],
+) -> NDArray[Shape["*,*"], Float64]:
     """
-    Calculate the weight factor array
+    Calculate the covariance matrix
+
+    Returns
+    -------
+    transmit_uv : (N,3) ndarray
+        The transmit array of unit vectors
+    gps_covariance_matrix : (3,3) ndarray
+        The GPS covariance matrix
+    travel_times_variance : float
+        The travel times variance
+    transponders_mean_sv : (N,) ndarray
+        The transponders mean sound speed
+
+    Returns
+    -------
+    (N,N) ndarray
+        The resulting covariance matrix
     """
+
     # Calculate covariance matrix for partlp vectors (COVF) Units m^2
     covariance_matrix = np.abs((transmit_uv @ gps_covariance_matrix @ transmit_uv.T))
 
@@ -143,6 +183,20 @@ def _calc_weight_fac(transponders_mean_sv):
     """
     Calculate the weight factor array
 
+    Parameters
+    ----------
+    transponders_mean_sv : (N,) ndarray
+        The transponders mean sound speed
+
+    Returns
+    -------
+    (N,) ndarray
+        The resulting weight factor array
+
+    Notes
+    -----
+    The weight factor array is calculated as follows:
+
     .. math::
         W_f = \\frac{2.0}{s^2}
     """
@@ -150,9 +204,19 @@ def _calc_weight_fac(transponders_mean_sv):
 
 
 @numba.njit(cache=True)
-def _calc_weight_mat(covariance_std):
+def _calc_weight_mat(covariance_std: NDArray[Shape["*,*"], Float64]):
     """
     Calculate the weight matrix by inverting the covariance std matrix
+
+    Parameters
+    ----------
+    covariance_std : (N,N) ndarray
+        The covariance std dev matrix
+
+    Returns
+    -------
+    (N,N) ndarray
+        The resulting weight matrix
     """
     return np.linalg.inv(covariance_std)
 
@@ -256,6 +320,36 @@ def solve_transponder_locations(
     """
     Solve transponder locations by performing basic GNSS-Acoustic
     Derivation.
+
+    Parameters
+    ----------
+    transmit_xyz : ndarray
+        The transmit locations in XYZ coordinates
+    reply_xyz : ndarray
+        The reply locations in XYZ coordinates
+    gps_covariance_matrix : ndarray
+        The covariance matrix for GPS measurements
+    observed_delays : ndarray
+        The observed delays in seconds
+    transponders_xyz : ndarray
+        The transponder locations in XYZ coordinates
+    transponders_delay : ndarray
+        The transponder delays in seconds
+    transponders_mean_sv : ndarray
+        The mean signal velocity for each transponder
+    travel_times_variance : ndarray
+        The variance of the travel times
+
+    Returns
+    -------
+    atwa : ndarray
+        The ATWA matrix
+    atwf : ndarray
+        ATWF matrix
+    tt_residual : ndarray
+        the travel time residuals
+    sigma_delay : ndarray
+        the sigma delay
     """
     # Infer the number of transponders by the number of mean sv
     num_transponders = len(transponders_mean_sv)
@@ -313,12 +407,35 @@ def solve_transponder_locations(
 
 @numba.njit(cache=True)
 def perform_solve(
-    data_inputs,
-    transponders_mean_sv,
-    transponders_xyz,
-    transponders_delay,
-    travel_times_variance,
+    data_inputs: NumbaList,
+    transponders_mean_sv: NDArray[Shape["*"], Float64],
+    transponders_xyz: NDArray[Shape["*, 3"], Float64],
+    transponders_delay: NDArray[Shape["*"], Float64],
+    travel_times_variance: float,
 ):
+    """
+    Perform the solve for the given data inputs and transponder information.
+
+    Parameters
+    ----------
+    data_inputs : NumbaList
+        A list of tuples, where each tuple contains the transmit and reply positions,
+        the GPS covariance matrix, and the observed delays for a single ping.
+    transponders_mean_sv : (N,) ndarray
+        The mean signal velocity for each transponder.
+    transponders_xyz : (N,3) ndarray
+        The XYZ positions of each transponder.
+    transponders_delay : (N,) ndarray
+        The internal delay for each transponder.
+    travel_times_variance : float
+        The variance in travel times
+
+    Returns
+    -------
+    NumbaList
+        A list of tuples, where each tuple contains,
+        The ATWA matrix, ATWF matrix, the travel time residual, and the sigma delay
+    """
     all_results = NumbaList()
     for transmit_xyz, reply_xyz, gps_covariance_matrix, observed_delays in data_inputs:
         results = solve_transponder_locations(
