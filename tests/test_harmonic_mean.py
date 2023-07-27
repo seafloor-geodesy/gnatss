@@ -58,26 +58,19 @@ def test__compute_hm(start_idx, end_idx, expected_hm):
     assert result_hm == round(H, 3)
 
 
-@pytest.mark.parametrize(
-    "end_depth,expected_hm",
-    [("invalid_value", None)],  # Invalid end_depth input will raise ValueError
-)
-def test_sv_harmonic_mean_invalid_input(end_depth, expected_hm, sound_profile_data):
-    svdf = sound_profile_data
-    start_depth = -4
+# Add test for missing columns in dataframe
+def test__compute_hm_missing_columns():
+    svdf = pd.DataFrame({"random_column1": [1, 2, 3], "random_column2": [4, 5, 6]})
+    start_depth = 0
+    end_depth = 2
+    with pytest.raises(ValueError):
+        _compute_hm(svdf, start_depth, end_depth)
+
+
+# Add test for empty dataframe
+def test_sv_harmonic_mean_empty_dataframe():
+    svdf = pd.DataFrame()
+    start_depth = 0
+    end_depth = 2
     with pytest.raises(ValueError):
         sv_harmonic_mean(svdf, start_depth, end_depth)
-
-
-@pytest.mark.parametrize(
-    "start_idx,end_idx,expected_hm",
-    [("invalid_value", "invalid_value", None)],
-)
-def test__compute_hm_invalid_input(start_idx, end_idx, expected_hm):
-    depth = np.arange(7) * 10
-    speed = np.arange(1502, 1500, step=-0.31)
-
-    svdf = pd.DataFrame({SP_DEPTH: depth, SP_SOUND_SPEED: speed})
-
-    with pytest.raises(ValueError):
-        _compute_hm(svdf, start_idx, end_idx)
