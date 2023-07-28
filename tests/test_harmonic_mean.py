@@ -25,7 +25,6 @@ def sound_profile_data(delete_rows: bool = False) -> pd.DataFrame:
     df = pd.read_csv(sv_file)
     if delete_rows:
         df.drop(df.index, inplace=True)
-        return df
     return df
 
 
