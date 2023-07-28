@@ -68,12 +68,6 @@ def test__compute_hm_missing_columns():
 
 
 # Add test for empty dataframe
-# def test_sv_harmonic_mean_empty_dataframe():
-#     svdf = pd.DataFrame()
-#     start_depth = 0
-#     end_depth = 2
-#     with pytest.raises(ValueError):
-#         sv_harmonic_mean(svdf, start_depth, end_depth)
 def test_sv_harmonic_mean_empty_dataframe():
     # Create a DataFrame with empty 'abs_sv' column
     svdf = pd.DataFrame({"speed": [], "depth": []})
