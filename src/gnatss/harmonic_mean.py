@@ -63,6 +63,8 @@ def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -
     float
         The sound speed harmonic mean value
     """
+    if svdf.empty:
+        raise ValueError("Dataframe is empty! Please check your data inputs.")
     # Clean up the sound speed value, ensuring that there's no negative value
     svdf = svdf[svdf[SP_SOUND_SPEED] > 0].reset_index(drop=True)
     # Make all of the values absolute values, so we're only dealing with positives
@@ -71,6 +73,6 @@ def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -
     abs_sv = abs(svdf)
     # Get the index for the start of depth closest to specified start depth
     if len(abs_sv) == 0:
-        raise ValueError("Dataframe is empty! Please check your data inputs.")
+        raise ValueError("DataFrame with empty 'abs_sv' column! Please check your data inputs.")
 
     return _compute_hm(abs_sv, abs_start, abs_end)
