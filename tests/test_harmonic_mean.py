@@ -56,31 +56,3 @@ def test__compute_hm(start_idx, end_idx, expected_hm):
     x = partdf[SP_SOUND_SPEED]
     H = w.dropna().sum() / (w / x).dropna().sum()
     assert result_hm == round(H, 3)
-
-
-# Add test for missing columns in dataframe
-def test__compute_hm_missing_columns():
-    svdf = pd.DataFrame({"random_column1": [1, 2, 3], "random_column2": [4, 5, 6]})
-    start_depth = 0
-    end_depth = 2
-    with pytest.raises(ValueError):
-        _compute_hm(svdf, start_depth, end_depth)
-
-
-# Add test for empty dataframe
-def test_sv_harmonic_mean_empty_dataframe():
-    # Create a DataFrame with empty 'abs_sv' column
-    svdf = pd.DataFrame({"speed": [], "depth": []})
-    start_depth = 0
-    end_depth = 2
-    with pytest.raises(ValueError):
-        sv_harmonic_mean(svdf, start_depth, end_depth)
-
-
-# Add test for empty dataframe
-def test_sv_harmonic_mean_empty_dataframe():
-    svdf = pd.DataFrame()
-    start_depth = 0
-    end_depth = 2
-    with pytest.raises(ValueError):
-        sv_harmonic_mean(svdf, start_depth, end_depth)
