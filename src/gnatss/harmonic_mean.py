@@ -73,6 +73,8 @@ def sv_harmonic_mean(svdf: pd.DataFrame, start_depth: float, end_depth: float) -
     abs_sv = abs(svdf)
     # Get the index for the start of depth closest to specified start depth
     if len(abs_sv) == 0:
-        raise ValueError("DataFrame with empty 'abs_sv' column! Please check your data inputs.")
+        raise ValueError(
+            "DataFrame with empty 'abs_sv' column! Please check your data inputs."
+        )
 
     return _compute_hm(abs_sv, abs_start, abs_end)
