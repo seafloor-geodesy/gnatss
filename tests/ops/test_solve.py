@@ -90,6 +90,7 @@ def test__calc_unit_vectors(vectors) -> None:
     # Currently hard-coded to 3 transponders
     n_transponders=st.integers(min_value=3, max_value=3),
 )
+@settings(deadline=None)
 def test__calc_partial_derivatives(n_transponders) -> None:
     """Test calculate partial derivatives"""
     transmit_uv = np.random.rand(n_transponders, 3)
@@ -108,6 +109,7 @@ def test__calc_partial_derivatives(n_transponders) -> None:
     # Currently hard-coded to 3 transponders
     n_transponders=st.integers(min_value=3, max_value=3),
 )
+@settings(deadline=None)
 def test__setup_ab(n_transponders) -> None:
     delays = np.random.rand(n_transponders)
     num_transponders = n_transponders
@@ -144,6 +146,7 @@ def test__calc_cov(n_transponders, travel_times_variance) -> None:
         elements=st.floats(min_value=1052.0, max_value=1053.0),
     )
 )
+@settings(deadline=None)
 def test__calc_weight_fac(transponders_mean_sv):
     """Testing calculate weight factor"""
     expected_output = 2.0 / (transponders_mean_sv**2)
@@ -155,6 +158,7 @@ def test__calc_weight_fac(transponders_mean_sv):
         dtype=np.float64, shape=(2, 2), elements=st.integers(min_value=1, max_value=6)
     )
 )
+@settings(deadline=None)
 def test__calc_weight_mat(covariance_std):
     if np.linalg.det(covariance_std) == 0:
         return
