@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 
 import numba
 import numpy as np
@@ -8,7 +8,6 @@ from nptyping import Float64, NDArray, Shape
 from numba.typed import List as NumbaList
 
 from .. import constants
-from . import calc_std_and_verify
 from .utils import clean_zeros
 
 
@@ -176,6 +175,60 @@ def check_solutions(all_results, transponders_xyz):
     }
 
     return is_converged, transponders_xyz, check_result
+
+
+def _check_cols_in_series(input_series: pd.Series, columns: List[str]) -> None:
+    """Private func to check if the columns exists in data series"""
+    for col in columns:
+        if col not in input_series:
+            # Catch if some of thecolumns are missing
+            raise KeyError(f"{col} not found in the data series provided.")
+
+
+def calc_std_and_verify(
+    gps_series: pd.Series, std_dev: bool = True, sigma_limit: float = 0.05, verify=True
+) -> float:
+    """
+    Calculate the 3d standard deviation and verify the value based on limit
+
+    Parameters
+    ----------
+    gps_series : pd.Series
+        The data input to check as a pandas series.
+        The following keys are expected: 'xx', 'yy', 'zz'
+    std_dev : bool
+        Flag to indicate if the inputs are standard deviation or variance
+    sigma_limit : float
+        The allowable sigma limit to check against
+    verify : bool
+        Flag to run verification or not
+
+    Returns
+    -------
+    float
+        The calculated sigma 3d
+
+    Raises
+    ------
+    ValueError
+        If 3D Standard Deviation exceeds the GPS Sigma limit
+    """
+    # Checks for GPS Covariance Diagonal values
+    _check_cols_in_series(input_series=gps_series, columns=constants.GPS_COV_DIAG)
+
+    # Compute the 3d std (sum variances of GPS components and take sqrt)
+    sig_3d = np.sqrt(
+        np.sum(gps_series[constants.GPS_COV_DIAG] ** (2 if std_dev else 1))
+    )
+
+    if verify and (sig_3d > sigma_limit):
+        # Verify sigma value, throw error if greater than gps sigma limit
+        raise ValueError(
+            f"3D Standard Deviation of {sig_3d} exceeds "
+            f"GPS Sigma Limit of {sigma_limit}!"
+        )
+
+    return sig_3d
 
 
 def check_sig3d(data: pd.DataFrame, gps_sigma_limit: float):

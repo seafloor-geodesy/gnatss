@@ -18,6 +18,12 @@ Notion page for project can be found [here](https://safe-mouse-a43.notion.site/G
 
 See Openscapes Champion Series [documentation](https://openscapes.github.io/series/core-lessons/github/github-issues.html) on Github for Project management.
 
+## Contributing
+
+Thanks to our contributors so far!
+
+[![Contributors](https://contrib.rocks/image?repo=uw-ssec/offshore-geodesy)](https://github.com/uw-ssec/offshore-geodesy/graphs/contributors)
+
 ## Open source licensing
 
 Statement from Schmidt Futures:
