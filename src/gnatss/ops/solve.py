@@ -87,6 +87,8 @@ def _calc_partial_derivatives(
         The transmit array of unit vectors
     reply_uv : (N,3) ndarray
         The reply array of unit vectors
+    transponders_mean_sv : (N,) ndarray
+        The mean sound velocity for each transponder
 
     Returns
     -------
