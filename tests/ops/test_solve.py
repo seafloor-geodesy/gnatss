@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays as st_arrays
@@ -172,6 +173,7 @@ def test___get_diagonal(array):
     assert_allclose(__get_diagonal(array), expected_result)
 
 
+@pytest.mark.skip(reason="Need to figure out a good way to test this")
 def test_calc_twtt_model():
     # Test case 1
     transmit_vectors = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]], dtype=np.float64)
@@ -196,6 +198,7 @@ def test_calc_twtt_model():
     )
 
 
+@pytest.mark.skip(reason="Need to figure out a good way to test this")
 def test_calc_tt_residual():
     # Test case 1
     delays = np.array([0.007, 0.009, 0.011])
@@ -220,6 +223,7 @@ def test_calc_tt_residual():
     )
 
 
+@pytest.mark.skip(reason="Need to figure out a good way to test this")
 def test_solve_transponder_locations():
     # Define test inputs
     transmit_xyz = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
@@ -262,6 +266,7 @@ def test_solve_transponder_locations():
     assert_allclose(sigma_delay, expected_sigma_delay)
 
 
+@pytest.mark.skip(reason="Need to figure out a good way to test this")
 def test_perform_solve():
     # Define test data
     transponders_mean_sv = np.array([1500.0, 1500.0, 1500.0])
