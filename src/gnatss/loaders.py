@@ -60,6 +60,7 @@ def load_travel_times(
     files: List[str],
     transponder_ids: List[str],
     is_j2k: bool = False,
+    time_scale: str = "tt",
 ) -> pd.DataFrame:
     """
     Loads travel times data into a pandas dataframe from a list of files.
@@ -80,6 +81,12 @@ def load_travel_times(
         A flag to signify to expect j2000 time column only rather
         than date and time. No conversion will be performed if this
         is the case.
+    time_scale : str
+        The time scale of the datetime string input.
+        Default is 'tt' for Terrestrial Time,
+        Must be one of the following:
+        (`tai`, `tcb`, `tcg`, `tdb`,
+        `tt`, `ut1`, `utc`)
 
     Returns
     -------
@@ -148,7 +155,7 @@ def load_travel_times(
             lambda row: AstroTime.strptime(
                 f"{row[constants.TT_DATE].lower()} {row[constants.TT_TIME]}",
                 DATETIME_FORMAT,
-                scale="tt",
+                scale=time_scale,
             ),
             axis=1,
         )
@@ -217,7 +224,7 @@ def load_gps_solutions(
     return all_gps_solutions
 
 
-def load_deletions(file_path: str) -> pd.DataFrame:
+def load_deletions(file_path: str, time_scale="tt") -> pd.DataFrame:
     """
     Loads the raw deletion text file into a pandas dataframe
 
@@ -225,6 +232,12 @@ def load_deletions(file_path: str) -> pd.DataFrame:
     ----------
     file_path : str
         Path to the deletion file to be loaded
+    time_scale : str
+        The time scale of the datetime string input.
+        Default is 'tt' for Terrestrial Time,
+        Must be one of the following:
+        (`tai`, `tcb`, `tcg`, `tdb`,
+        `tt`, `ut1`, `utc`)
 
     Returns
     -------
@@ -249,10 +262,10 @@ def load_deletions(file_path: str) -> pd.DataFrame:
     # Convert time string to j2000,
     # assuming that they're in Terrestrial Time (TT) scale
     cut_df[constants.DEL_STARTTIME] = cut_df[constants.DEL_STARTTIME].apply(
-        lambda row: AstroTime(row, scale="tt").unix_j2000
+        lambda row: AstroTime(row, scale=time_scale).unix_j2000
     )
     cut_df[constants.DEL_ENDTIME] = cut_df[constants.DEL_ENDTIME].apply(
-        lambda row: AstroTime(row, scale="tt").unix_j2000
+        lambda row: AstroTime(row, scale=time_scale).unix_j2000
     )
 
     return cut_df
