@@ -142,11 +142,13 @@ def load_travel_times(
     if not is_j2k:
         from .utilities.time import AstroTime
 
-        # Determine j2000 time from date and time string
+        # Determine j2000 time from date and time string,
+        # assuming that they're in Terrestrial Time (TT) scale
         all_travel_times[constants.TIME_ASTRO] = all_travel_times.apply(
             lambda row: AstroTime.strptime(
                 f"{row[constants.TT_DATE].lower()} {row[constants.TT_TIME]}",
                 DATETIME_FORMAT,
+                scale="tt",
             ),
             axis=1,
         )
@@ -244,12 +246,13 @@ def load_deletions(file_path: str) -> pd.DataFrame:
     cut_columns = cut_df.columns[0:-2]
     cut_df.drop(columns=cut_columns, inplace=True)
 
-    # Convert time to j2000
+    # Convert time string to j2000,
+    # assuming that they're in Terrestrial Time (TT) scale
     cut_df[constants.DEL_STARTTIME] = cut_df[constants.DEL_STARTTIME].apply(
-        lambda row: AstroTime(row).unix_j2000
+        lambda row: AstroTime(row, scale="tt").unix_j2000
     )
     cut_df[constants.DEL_ENDTIME] = cut_df[constants.DEL_ENDTIME].apply(
-        lambda row: AstroTime(row).unix_j2000
+        lambda row: AstroTime(row, scale="tt").unix_j2000
     )
 
     return cut_df
