@@ -24,6 +24,8 @@ from gnatss.ops.solve import (
 
 # TODO: Use real data examples for testing
 
+N_TRANSPONDERS = 3
+
 
 @given(
     transponders_xyz=st_arrays(
@@ -87,8 +89,7 @@ def test__calc_unit_vectors(vectors) -> None:
 
 
 @given(
-    # Currently hard-coded to 3 transponders
-    n_transponders=st.integers(min_value=3, max_value=3),
+    n_transponders=st.integers(min_value=N_TRANSPONDERS, max_value=N_TRANSPONDERS),
 )
 @settings(deadline=None)
 def test__calc_partial_derivatives(n_transponders) -> None:

@@ -422,13 +422,13 @@ def perform_solve(
     ----------
     data_inputs : NumbaList
         A list of tuples, where each tuple contains the transmit and reply positions,
-        the GPS covariance matrix, and the observed delays for a single ping.
+        the GPS covariance matrix, and the observed delays for a single ping
     transponders_mean_sv : (N,) ndarray
-        The mean signal velocity for each transponder.
+        The mean signal velocity for each transponder
     transponders_xyz : (N,3) ndarray
-        The XYZ positions of each transponder.
+        The XYZ positions of each transponder
     transponders_delay : (N,) ndarray
-        The internal delay for each transponder.
+        The internal delay for each transponder
     travel_times_variance : float
         The variance in travel times
 
