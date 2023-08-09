@@ -30,9 +30,14 @@ def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
     ValueError
         If the input vector is not a 1-D array
     """
+    ashape = input_vector.shape
 
-    if input_vector.ndim != 1 or input_vector.shape != (3,):
-        raise ValueError("Unit vector calculation must be 1-D array of shape 3!")
+    # Dimensionality check already done by numba
+    # so we just check for the shape
+    assert ashape == (3,), (
+        "Unit vector calculation must be 1-D array of shape 3! "
+        f"Instead got 1-D of shape {','.join([str(s) for s in ashape])}!"
+    )
 
     vector_norm = np.linalg.norm(input_vector)
 

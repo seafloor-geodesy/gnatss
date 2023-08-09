@@ -30,6 +30,8 @@ def run(
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
+    Note: Currently only supports 3 transponders.
+
     Parameters
     ----------
     config_yaml : str, optional
