@@ -5,16 +5,70 @@ classes
 """
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 import yaml
-from pydantic import BaseSettings, Field
-from pydantic.fields import ModelField
+from pydantic import Field
+from pydantic.fields import FieldInfo
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from .io import OutputPath
 from .solver import Solver
 
 CONFIG_FILE = "config.yaml"
+
+
+class YamlConfigSettingsSource(PydanticBaseSettingsSource):
+    """
+    A simple settings source that reads from a yaml file.
+
+    Read config settings form a local yaml file where the software runs
+
+    """
+
+    def get_field_value(
+        self, field: FieldInfo, field_name: str
+    ) -> tuple[Any, str, bool]:
+        encoding = self.config.get("env_file_encoding")
+        config_path = Path(CONFIG_FILE)
+        file_content_yaml = {}
+        if config_path.exists():
+            # Only load config.yaml when it exists
+            file_content_yaml = yaml.safe_load(config_path.read_text(encoding))
+        else:
+            warnings.warn(
+                (
+                    f"Configuration file `{CONFIG_FILE}` not found. "
+                    "Will attempt to retrieve configuration from environment variables."
+                )
+            )
+
+        field_value = file_content_yaml.get(field_name)
+        return field_value, field_name, False
+
+    def prepare_field_value(
+        self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
+    ) -> Any:
+        return value
+
+    def __call__(self) -> Dict[str, Any]:
+        d: Dict[str, Any] = {}
+
+        for field_name, field in self.settings_cls.model_fields.items():
+            field_value, field_key, value_is_complex = self.get_field_value(
+                field, field_name
+            )
+            field_value = self.prepare_field_value(
+                field_name, field, field_value, value_is_complex
+            )
+            if field_value is not None:
+                d[field_key] = field_value
+
+        return d
 
 
 def yaml_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
@@ -50,65 +104,27 @@ def yaml_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
 class BaseConfiguration(BaseSettings):
     """Base configuration class"""
 
+    model_config = SettingsConfigDict(
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        env_prefix="gnatss_",
+    )
+
     @classmethod
-    def add_fields(cls, **field_definitions: Any) -> None:
-        """
-        Adds additional configuration field on the fly (inplace)
-
-        Parameters
-        ----------
-        **field_definitions
-            Keyword arguments of the new field to be added
-        """
-        new_fields: Dict[str, ModelField] = {}
-        new_annotations: Dict[str, Optional[type]] = {}
-
-        for f_name, f_def in field_definitions.items():
-            if isinstance(f_def, tuple):
-                try:
-                    f_annotation, f_value = f_def
-                except ValueError as e:
-                    raise Exception(
-                        "field definitions should either be a tuple of"
-                        " (<type>, <default>) or just a "
-                        "default value, unfortunately this means tuples as "
-                        "default values are not allowed"
-                    ) from e
-            else:
-                f_annotation, f_value = None, f_def
-
-            if f_annotation:
-                new_annotations[f_name] = f_annotation
-
-            new_fields[f_name] = ModelField.infer(
-                name=f_name,
-                value=f_value,
-                annotation=f_annotation,
-                class_validators=None,
-                config=cls.__config__,
-            )
-
-        cls.__fields__.update(new_fields)
-        cls.__annotations__.update(new_annotations)
-
-    class Config:
-        env_file_encoding = "utf-8"
-        env_nested_delimiter = "__"
-        env_prefix = "gnatss_"
-
-        @classmethod
-        def customise_sources(
-            cls,
+    def settings_customise_sources(
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,  # noqa
+        file_secret_settings: PydanticBaseSettingsSource,
+    ):
+        return (
             init_settings,
+            YamlConfigSettingsSource(settings_cls),
             env_settings,
             file_secret_settings,
-        ):
-            return (
-                init_settings,
-                yaml_config_settings_source,
-                env_settings,
-                file_secret_settings,
-            )
+        )
 
 
 class Configuration(BaseConfiguration):
@@ -119,12 +135,10 @@ class Configuration(BaseConfiguration):
     solver: Optional[Solver] = Field(None, description="Solver configurations")
     output: OutputPath
 
-    def __init__(__pydantic_self__, **data):
+    def __init__(self, **data):
         super().__init__(**data)
 
         # Set the transponders pxp id based on the site id
-        transponders = __pydantic_self__.solver.transponders
+        transponders = self.solver.transponders
         for idx in range(len(transponders)):
-            transponders[idx].pxp_id = "-".join(
-                [__pydantic_self__.site_id, str(idx + 1)]
-            )
+            transponders[idx].pxp_id = "-".join([self.site_id, str(idx + 1)])
