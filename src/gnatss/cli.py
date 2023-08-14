@@ -30,18 +30,7 @@ def run(
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
-    Note: Currently only supports 3 transponders.
-
-    Parameters
-    ----------
-    config_yaml : str, optional
-        Custom path to configuration yaml file
-    extract_res : bool, optional
-        Flag to extract residual files from run, by default False.
-
-    Returns
-    -------
-    None
+    Note: Currently only supports 3 transponders
     """
     typer.echo("Loading configuration ...")
     config = load_configuration(config_yaml)

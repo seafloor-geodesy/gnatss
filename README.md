@@ -17,6 +17,123 @@ which can be found at [johnbdesanto/SeafloorGeodesy](https://github.com/johnbdes
 
 Notion page for project can be found [here](https://safe-mouse-a43.notion.site/GNSS-Acoustic-01f0423b3e2146f6a4465211f29cd9b9).
 
+## Using the software
+
+**This software is currently under heavy development and is not available via [PyPI](https://pypi.org/), the Python Package Index**
+
+You can install the software with pip directly from the main branch of the repo by running the following command:
+
+```bash
+pip install git+https://github.com/uw-ssec/offshore-geodesy@main
+```
+
+Once the software is installed, you should be able to get to the GNATSS Command Line Interface (CLI)
+using the command `gnatss`. For example: `gnatss --help`, will get you to the main GNSS-A Processing in Python help page.
+
+```console
+Usage: gnatss [OPTIONS] COMMAND [ARGS]...
+
+  GNSS-A Processing in Python
+
+Options:
+  --install-completion [bash|zsh|fish|powershell|pwsh]
+                                  Install completion for the specified shell.
+  --show-completion [bash|zsh|fish|powershell|pwsh]
+                                  Show completion for the specified shell, to
+                                  copy it or customize the installation.
+  --help                          Show this message and exit.
+
+Commands:
+  run  Runs the full pre-processing routine for GNSS-A
+```
+
+## Pre-processing solve routine
+
+Currently there's a single command available in the CLI, `run`, which will run the full pre-processing routine for GNSS-A.
+You can retrieve the helper text for this command by running `gnatss run --help`.
+
+```console
+Usage: gnatss run [OPTIONS]
+
+  Runs the full pre-processing routine for GNSS-A
+
+  Note: Currently only supports 3 transponders
+
+Options:
+  --config-yaml TEXT              Custom path to configuration yaml file.
+                                  **Currently only support local files!**
+  --extract-res / --no-extract-res
+                                  Flag to extract residual files from run.
+                                  [default: no-extract-res]
+  --help                          Show this message and exit.
+```
+
+*Currently the pre-processing routine have been tested to only supports 3 transponders, but this will be expanded in the future.*
+
+### Configuration yaml file
+
+The run command takes in a configuration yaml file, which is used to configure the pre-processing routine.
+By default, the program will look for a configuration file in the current working directory called `config.yaml`.
+If this file is found somewhere else, you can pass in the path to the file using the `--config-yaml` flag.
+
+Here's a sample configuration yaml file:
+
+```yaml
+site_id: SITE1
+
+solver:
+  # note that the coordinates are not real and are just for example
+  transponders:
+    - lat: 47.302064471
+      lon: -126.978181346
+      height: -1176.5866
+      internal_delay: 0.200000
+      sv_mean: 1481.551
+    - lat: 47.295207747
+      lon: -126.958752845
+      height: -1146.5881
+      internal_delay: 0.320000
+      sv_mean: 1481.521
+    - lat: 47.309643593
+      lon: -126.959348875
+      height: -1133.7305
+      internal_delay: 0.440000
+      sv_mean: 1481.509
+  reference_ellipsoid:
+    semi_major_axis: 6378137.000
+    reverse_flattening: 298.257222101
+  gps_sigma_limit: 0.05
+  std_dev: true
+  geoid_undulation: -26.59
+  bisection_tolerance: 1e-10
+  array_center:
+    lat: 47.3023
+    lon: -126.9656
+  travel_times_variance: 1e-10
+  travel_times_correction: 0.0
+  transducer_delay_time: 0.0
+  harmonic_mean_start_depth: -4.0
+  input_files:
+    sound_speed:
+      path: /path/to/CTD_NCL1_Ch_Mi
+    travel_times:
+      path: /path/to/**/WG_*/pxp_tt # this option will take in glob patterns
+    gps_solution:
+      path: /path/to/**/posfilter/POS_FREED_TRANS_TWTT # this option will take in glob patterns
+    deletions:
+      path: /path/to/deletns.dat
+
+
+output:
+  path: /my/output/dir/
+```
+
+### Residual file
+
+Currently, you can extract the residual file from the run command by passing in the `--extract-res` flag.
+This will output the final resulting residual file to the output directory specified in the configuration yaml file.
+This file will be in Comma Separated Value (CSV) format called `residuals.csv`.
+
 ## Contributing
 
 Please refer to our [Contributing Guide](.github/CONTRIBUTING.md) on how to setup your environment to contribute to this project.
