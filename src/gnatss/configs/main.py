@@ -27,12 +27,18 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
     A simple settings source that reads from a yaml file.
 
     Read config settings form a local yaml file where the software runs
-
     """
 
     def get_field_value(
         self, field: FieldInfo, field_name: str
     ) -> tuple[Any, str, bool]:
+        """
+        Gets the value,
+        the key for model creation,
+        and a flag to determine whether value is complex.
+
+        *This is an override for the pydantic abstract method.*
+        """
         encoding = self.config.get("env_file_encoding")
         config_path = Path(CONFIG_FILE)
         file_content_yaml = {}
@@ -40,6 +46,7 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
             # Only load config.yaml when it exists
             file_content_yaml = yaml.safe_load(config_path.read_text(encoding))
         else:
+            # Warn user when config.yaml is not found
             warnings.warn(
                 (
                     f"Configuration file `{CONFIG_FILE}` not found. "
@@ -53,9 +60,17 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
     def prepare_field_value(
         self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
     ) -> Any:
+        """
+        Prepares the value of a field.
+
+        *This is an override for the pydantic abstract method.*
+        """
         return value
 
     def __call__(self) -> Dict[str, Any]:
+        """
+        Allows the class to be called as a function.
+        """
         d: Dict[str, Any] = {}
 
         for field_name, field in self.settings_cls.model_fields.items():
@@ -69,36 +84,6 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
                 d[field_key] = field_value
 
         return d
-
-
-def yaml_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
-    """
-    Read config settings form a local yaml file where the software runs
-
-    Parameters
-    ----------
-    settings : pydantic.BaseSettings
-        The base settings class
-
-    Returns
-    -------
-    dict
-        The configuration dictionary based on inputs from the yaml
-        file
-    """
-    encoding = settings.__config__.env_file_encoding
-    config_path = Path(CONFIG_FILE)
-    if config_path.exists():
-        # Only load config.yaml when it exists
-        return yaml.safe_load(config_path.read_text(encoding))
-    else:
-        warnings.warn(
-            (
-                f"Configuration file `{CONFIG_FILE}` not found. "
-                "Will attempt to retrieve configuration from environment variables."
-            )
-        )
-    return {}
 
 
 class BaseConfiguration(BaseSettings):
