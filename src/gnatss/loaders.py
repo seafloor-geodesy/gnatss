@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import pandas as pd
 import yaml
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from . import constants
 from .configs.main import Configuration

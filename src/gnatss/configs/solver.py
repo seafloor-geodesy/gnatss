@@ -3,10 +3,11 @@
 The solver module containing base models for
 solver configuration
 """
-from typing import Any, List, Literal, Optional
+from functools import cached_property
+from typing import List, Literal, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, Field, computed_field
 
 from .io import InputData
 
@@ -16,20 +17,13 @@ class ReferenceEllipsoid(BaseModel):
 
     semi_major_axis: float = Field(..., description="Semi-major axis (m)")
     reverse_flattening: float = Field(..., description="Reverse flattening")
-    eccentricity: Optional[float] = Field(
-        None,
-        description="Eccentricity. **This field will be computed during object creation**",
+
+    @computed_field(
+        description="Eccentricity. **This field will be computed during object creation**"  # noqa
     )
-
-    def __init__(__pydantic_self__, **data: Any) -> None:
-        super().__init__(**data)
-
-        # Note: Potential improvement with computed value
-        # https://github.com/pydantic/pydantic/pull/2625
-        __pydantic_self__.eccentricity = (
-            2.0 / __pydantic_self__.reverse_flattening
-            - (1.0 / __pydantic_self__.reverse_flattening) ** 2.0
-        )
+    @cached_property
+    def eccentricity(self) -> Optional[float]:
+        return 2.0 / self.reverse_flattening - (1.0 / self.reverse_flattening) ** 2.0
 
 
 class ArrayCenter(BaseModel):
@@ -59,14 +53,14 @@ class SolverInputs(BaseModel):
 class SolverGlobal(BaseModel):
     """Solver global base model for inversion process."""
 
-    max_dat = 45000
-    max_gps = 423000
-    max_del = 15000
-    max_brk = 20
-    max_surv = 10
-    max_sdt_obs = 2000
-    max_obm = 472
-    max_unmm = 9
+    max_dat: int = 45000
+    max_gps: int = 423000
+    max_del: int = 15000
+    max_brk: int = 20
+    max_surv: int = 10
+    max_sdt_obs: int = 2000
+    max_obm: int = 472
+    max_unmm: int = 9
 
 
 class SolverTransponder(BaseModel):
@@ -94,14 +88,12 @@ class SolverTransponder(BaseModel):
             "**This field will be computed during object creation**"
         ),
     )
-    # Auto generated uuid per transponder for unique identifier
-    _uuid: str = PrivateAttr()
 
-    def __init__(__pydantic_self__, **data: Any) -> None:
-        super().__init__(**data)
-
-        # A solver transponder unique identifier
-        __pydantic_self__._uuid = uuid4().hex
+    @computed_field(repr=False, description="Transponder unique identifier")
+    @cached_property
+    def _uuid(self) -> str:
+        """Auto generated uuid per transponder for unique identifier"""
+        return uuid4().hex
 
 
 class Solver(BaseModel):

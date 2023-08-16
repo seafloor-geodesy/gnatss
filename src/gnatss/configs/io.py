@@ -21,13 +21,11 @@ class InputData(BaseModel):
         ),
     )
 
-    def __init__(__pydantic_self__, **data: Any) -> None:
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
 
         # Checks the file
-        if not check_file_exists(
-            __pydantic_self__.path, __pydantic_self__.storage_options
-        ):
+        if not check_file_exists(self.path, self.storage_options):
             raise FileNotFoundError("The specified file doesn't exist!")
 
 
@@ -48,11 +46,9 @@ class OutputPath(BaseModel):
 
     _fsmap: str = PrivateAttr()
 
-    def __init__(__pydantic_self__, **data: Any) -> None:
+    def __init__(self, **data: Any) -> None:
         super().__init__(**data)
 
-        __pydantic_self__._fsmap = fsspec.get_mapper(
-            __pydantic_self__.path, **__pydantic_self__.storage_options
-        )
+        self._fsmap = fsspec.get_mapper(self.path, **self.storage_options)
         # Checks the file permission as the object is being created
-        check_permission(__pydantic_self__._fsmap)
+        check_permission(self._fsmap)
