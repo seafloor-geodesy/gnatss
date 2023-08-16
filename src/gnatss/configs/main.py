@@ -17,6 +17,7 @@ from pydantic_settings import (
 )
 
 from .io import OutputPath
+from .posfilter import PositionFilter
 from .solver import Solver
 
 CONFIG_FILE = "config.yaml"
@@ -118,12 +119,16 @@ class Configuration(BaseConfiguration):
     site_id: str = Field(..., description="The site identification for processing")
     # TODO: Separate settings out to core plugin
     solver: Optional[Solver] = Field(None, description="Solver configurations")
-    output: OutputPath
+    posfilter: Optional[PositionFilter] = Field(
+        None, description="Position filter configurations"
+    )
+    output: Optional[OutputPath] = Field(None, description="Output path configurations")
 
     def __init__(self, **data):
         super().__init__(**data)
 
-        # Set the transponders pxp id based on the site id
-        transponders = self.solver.transponders
-        for idx in range(len(transponders)):
-            transponders[idx].pxp_id = "-".join([self.site_id, str(idx + 1)])
+        if self.solver is not None:
+            # Set the transponders pxp id based on the site id
+            transponders = self.solver.transponders
+            for idx in range(len(transponders)):
+                transponders[idx].pxp_id = "-".join([self.site_id, str(idx + 1)])
