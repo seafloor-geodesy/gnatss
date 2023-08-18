@@ -30,6 +30,8 @@ TT_DATE = "date"  # Date string
 
 # GPS solutions columns
 GPS_TIME = TIME_J2000  # Default J2000 time (sec since 2000-01-01 12:00:00)
+GPS_AZ = "azimuth"  # Azimuth
+GPS_DISTANCE = "distance"  # Distance
 GPS_X = "x"  # Geocentric x
 GPS_Y = "y"  # Geocentric y
 GPS_Z = "z"  # Geocentric z
