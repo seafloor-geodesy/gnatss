@@ -16,6 +16,7 @@ from .loaders import (
 )
 from .ops.data import get_data_inputs
 from .ops.solve import perform_solve
+from .ops.utils import _prep_col_names
 from .ops.validate import check_sig3d, check_solutions
 from .utilities.geo import _get_rotation_matrix
 from .utilities.io import _get_filesystem
@@ -497,20 +498,68 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     )
 
     # Merge times
-    all_observations = pd.merge(transmit_times, reply_times, on=constants.garpos.ST)
+    all_observations = pd.merge(
+        transmit_times, reply_times, on=constants.garpos.ST
+    ).reset_index(
+        drop=True
+    )  # Reset index ensures that it is sequential
 
-    # TODO: Get lat lon alt and enu, and azimuth
-    # Calculate transmit azimuth angle in degrees
-    # transmit_azimuth = np.degrees(
-    #   np.arctan2(transmit_location[GPS_EAST], transmit_location[GPS_NORTH])
-    # )
+    return all_observations
+
+
+def extract_distance_from_center(
+    all_observations: pd.DataFrame, config: Configuration
+) -> pd.DataFrame:
+    """Extracts and calculates the distance from the array center
+
+    Parameters
+    ----------
+    all_observations : pd.DataFrame
+        The full dataset for computation
+    config : Configuration
+        The configuration object
+
+    Returns
+    -------
+    pd.DataFrame
+        The final dataframe for distance from center
+    """
+
+    def _compute_enu(coords, array_center):
+        return ecef2enu(
+            *coords, array_center.lat, array_center.lon, array_center.alt, deg=True
+        )
 
     # Get geocentric x,y,z for array center
-    # array_center = config.solver.array_center
-    # array_center_xyz = np.array(
-    #     geodetic2ecef(array_center.lat, array_center.lon, array_center.alt)
-    # )
-    return all_observations
+    array_center = config.solver.array_center
+
+    # Set up transmit columns
+    transmit_cols = _prep_col_names(constants.GPS_GEOCENTRIC, True)
+
+    transmit_coords = all_observations[transmit_cols]
+    enu_arrays = np.apply_along_axis(
+        _compute_enu, axis=1, arr=transmit_coords, array_center=array_center
+    )
+    enu_df = pd.DataFrame.from_records(enu_arrays, columns=constants.GPS_LOCAL_TANGENT)
+    # Compute azimuth from north to east
+    enu_df.loc[:, constants.GPS_AZ] = enu_df.apply(
+        lambda row: np.degrees(
+            np.arctan2(row[constants.GPS_EAST], row[constants.GPS_NORTH])
+        ),
+        axis=1,
+    )
+    # Compute distance from center
+    enu_df.loc[:, constants.GPS_DISTANCE] = enu_df.apply(
+        lambda row: np.sqrt(
+            row[constants.GPS_NORTH] ** 2 + row[constants.GPS_EAST] ** 2
+        ),
+        axis=1,
+    )
+
+    # Merge with equivalent index
+    return pd.merge(
+        all_observations[constants.garpos.ST], enu_df, left_index=True, right_index=True
+    )
 
 
 def extract_latest_residuals(
@@ -562,7 +611,10 @@ def main(
     config: Configuration,
     all_files_dict: Dict[str, Any],
     extract_res: bool = False,
-) -> Tuple[List[float], Dict[str, Any], Union[pd.DataFrame, None]]:
+    extract_dist_center: bool = False,
+) -> Tuple[
+    List[float], Dict[str, Any], Union[pd.DataFrame, None], Union[pd.DataFrame, None]
+]:
     """
     The main function that performs the full pre-processing
 
@@ -573,7 +625,11 @@ def main(
     all_files_dict : Dict[str, Any]
         A dictionary of file paths for the input data
     extract_res : bool, optional
-        A flag to extract latest residual data as dataframe, by default False
+        A flag to extract latest residual data as dataframe,
+        by default False
+    extract_dist_center : bool, optional
+        A flag to extract distance from center data as dataframe,
+        by default False
 
     Returns
     -------
@@ -583,8 +639,16 @@ def main(
         The full processing data results
     resdf : Union[pd.DataFrame, None]]
         Extracted latest residuals as dataframe, by default None
+    dist_center_df : Union[pd.DataFrame, None]
+        Extracted distance from center as dataframe, by default None
     """
     all_observations = load_data(all_files_dict, config)
+
+    # Extracts distance from center when specified
+    dist_center_df = None
+    if extract_dist_center:
+        dist_center_df = extract_distance_from_center(all_observations, config)
+
     all_epochs = all_observations[constants.garpos.ST].unique()
     process_data = prepare_and_solve(all_observations, config)
 
@@ -592,4 +656,4 @@ def main(
     resdf = None
     if extract_res:
         resdf = extract_latest_residuals(config, all_epochs, process_data)
-    return all_epochs, process_data, resdf
+    return all_epochs, process_data, resdf, dist_center_df

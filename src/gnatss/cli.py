@@ -27,6 +27,9 @@ def run(
     extract_res: Optional[bool] = typer.Option(
         False, help="Flag to extract residual files from run."
     ),
+    extract_dist_center: Optional[bool] = typer.Option(
+        False, help="Flag to extract distance from center from run."
+    ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
@@ -39,12 +42,24 @@ def run(
 
     # Run the main function
     # TODO: Clean up so that we aren't throwing data away
-    _, _, resdf = main(config, all_files_dict, extract_res=extract_res)
+    _, _, resdf, dist_center_df = main(
+        config,
+        all_files_dict,
+        extract_res=extract_res,
+        extract_dist_center=extract_dist_center,
+    )
+
+    # TODO: Switch to fsspec so we can save anywhere
+    output_path = Path(config.output.path)
+    if extract_dist_center:
+        dist_center_csv = output_path / "dist_center.csv"
+        typer.echo(
+            f"Saving the distance from center file to {str(dist_center_csv.absolute())}"
+        )
+        dist_center_df.to_csv(dist_center_csv, index=False)
 
     if extract_res:
         # Write out to residuals.csv file
-        # TODO: Switch to fsspec so we can save anywhere
-        output_path = Path(config.output.path)
-        csv_path = output_path / "residuals.csv"
-        typer.echo(f"Saving the latest residuals to {str(csv_path.absolute())}")
-        resdf.to_csv(csv_path, index=False)
+        res_csv = output_path / "residuals.csv"
+        typer.echo(f"Saving the latest residuals to {str(res_csv.absolute())}")
+        resdf.to_csv(res_csv, index=False)
