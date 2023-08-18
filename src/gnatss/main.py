@@ -530,13 +530,24 @@ def extract_distance_from_center(
             *coords, array_center.lat, array_center.lon, array_center.alt, deg=True
         )
 
-    # Get geocentric x,y,z for array center
-    array_center = config.solver.array_center
-
     # Set up transmit columns
     transmit_cols = _prep_col_names(constants.GPS_GEOCENTRIC, True)
 
-    transmit_coords = all_observations[transmit_cols]
+    # Since we're only working with transmit,
+    # we can just group by transmit time to avoid repetition.
+    # This extracts transmit data coords only
+    transmit_obs = (
+        all_observations[[constants.garpos.ST] + transmit_cols]
+        .groupby(constants.garpos.ST)
+        .first()
+        .reset_index()
+    )
+
+    # Get geocentric x,y,z for array center
+    array_center = config.solver.array_center
+
+    # Extract coordinates only
+    transmit_coords = transmit_obs[transmit_cols]
     enu_arrays = np.apply_along_axis(
         _compute_enu, axis=1, arr=transmit_coords, array_center=array_center
     )
@@ -558,7 +569,7 @@ def extract_distance_from_center(
 
     # Merge with equivalent index
     return pd.merge(
-        all_observations[constants.garpos.ST], enu_df, left_index=True, right_index=True
+        transmit_obs[constants.garpos.ST], enu_df, left_index=True, right_index=True
     )
 
 
