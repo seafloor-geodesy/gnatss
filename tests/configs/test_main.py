@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -6,8 +5,12 @@ import pytest
 from gnatss.configs.main import Configuration
 
 
-def test_env_configuration_main():
-    os.environ.setdefault("GNATSS_SITE_ID", "test_site")
+def test_env_configuration_main(blank_env: None) -> None:
+    """Testing a simple configuration class
+    with environment variables.
+
+    See root/conftest.py for fixture definition.
+    """
     with pytest.warns(
         UserWarning,
         match=(
@@ -20,16 +23,14 @@ def test_env_configuration_main():
     assert config.site_id == "test_site"
 
 
-def test_env_main_posfilter():
-    # Create test file
-    test_file = Path(__file__).parent / "test_data.csv"
-    test_file.touch()
+def test_env_main_posfilter(blank_csv_test_file: Path, blank_env: None) -> None:
+    """Testing setting RPS input file path
+    with environment variables
 
-    # Set environment variables
-    os.environ.setdefault("GNATSS_SITE_ID", "test_site")
-    os.environ.setdefault(
-        "GNATSS_POSFILTER__INPUT_FILES__ROLL_PITCH_HEADING__PATH", str(test_file)
-    )
+    See root/conftest.py for fixture definition.
+    """
+    test_path = str(blank_csv_test_file)
+
     with pytest.warns(
         UserWarning,
         match=(
@@ -40,7 +41,4 @@ def test_env_main_posfilter():
         config = Configuration()
 
     assert config.posfilter is not None
-    assert config.posfilter.input_files.roll_pitch_heading.path == str(test_file)
-
-    # Delete test file
-    test_file.unlink()
+    assert config.posfilter.input_files.roll_pitch_heading.path == test_path

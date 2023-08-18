@@ -6,18 +6,17 @@ from gnatss.configs.io import InputData
 from gnatss.configs.posfilter import PositionFilter, PositionFilterInputs
 
 
-def test_position_filter_input():
-    # Create test file
-    test_file = Path(__file__).parent / "test_data.csv"
-    test_file.touch()
+def test_position_filter_input(blank_csv_test_file: Path) -> None:
+    """Testing the PositionFilterInputs class.
+
+    See root/conftest.py for fixture definition.
+    """
+    test_path = str(blank_csv_test_file)
 
     # Test initialization of PositionFilter
-    inputs = PositionFilterInputs(roll_pitch_heading=InputData(path=str(test_file)))
+    inputs = PositionFilterInputs(roll_pitch_heading=InputData(path=test_path))
     pos_filter = PositionFilter(input_files=inputs)
-    assert pos_filter.input_files.roll_pitch_heading.path == str(test_file)
-
-    # Delete test file
-    test_file.unlink()
+    assert pos_filter.input_files.roll_pitch_heading.path == test_path
 
     # Test invalid initialization of PositionFilter
     with pytest.raises(Exception) as e:
