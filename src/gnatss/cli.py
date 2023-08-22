@@ -30,6 +30,9 @@ def run(
     extract_dist_center: Optional[bool] = typer.Option(
         False, help="Flag to extract distance from center from run."
     ),
+    extract_process_dataset: Optional[bool] = typer.Option(
+        False, help="Flag to extract process results."
+    ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
@@ -42,11 +45,12 @@ def run(
 
     # Run the main function
     # TODO: Clean up so that we aren't throwing data away
-    _, _, resdf, dist_center_df = main(
+    _, _, resdf, dist_center_df, process_ds = main(
         config,
         all_files_dict,
         extract_res=extract_res,
         extract_dist_center=extract_dist_center,
+        extract_process_dataset=extract_process_dataset,
     )
 
     # TODO: Switch to fsspec so we can save anywhere
@@ -63,3 +67,11 @@ def run(
         res_csv = output_path / "residuals.csv"
         typer.echo(f"Saving the latest residuals to {str(res_csv.absolute())}")
         resdf.to_csv(res_csv, index=False)
+
+    if extract_process_dataset:
+        # Write out to process_dataset.nc file
+        process_dataset_nc = output_path / "process_dataset.nc"
+        typer.echo(
+            f"Saving the process results dataset to {str(process_dataset_nc.absolute())}"
+        )
+        process_ds.to_netcdf(process_dataset_nc)

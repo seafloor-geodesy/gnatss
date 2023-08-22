@@ -1,8 +1,10 @@
+import warnings
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import typer
+import xarray as xr
 from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 
 from . import constants
@@ -246,8 +248,8 @@ def get_reply_times(
 
 
 def prepare_and_solve(
-    all_observations: pd.DataFrame, config: Configuration
-) -> Dict[int, Any]:
+    all_observations: pd.DataFrame, config: Configuration, max_iter: int = 6
+) -> Tuple[Dict[int, Any], bool]:
     """
     Prepare data inputs and perform solving algorithm
 
@@ -295,9 +297,12 @@ def prepare_and_solve(
     num_data = len(all_observations)
     typer.echo(f"--- {len(data_inputs)} epochs, {num_data} measurements ---")
     while not is_converged:
-        # TODO: Add max converge attempt failure
-        # if n_iter > max_iter:
-        #     raise RuntimeError("Exceeds the allowed number of attempt, please adjust your data.")
+        # Max converge attempt failure
+        if n_iter > max_iter:
+            warnings.warn(
+                "Exceeds the allowed number of attempt, " "please adjust your data."
+            )
+            return process_dict, is_converged
 
         # Increase iter num
         n_iter += 1
@@ -338,6 +343,8 @@ def prepare_and_solve(
         RMSRESCM = np.sqrt(RMSRESCM / num_data)
         ERRFAC = np.sqrt(ERRFAC / (num_data - (3 * num_transponders)))
 
+        process_dict[n_iter]["rmsrescm"] = RMSRESCM
+        process_dict[n_iter]["errfac"] = ERRFAC
         typer.echo(
             (
                 f"After iteration: {n_iter}, "
@@ -346,8 +353,39 @@ def prepare_and_solve(
             )
         )
 
+        enu_arr = []
+        sig_enu = []
+        lat_lon = []
         for idx, tp in enumerate(transponders):
             pxp_id = tp.pxp_id
+            # Get xyz for a transponder
+            x, y, z = transponders_xyz[idx]
+
+            # Get lat lon alt
+            lat, lon, alt = ecef2geodetic(x, y, z)
+            lat_lon.append([lat, lon, alt])
+
+            # Retrieve apriori xyz and lat lon alt
+            original_xyz = original_positions[idx]
+            original_lla = ecef2geodetic(*original_xyz)
+
+            # Compute enu w.r.t apriori lat lon alt
+            e, n, u = ecef2enu(x, y, z, *original_lla)
+            enu_arr.append([e, n, u])
+
+            # Find enu covariance
+            latr, lonr = np.radians([lat, lon])
+            R = _get_rotation_matrix(latr, lonr, False)
+            covpx = np.array(
+                [arr[:3] for arr in data["covpx"][idx * 3 : 3 * (idx + 1)]]  # noqa
+            )
+            covpe = R.T @ covpx @ R
+            # Retrieve diagonal and change negative values to 0
+            diag = covpe.diagonal().copy()
+            diag[diag < 0] = 0
+            sig_enu.append(np.sqrt(diag))
+
+            # Find location differences and its std dev
             SIGPX = np.array_split(data["sigpx"], num_transponders)
             DELP = np.array_split(data["delp"], num_transponders)
             dX, dY, dZ = DELP[idx]
@@ -371,35 +409,25 @@ def prepare_and_solve(
                     f"Sigma(z) = {np.format_float_scientific(sigZ, 6)} m"
                 )
             )
-
+        process_dict[n_iter]["enu"] = np.array(enu_arr)
+        process_dict[n_iter]["sig_enu"] = np.array(sig_enu)
+        process_dict[n_iter]["transponders_lla"] = np.array(lat_lon)
         if is_converged:
             typer.echo()
             typer.echo("---- FINAL SOLUTION ----")
             for idx, tp in enumerate(transponders):
                 typer.echo(pxp_id)
-                x, y, z = transponders_xyz[idx]
-                original_xyz = original_positions[idx]
-                original_lla = ecef2geodetic(*original_xyz)
+
+                lat, lon, alt = lat_lon[idx]
 
                 SIGPX = np.array_split(data["sigpx"], num_transponders)
                 sigX, sigY, sigZ = SIGPX[idx]
-                lat, lon, alt = ecef2geodetic(x, y, z)
 
                 # Compute enu
-                e, n, u = ecef2enu(x, y, z, *original_lla)
+                e, n, u = enu_arr[idx]
 
-                # Find enu covariance
-                latr, lonr = np.radians([lat, lon])
-                R = _get_rotation_matrix(latr, lonr, False)
-                covpx = np.array(
-                    [arr[:3] for arr in data["covpx"][idx * 3 : 3 * (idx + 1)]]  # noqa
-                )
-                covpe = R.T @ covpx @ R
-                # Retrieve diagonal and change negative values to 0
-                diag = covpe.diagonal().copy()
-                diag[diag < 0] = 0
-
-                sigE, sigN, sigU = np.sqrt(diag)
+                # Get sig enu
+                sigE, sigN, sigU = sig_enu[idx]
 
                 typer.echo(
                     (
@@ -422,7 +450,7 @@ def prepare_and_solve(
                 typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
             typer.echo("------------------------")
             typer.echo()
-            return process_dict
+            return process_dict, is_converged
 
 
 def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataFrame:
@@ -618,13 +646,112 @@ def extract_latest_residuals(
     )
 
 
+def _create_process_dataset(
+    proc_d: Dict[str, Any], n_iter: int, config: Configuration
+) -> xr.Dataset:
+    """Creates a process dataset from the process dictionary
+
+    Parameters
+    ----------
+    proc_d : Dict[str, Any]
+        Process dictionary
+    n_iter : int
+        Iteration number
+    config : Configuration
+        The configuration object
+
+    Returns
+    -------
+    xr.Dataset
+        The resulting process dataset
+    """
+    transponders = config.solver.transponders
+    num_transponders = len(transponders)
+    transponders_ids = [tp.pxp_id for tp in transponders]
+
+    ds = xr.Dataset(
+        data_vars={
+            "transponders_xyz": (
+                ("transponder", "coords"),
+                proc_d["transponders_xyz"],
+                {"units": "meters", "long_name": "Transponder ECEF location"},
+            ),
+            "delta_xyz": (
+                ("transponder", "coords"),
+                np.array(np.array_split(proc_d["data"]["delp"], num_transponders)),
+                {
+                    "units": "meters",
+                    "long_name": "Transponder location differences from apriori",
+                },
+            ),
+            "sigma_xyz": (
+                ("transponder", "coords"),
+                np.array(np.array_split(proc_d["data"]["sigpx"], num_transponders)),
+                {
+                    "units": "meters",
+                    "long_name": "Transponder location differences standard deviation",
+                },
+            ),
+            "rms_residual": (
+                ("iteration"),
+                [proc_d["rmsrescm"]],
+                {
+                    "units": "centimeters",
+                    "long_name": "Root mean square (RMS) of residuals",
+                },
+            ),
+            "error_factor": (
+                ("iteration"),
+                [proc_d["errfac"]],
+                {"units": "unitless", "long_name": "Error factor value"},
+            ),
+            "delta_enu": (
+                ("transponder", "coords"),
+                proc_d["enu"],
+                {
+                    "units": "meters",
+                    "long_name": "Transponder ENU differences from apriori",
+                },
+            ),
+            "sigma_enu": (
+                ("transponder", "coords"),
+                proc_d["sig_enu"],
+                {
+                    "units": "meters",
+                    "long_name": "Transponder ENU differences standard deviation",
+                },
+            ),
+            "transponders_lla": (
+                ("transponder", "coords"),
+                proc_d["transponders_lla"],
+                {"units": "degrees", "long_name": "Transponder Geodetic location"},
+            ),
+        },
+        coords={
+            "transponder": (
+                ("transponder"),
+                transponders_ids,
+                {"long_name": "Transponder id"},
+            ),
+            "coords": (("coords"), ["x", "y", "z"], {"long_name": "Coordinate label"}),
+            "iteration": (("iteration"), [n_iter], {"long_name": "Iteration number"}),
+        },
+    )
+    return ds
+
+
 def main(
     config: Configuration,
     all_files_dict: Dict[str, Any],
     extract_res: bool = False,
     extract_dist_center: bool = False,
+    extract_process_dataset: bool = False,
 ) -> Tuple[
-    List[float], Dict[str, Any], Union[pd.DataFrame, None], Union[pd.DataFrame, None]
+    List[float],
+    Dict[str, Any],
+    Union[pd.DataFrame, None],
+    Union[pd.DataFrame, None],
+    Union[xr.Dataset, None],
 ]:
     """
     The main function that performs the full pre-processing
@@ -652,6 +779,8 @@ def main(
         Extracted latest residuals as dataframe, by default None
     dist_center_df : Union[pd.DataFrame, None]
         Extracted distance from center as dataframe, by default None
+    process_ds : Union[xr.Dataset, None]
+        Extracted process results as xarray dataset, by default None
     """
     all_observations = load_data(all_files_dict, config)
 
@@ -661,10 +790,18 @@ def main(
         dist_center_df = extract_distance_from_center(all_observations, config)
 
     all_epochs = all_observations[constants.garpos.ST].unique()
-    process_data = prepare_and_solve(all_observations, config)
+    process_data, _ = prepare_and_solve(all_observations, config)
 
     # Extracts latest residuals when specified
     resdf = None
     if extract_res:
         resdf = extract_latest_residuals(config, all_epochs, process_data)
-    return all_epochs, process_data, resdf, dist_center_df
+
+    # Extracts process dataset when specified
+    process_ds = None
+    if extract_process_dataset:
+        process_ds = xr.concat(
+            [_create_process_dataset(v, k, config) for k, v in process_data.items()],
+            dim="iteration",
+        )
+    return all_epochs, process_data, resdf, dist_center_df, process_ds
