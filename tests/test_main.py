@@ -27,7 +27,7 @@ def test_gather_files(mocker):
         for k in item_keys
     }
     config = mocker.patch("gnatss.configs.main.Configuration")
-    config.solver.input_files.dict.return_value = sample_dict
+    config.solver.input_files.model_dump.return_value = sample_dict
 
     # Perform test
     all_files_dict = gather_files(config)
