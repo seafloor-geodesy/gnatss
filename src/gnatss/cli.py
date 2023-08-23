@@ -5,6 +5,7 @@ from typing import Optional
 import typer
 
 from . import package_name
+from .configs.io import CSVOutput
 from .loaders import load_configuration
 from .main import gather_files, main
 
@@ -45,7 +46,7 @@ def run(
 
     # Run the main function
     # TODO: Clean up so that we aren't throwing data away
-    _, _, resdf, dist_center_df, process_ds = main(
+    _, _, resdf, dist_center_df, process_ds, outliers_df = main(
         config,
         all_files_dict,
         extract_res=extract_res,
@@ -56,7 +57,7 @@ def run(
     # TODO: Switch to fsspec so we can save anywhere
     output_path = Path(config.output.path)
     if extract_dist_center:
-        dist_center_csv = output_path / "dist_center.csv"
+        dist_center_csv = output_path / CSVOutput.dist_center.value
         typer.echo(
             f"Saving the distance from center file to {str(dist_center_csv.absolute())}"
         )
@@ -64,14 +65,22 @@ def run(
 
     if extract_res:
         # Write out to residuals.csv file
-        res_csv = output_path / "residuals.csv"
+        res_csv = output_path / CSVOutput.residuals.value
         typer.echo(f"Saving the latest residuals to {str(res_csv.absolute())}")
         resdf.to_csv(res_csv, index=False)
+
+        if len(outliers_df) > 0:
+            outliers_csv = output_path / CSVOutput.outliers.value
+            typer.echo(
+                f"Saving the latest residual outliers to {str(outliers_csv.absolute())}"
+            )
+            outliers_df.to_csv(outliers_csv, index=False)
 
     if extract_process_dataset:
         # Write out to process_dataset.nc file
         process_dataset_nc = output_path / "process_dataset.nc"
         typer.echo(
-            f"Saving the process results dataset to {str(process_dataset_nc.absolute())}"
+            "Saving the process results "
+            f"dataset to {str(process_dataset_nc.absolute())}"
         )
         process_ds.to_netcdf(process_dataset_nc)
