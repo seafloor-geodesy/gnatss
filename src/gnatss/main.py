@@ -38,7 +38,7 @@ def gather_files(config: Configuration) -> Dict[str, Any]:
         A dictionary containing the various datasets file paths
     """
     all_files_dict = {}
-    for k, v in config.solver.input_files.dict().items():
+    for k, v in config.solver.input_files.model_dump().items():
         path = v.get("path", "")
         typer.echo(f"Gathering {k} at {path}")
         storage_options = v.get("storage_options", {})
@@ -489,7 +489,7 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
 
     # Read deletion file
     typer.echo("Load deletions data...")
-    cut_df = load_deletions(all_files_dict["deletions"])
+    cut_df = load_deletions(all_files_dict["deletions"], config=config)
 
     # Load travel times data
     typer.echo("Load travel times...")
@@ -752,6 +752,7 @@ def main(
     Union[pd.DataFrame, None],
     Union[pd.DataFrame, None],
     Union[xr.Dataset, None],
+    Union[pd.DataFrame, None],
 ]:
     """
     The main function that performs the full pre-processing
@@ -781,6 +782,8 @@ def main(
         Extracted distance from center as dataframe, by default None
     process_ds : Union[xr.Dataset, None]
         Extracted process results as xarray dataset, by default None
+    outliers_df : Union[pd.DataFrame, None]
+        Extracted residual outliers as dataframe, by default None
     """
     all_observations = load_data(all_files_dict, config)
 
@@ -788,14 +791,40 @@ def main(
     dist_center_df = None
     if extract_dist_center:
         dist_center_df = extract_distance_from_center(all_observations, config)
-
+        typer.echo("Filtering out data outside of distance limit...")
+        # Filter out data that is outside of the distance limit
+        all_observations = all_observations[
+            ~all_observations[constants.garpos.ST].isin(
+                dist_center_df[
+                    dist_center_df[constants.GPS_DISTANCE]
+                    > config.solver.distance_limit
+                ][constants.garpos.ST]
+            )
+        ].reset_index(drop=True)
     all_epochs = all_observations[constants.garpos.ST].unique()
     process_data, _ = prepare_and_solve(all_observations, config)
 
     # Extracts latest residuals when specified
     resdf = None
+    outliers_df = None
     if extract_res:
         resdf = extract_latest_residuals(config, all_epochs, process_data)
+
+        # Get data outside of the residual limit
+        truthy_df = (
+            resdf[[t.pxp_id for t in config.solver.transponders]].apply(np.abs)
+            > config.solver.residual_limit
+        )
+        truthy_series = truthy_df.apply(np.any, axis=1)
+        outliers_df = resdf[truthy_series]
+
+        # Print out the number of outliers detected
+        n_outliers = len(outliers_df)
+        message = f"There are {n_outliers} outliers found during this run. "
+        if n_outliers > 0:
+            message += "Please modify your residual limit."
+
+        typer.echo(message + "\n")
 
     # Extracts process dataset when specified
     process_ds = None
@@ -804,4 +833,4 @@ def main(
             [_create_process_dataset(v, k, config) for k, v in process_data.items()],
             dim="iteration",
         )
-    return all_epochs, process_data, resdf, dist_center_df, process_ds
+    return all_epochs, process_data, resdf, dist_center_df, process_ds, outliers_df
