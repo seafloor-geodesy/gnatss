@@ -172,6 +172,40 @@ def load_travel_times(
     return all_travel_times
 
 
+def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
+    """
+    Loads roll pitch heading data into a pandas dataframe from a list of files.
+
+    Parameters
+    ----------
+    files : List[str]
+        The list of path string to files to load
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing all of
+        the roll pitch heading data.
+        Expected columns will have 'time' and
+        the 'roll', 'pitch', 'heading' values
+    """
+    columns = [
+        constants.RPH_TIME,
+        constants.RPH_ROLL,
+        constants.RPH_PITCH,
+        constants.RPH_HEADING,
+    ]
+    # Real all rph files
+    rph_dfs = [
+        pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+        .drop_duplicates(constants.RPH_TIME)
+        .reset_index(drop=True)
+        for i in files
+    ]
+    all_rph = pd.concat(rph_dfs).reset_index(drop=True)
+    return all_rph
+
+
 def load_gps_solutions(
     files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
 ) -> pd.DataFrame:
