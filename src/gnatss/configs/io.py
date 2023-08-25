@@ -1,9 +1,24 @@
+from enum import Enum
 from typing import Any, Dict
 
 import fsspec
 from pydantic import BaseModel, Field, PrivateAttr
 
 from ..utilities.io import check_file_exists, check_permission
+
+
+class StrEnum(str, Enum):
+    """A custom string enum class"""
+
+    ...
+
+
+class CSVOutput(StrEnum):
+    """Default CSV output file names"""
+
+    outliers = "outliers.csv"
+    residuals = "residuals.csv"
+    dist_center = "dist_center.csv"
 
 
 class InputData(BaseModel):

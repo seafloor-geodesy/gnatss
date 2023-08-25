@@ -7,6 +7,7 @@ import yaml
 from pydantic import ValidationError
 
 from . import constants
+from .configs.io import CSVOutput
 from .configs.main import Configuration
 
 
@@ -258,7 +259,9 @@ def load_gps_solutions(
     return all_gps_solutions
 
 
-def load_deletions(file_path: str, time_scale="tt") -> pd.DataFrame:
+def load_deletions(
+    file_path: str, config: Configuration, time_scale="tt"
+) -> pd.DataFrame:
     """
     Loads the raw deletion text file into a pandas dataframe
 
@@ -266,6 +269,8 @@ def load_deletions(file_path: str, time_scale="tt") -> pd.DataFrame:
     ----------
     file_path : str
         Path to the deletion file to be loaded
+    config : Configuration
+        The configuration object
     time_scale : str
         The time scale of the datetime string input.
         Default is 'tt' for Terrestrial Time,
@@ -301,5 +306,21 @@ def load_deletions(file_path: str, time_scale="tt") -> pd.DataFrame:
     cut_df[constants.DEL_ENDTIME] = cut_df[constants.DEL_ENDTIME].apply(
         lambda row: AstroTime(row, scale=time_scale).unix_j2000
     )
+
+    # Try to find outliers.csv file if there is one run already
+    # this currently assumes that the file is in the output directory
+    output_path = Path(config.output.path)
+    outliers_csv = output_path / CSVOutput.outliers.value
+    if outliers_csv.exists():
+        import typer
+
+        typer.echo(f"Found {str(outliers_csv.absolute())} file. Including into cuts...")
+        outliers_df = pd.read_csv(outliers_csv)
+        outlier_cut = pd.DataFrame.from_records(
+            outliers_df[constants.TT_TIME].apply(lambda row: (row, row)).to_numpy(),
+            columns=cut_df.columns,
+        )
+        # Include the outlier cut into here
+        cut_df = pd.concat([cut_df, outlier_cut])
 
     return cut_df
