@@ -195,7 +195,7 @@ def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
         constants.RPH_PITCH,
         constants.RPH_HEADING,
     ]
-    # Real all rph files
+    # Read all rph files
     rph_dfs = [
         pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
         .drop_duplicates(constants.RPH_TIME)
