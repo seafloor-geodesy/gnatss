@@ -65,3 +65,9 @@ GPS_COV = [
     GPS_COV_ZY,
     GPS_COV_ZZ,
 ]  # Covariance matrix columns
+
+# Roll Pitch Heading columns
+RPH_TIME = TIME_J2000
+RPH_ROLL = "roll"
+RPH_PITCH = "pitch"
+RPH_HEADING = "heading"
