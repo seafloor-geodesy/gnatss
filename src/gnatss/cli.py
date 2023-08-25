@@ -6,8 +6,12 @@ import typer
 
 from . import package_name
 from .configs.io import CSVOutput
+from .configs.solver import Solver
 from .loaders import load_configuration
 from .main import gather_files, main
+
+# Global variables
+OVERRIDE_MESSAGE = "Note that this will override the value set as configuration."
 
 app = typer.Typer(name=package_name)
 
@@ -34,6 +38,20 @@ def run(
     extract_process_dataset: Optional[bool] = typer.Option(
         False, help="Flag to extract process results."
     ),
+    distance_limit: Optional[float] = typer.Option(
+        None,
+        help=(
+            f"{Solver.model_fields.get('distance_limit').description}"
+            f". {OVERRIDE_MESSAGE}"
+        ),
+    ),
+    residual_limit: Optional[float] = typer.Option(
+        None,
+        help=(
+            f"{Solver.model_fields.get('residual_limit').description}"
+            f". {OVERRIDE_MESSAGE}"
+        ),
+    ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
@@ -41,6 +59,15 @@ def run(
     """
     typer.echo("Loading configuration ...")
     config = load_configuration(config_yaml)
+
+    # Override the distance and residual limits if provided
+    # this short-circuits pydantic model
+    if distance_limit is not None:
+        config.solver.distance_limit = distance_limit
+
+    if residual_limit is not None:
+        config.solver.residual_limit = residual_limit
+
     typer.echo("Configuration loaded.")
     all_files_dict = gather_files(config)
 

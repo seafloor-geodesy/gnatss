@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Literal, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -24,7 +24,9 @@ from .utilities.geo import _get_rotation_matrix
 from .utilities.io import _get_filesystem
 
 
-def gather_files(config: Configuration) -> Dict[str, Any]:
+def gather_files(
+    config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
+) -> Dict[str, Any]:
     """Gather file paths for the various dataset files
 
     Parameters
@@ -38,7 +40,12 @@ def gather_files(config: Configuration) -> Dict[str, Any]:
         A dictionary containing the various datasets file paths
     """
     all_files_dict = {}
-    for k, v in config.solver.input_files.model_dump().items():
+    # Check for process type first
+    if not hasattr(config, proc):
+        raise AttributeError(f"Unknown process type: {proc}")
+
+    proc_config = getattr(config, proc)
+    for k, v in proc_config.input_files.dict().items():
         path = v.get("path", "")
         typer.echo(f"Gathering {k} at {path}")
         storage_options = v.get("storage_options", {})
