@@ -792,15 +792,19 @@ def main(
     if extract_dist_center:
         dist_center_df = extract_distance_from_center(all_observations, config)
         typer.echo("Filtering out data outside of distance limit...")
-        # Filter out data that is outside of the distance limit
+        # Extract distance limit
+        distance_limit = config.solver.distance_limit
+
+        # Extract the rows of observations with distances beyond the limit
+        filtered_rows = dist_center_df[
+            dist_center_df[constants.GPS_DISTANCE] > distance_limit
+        ][constants.garpos.ST]
+
+        # Filter out data based on the filtered rows and reset index
         all_observations = all_observations[
-            ~all_observations[constants.garpos.ST].isin(
-                dist_center_df[
-                    dist_center_df[constants.GPS_DISTANCE]
-                    > config.solver.distance_limit
-                ][constants.garpos.ST]
-            )
+            ~all_observations[constants.garpos.ST].isin(filtered_rows)
         ].reset_index(drop=True)
+
     all_epochs = all_observations[constants.garpos.ST].unique()
     process_data, _ = prepare_and_solve(all_observations, config)
 
