@@ -41,7 +41,7 @@ class InputData(BaseModel):
 
         # Checks the file
         if not check_file_exists(self.path, self.storage_options):
-            raise FileNotFoundError("The specified file doesn't exist!")
+            raise FileNotFoundError(f"{self.path} doesn't exist!")
 
 
 class OutputPath(BaseModel):
@@ -67,3 +67,10 @@ class OutputPath(BaseModel):
         self._fsmap = fsspec.get_mapper(self.path, **self.storage_options)
         # Checks the file permission as the object is being created
         check_permission(self._fsmap)
+
+        # Check to ensure it's a directory
+        if not self.path.endswith("/"):
+            raise NotADirectoryError(f"{self.path} is not a directory!")
+
+        # Always try create the directory even if it exists
+        self._fsmap.fs.makedirs(self.path, exist_ok=True)
