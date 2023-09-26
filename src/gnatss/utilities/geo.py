@@ -116,3 +116,35 @@ def ecef2ae(
         az = np.degrees(az)
         elev = np.degrees(elev)
     return az, elev
+
+
+def calc_enu_comp(
+    residuals: NDArray[Shape["*"]], az: NDArray[Shape["*"]], el: NDArray[Shape["*"]]
+) -> NDArray[Shape["*"], Float64]:
+    """
+    Calculates the mean east, north, up components of the residuals
+    from N number of transponders.
+
+    Returns
+    -------
+    residuals : (N,) ndarray
+        Residuals values in centimeters (cm)
+    az : (N,) ndarray
+        Azimuth values in degrees (deg)
+    el : (N,) ndarray
+        Elevation values in degrees (deg)
+    """
+    # Perform checks
+    assert residuals.ndim == 1, "Residuals must be 1D"
+    assert az.ndim == 1, "Azimuth must be 1D"
+    assert el.ndim == 1, "Elevation must be 1D"
+    assert (
+        az.shape == el.shape == residuals.shape
+    ), "Azimuth, elevation, and residuals must have same shape"
+
+    # Compute north, east, and vertical components
+    res_north = np.mean(residuals * np.sin(np.radians(az)) * np.sin(np.radians(el)))
+    res_east = np.mean(residuals * np.cos(np.radians(az)) * np.cos(np.radians(el)))
+    res_vert = np.mean(residuals * np.cos(np.radians(el)))
+
+    return np.array([res_east, res_north, res_vert])
