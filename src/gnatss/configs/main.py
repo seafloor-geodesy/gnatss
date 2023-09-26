@@ -7,6 +7,7 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, Optional, Type
 
+import numpy as np
 import yaml
 from pydantic import Field
 from pydantic.fields import FieldInfo
@@ -15,7 +16,9 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
+from pymap3d import geodetic2ecef
 
+from ..utilities.geo import ecef2ae
 from .io import OutputPath
 from .posfilter import PositionFilter
 from .solver import Solver
@@ -130,5 +133,29 @@ class Configuration(BaseConfiguration):
         if self.solver is not None:
             # Set the transponders pxp id based on the site id
             transponders = self.solver.transponders
+
+            if self.solver.array_center is None:
+                raise ValueError("Array center is not set")
             for idx in range(len(transponders)):
+                # Compute azimuth and elevation
+                tp = transponders[idx]
+                arr_center = self.solver.array_center
+
+                # Convert geodetic (deg) to ecef (meters)
+                x, y, z = geodetic2ecef(tp.lat, tp.lon, tp.height)
+
+                # Compute azimuth and elevation w.r.t. array center
+                az, el = ecef2ae(
+                    x, y, z, arr_center.lat, arr_center.lon, arr_center.alt
+                )
+
+                # Round the values to 2 decimal places and
+                # take absolute value of elevation
+                az, el = np.round([az, np.abs(el)], 2)
+
+                # Set azimuth and elevation
+                transponders[idx].azimuth = az
+                transponders[idx].elevation = el
+
+                # Set pxp id
                 transponders[idx].pxp_id = "-".join([self.site_id, str(idx + 1)])

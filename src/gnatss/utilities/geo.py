@@ -2,8 +2,11 @@
 
 Geospatial utilities module
 """
+from typing import Tuple
+
 import numpy as np
 from nptyping import Float64, NDArray, Shape
+from pymap3d import Ellipsoid, ecef2enu
 
 
 def _get_rotation_matrix(
@@ -47,3 +50,69 @@ def _get_rotation_matrix(
             [0, cos_lat, sin_lat],
         ]
     )
+
+
+def ecef2ae(
+    x: float,
+    y: float,
+    z: float,
+    lat0: float,
+    lon0: float,
+    h0: float,
+    ell: Ellipsoid = None,
+    deg: bool = True,
+) -> Tuple[float, float]:
+    """
+    Compute azimuth and elevation from ECEF coordinates
+    w.r.t. a reference point
+
+    Parameters
+    ----------
+    x: float
+        target x ECEF coordinate (meters)
+    y: float
+        target y ECEF coordinate (meters)
+    z: float
+        target z ECEF coordinate (meters)
+    lat0: float
+        observer geodetic latitude
+    lon0: float
+        observer geodetic longitude
+    h0: float
+        observer altitude above geodetic ellipsoid (meters)
+    ell : Ellipsoid, optional
+        reference ellipsoid
+    deg : bool, optional
+        degrees input/output  (False: radians in/out)
+
+    Returns
+    -------
+    az: float
+        azimuth (degrees)
+    elev: float
+        elevation (degrees)
+    """
+    e, n, u = ecef2enu(x, y, z, lat0, lon0, h0, ell, deg=deg)
+
+    # 1 millimeter precision for singularity stability
+    try:
+        e[abs(e) < 1e-3] = 0.0
+        n[abs(n) < 1e-3] = 0.0
+        u[abs(u) < 1e-3] = 0.0
+    except TypeError:
+        if abs(e) < 1e-3:
+            e = 0.0
+        if abs(n) < 1e-3:
+            n = 0.0
+        if abs(u) < 1e-3:
+            u = 0.0
+
+    # Calculate hypotenuse
+    r = np.hypot(n, e)
+    elev = np.arctan(r / u)
+    az = np.arctan2(n, e)
+
+    if deg:
+        az = np.degrees(az)
+        elev = np.degrees(elev)
+    return az, elev

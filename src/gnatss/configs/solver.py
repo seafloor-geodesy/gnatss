@@ -88,6 +88,12 @@ class SolverTransponder(BaseModel):
             "**This field will be computed during object creation**"
         ),
     )
+    azimuth: Optional[float] = Field(
+        None, description="Transponder azimuth in degrees w.r.t. array center."
+    )
+    elevation: Optional[float] = Field(
+        None, description="Transponder elevation in degrees w.r.t. array center."
+    )
 
     @computed_field(repr=False, description="Transponder unique identifier")
     @cached_property
