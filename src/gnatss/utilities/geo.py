@@ -119,7 +119,9 @@ def ecef2ae(
 
 
 def calc_enu_comp(
-    residuals: NDArray[Shape["*"]], az: NDArray[Shape["*"]], el: NDArray[Shape["*"]]
+    residuals: NDArray[Shape["*"], Float64],
+    az: NDArray[Shape["*"], Float64],
+    el: NDArray[Shape["*"], Float64],
 ) -> NDArray[Shape["*"], Float64]:
     """
     Calculates the mean east, north, up components of the residuals
