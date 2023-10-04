@@ -29,9 +29,6 @@ def run(
         None,
         help="Custom path to configuration yaml file. **Currently only support local files!**",
     ),
-    extract_res: Optional[bool] = typer.Option(
-        False, help="Flag to extract residual files from run."
-    ),
     extract_dist_center: Optional[bool] = typer.Option(
         False, help="Flag to extract distance from center from run."
     ),
@@ -76,8 +73,6 @@ def run(
     _, _, resdf, dist_center_df, process_ds, outliers_df = main(
         config,
         all_files_dict,
-        extract_res=extract_res,
-        extract_dist_center=extract_dist_center,
         extract_process_dataset=extract_process_dataset,
     )
 
@@ -90,18 +85,18 @@ def run(
         )
         dist_center_df.to_csv(dist_center_csv, index=False)
 
-    if extract_res:
-        # Write out to residuals.csv file
-        res_csv = output_path / CSVOutput.residuals.value
-        typer.echo(f"Saving the latest residuals to {str(res_csv.absolute())}")
-        resdf.to_csv(res_csv, index=False)
+    # Write out to residuals.csv file
+    res_csv = output_path / CSVOutput.residuals.value
+    typer.echo(f"Saving the latest residuals to {str(res_csv.absolute())}")
+    resdf.to_csv(res_csv, index=False)
 
-        if len(outliers_df) > 0:
-            outliers_csv = output_path / CSVOutput.outliers.value
-            typer.echo(
-                f"Saving the latest residual outliers to {str(outliers_csv.absolute())}"
-            )
-            outliers_df.to_csv(outliers_csv, index=False)
+    # Write out to outliers.csv file
+    if len(outliers_df) > 0:
+        outliers_csv = output_path / CSVOutput.outliers.value
+        typer.echo(
+            f"Saving the latest residual outliers to {str(outliers_csv.absolute())}"
+        )
+        outliers_df.to_csv(outliers_csv, index=False)
 
     if extract_process_dataset:
         # Write out to process_dataset.nc file

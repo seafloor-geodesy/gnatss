@@ -19,6 +19,7 @@ class CSVOutput(StrEnum):
     outliers = "outliers.csv"
     residuals = "residuals.csv"
     dist_center = "dist_center.csv"
+    deletions = "deletions.csv"
 
 
 class InputData(BaseModel):

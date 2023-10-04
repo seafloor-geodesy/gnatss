@@ -283,33 +283,40 @@ def load_deletions(
     pd.DataFrame
         Deletion ranges data pandas dataframe
     """
-    from .utilities.time import AstroTime
+    output_path = Path(config.output.path)
+    # TODO: Add additional files to be used for deletions
+    default_deletions = output_path / CSVOutput.deletions.value
+    if file_path:
+        from .utilities.time import AstroTime
 
-    cut_df = pd.read_fwf(file_path, header=None)
-    # Date example: 28-JUL-22 12:30:00
-    cut_df[constants.DEL_STARTTIME] = pd.to_datetime(
-        cut_df[0] + "T" + cut_df[1], format="%d-%b-%yT%H:%M:%S"
-    )
-    cut_df[constants.DEL_ENDTIME] = pd.to_datetime(
-        cut_df[2] + "T" + cut_df[3], format="%d-%b-%yT%H:%M:%S"
-    )
-    # Got rid of the other columns
-    # TODO: Parse the other columns
-    cut_columns = cut_df.columns[0:-2]
-    cut_df.drop(columns=cut_columns, inplace=True)
+        cut_df = pd.read_fwf(file_path, header=None)
+        # Date example: 28-JUL-22 12:30:00
+        cut_df[constants.DEL_STARTTIME] = pd.to_datetime(
+            cut_df[0] + "T" + cut_df[1], format="%d-%b-%yT%H:%M:%S"
+        )
+        cut_df[constants.DEL_ENDTIME] = pd.to_datetime(
+            cut_df[2] + "T" + cut_df[3], format="%d-%b-%yT%H:%M:%S"
+        )
+        # Got rid of the other columns
+        # TODO: Parse the other columns
+        cut_columns = cut_df.columns[0:-2]
+        cut_df.drop(columns=cut_columns, inplace=True)
 
-    # Convert time string to j2000,
-    # assuming that they're in Terrestrial Time (TT) scale
-    cut_df[constants.DEL_STARTTIME] = cut_df[constants.DEL_STARTTIME].apply(
-        lambda row: AstroTime(row, scale=time_scale).unix_j2000
-    )
-    cut_df[constants.DEL_ENDTIME] = cut_df[constants.DEL_ENDTIME].apply(
-        lambda row: AstroTime(row, scale=time_scale).unix_j2000
-    )
+        # Convert time string to j2000,
+        # assuming that they're in Terrestrial Time (TT) scale
+        cut_df[constants.DEL_STARTTIME] = cut_df[constants.DEL_STARTTIME].apply(
+            lambda row: AstroTime(row, scale=time_scale).unix_j2000
+        )
+        cut_df[constants.DEL_ENDTIME] = cut_df[constants.DEL_ENDTIME].apply(
+            lambda row: AstroTime(row, scale=time_scale).unix_j2000
+        )
+    elif default_deletions.exists():
+        cut_df = pd.read_csv(default_deletions)
+    else:
+        cut_df = pd.DataFrame()
 
     # Try to find outliers.csv file if there is one run already
     # this currently assumes that the file is in the output directory
-    output_path = Path(config.output.path)
     outliers_csv = output_path / CSVOutput.outliers.value
     if outliers_csv.exists():
         import typer
@@ -318,9 +325,14 @@ def load_deletions(
         outliers_df = pd.read_csv(outliers_csv)
         outlier_cut = pd.DataFrame.from_records(
             outliers_df[constants.TT_TIME].apply(lambda row: (row, row)).to_numpy(),
-            columns=cut_df.columns,
+            columns=[constants.DEL_STARTTIME, constants.DEL_ENDTIME],
         )
         # Include the outlier cut into here
         cut_df = pd.concat([cut_df, outlier_cut])
+        outliers_csv.unlink()
+
+    # Export to a deletions csv
+    if not cut_df.empty:
+        cut_df.to_csv(output_path / CSVOutput.deletions.value, index=False)
 
     return cut_df
