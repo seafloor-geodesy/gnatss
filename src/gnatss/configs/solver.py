@@ -45,8 +45,8 @@ class SolverInputs(BaseModel):
     gps_solution: InputData = Field(
         ..., description="GPS solution data path specification."
     )
-    deletions: InputData = Field(
-        ..., description="Deletions file for unwanted data points."
+    deletions: Optional[InputData] = Field(
+        None, description="Deletions file for unwanted data points."
     )
 
 

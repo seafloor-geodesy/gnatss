@@ -46,17 +46,18 @@ def gather_files(
 
     proc_config = getattr(config, proc)
     for k, v in proc_config.input_files.dict().items():
-        path = v.get("path", "")
-        typer.echo(f"Gathering {k} at {path}")
-        storage_options = v.get("storage_options", {})
+        if v:
+            path = v.get("path", "")
+            typer.echo(f"Gathering {k} at {path}")
+            storage_options = v.get("storage_options", {})
 
-        fs = _get_filesystem(path, storage_options)
-        if "**" in path:
-            all_files = fs.glob(path)
-        else:
-            all_files = path
+            fs = _get_filesystem(path, storage_options)
+            if "**" in path:
+                all_files = fs.glob(path)
+            else:
+                all_files = path
 
-        all_files_dict.setdefault(k, all_files)
+            all_files_dict.setdefault(k, all_files)
     return all_files_dict
 
 
@@ -495,6 +496,8 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     typer.echo("Finished computing harmonic mean")
 
     # Read deletion file
+    # Set default to empty string
+    all_files_dict.setdefault("deletions", "")
     typer.echo("Load deletions data...")
     cut_df = load_deletions(all_files_dict["deletions"], config=config)
 
@@ -750,8 +753,6 @@ def _create_process_dataset(
 def main(
     config: Configuration,
     all_files_dict: Dict[str, Any],
-    extract_res: bool = False,
-    extract_dist_center: bool = False,
     extract_process_dataset: bool = False,
 ) -> Tuple[
     List[float],
@@ -770,12 +771,8 @@ def main(
         The configuration object
     all_files_dict : Dict[str, Any]
         A dictionary of file paths for the input data
-    extract_res : bool, optional
-        A flag to extract latest residual data as dataframe,
-        by default False
-    extract_dist_center : bool, optional
-        A flag to extract distance from center data as dataframe,
-        by default False
+    extract_process_dataset : bool, default False
+        A flag to extract the process data as a netCDF file
 
     Returns
     -------
@@ -794,48 +791,43 @@ def main(
     """
     all_observations = load_data(all_files_dict, config)
 
-    # Extracts distance from center when specified
-    dist_center_df = None
-    if extract_dist_center:
-        dist_center_df = extract_distance_from_center(all_observations, config)
-        typer.echo("Filtering out data outside of distance limit...")
-        # Extract distance limit
-        distance_limit = config.solver.distance_limit
+    # Extracts distance from center
+    dist_center_df = extract_distance_from_center(all_observations, config)
+    typer.echo("Filtering out data outside of distance limit...")
+    # Extract distance limit
+    distance_limit = config.solver.distance_limit
 
-        # Extract the rows of observations with distances beyond the limit
-        filtered_rows = dist_center_df[
-            dist_center_df[constants.GPS_DISTANCE] > distance_limit
-        ][constants.garpos.ST]
+    # Extract the rows of observations with distances beyond the limit
+    filtered_rows = dist_center_df[
+        dist_center_df[constants.GPS_DISTANCE] > distance_limit
+    ][constants.garpos.ST]
 
-        # Filter out data based on the filtered rows and reset index
-        all_observations = all_observations[
-            ~all_observations[constants.garpos.ST].isin(filtered_rows)
-        ].reset_index(drop=True)
+    # Filter out data based on the filtered rows and reset index
+    all_observations = all_observations[
+        ~all_observations[constants.garpos.ST].isin(filtered_rows)
+    ].reset_index(drop=True)
 
     all_epochs = all_observations[constants.garpos.ST].unique()
     process_data, _ = prepare_and_solve(all_observations, config)
 
     # Extracts latest residuals when specified
-    resdf = None
-    outliers_df = None
-    if extract_res:
-        resdf = extract_latest_residuals(config, all_epochs, process_data)
+    resdf = extract_latest_residuals(config, all_epochs, process_data)
 
-        # Get data outside of the residual limit
-        truthy_df = (
-            resdf[[t.pxp_id for t in config.solver.transponders]].apply(np.abs)
-            > config.solver.residual_limit
-        )
-        truthy_series = truthy_df.apply(np.any, axis=1)
-        outliers_df = resdf[truthy_series]
+    # Get data outside of the residual limit
+    truthy_df = (
+        resdf[[t.pxp_id for t in config.solver.transponders]].apply(np.abs)
+        > config.solver.residual_limit
+    )
+    truthy_series = truthy_df.apply(np.any, axis=1)
+    outliers_df = resdf[truthy_series]
 
-        # Print out the number of outliers detected
-        n_outliers = len(outliers_df)
-        message = f"There are {n_outliers} outliers found during this run. "
-        if n_outliers > 0:
-            message += "Please modify your residual limit."
+    # Print out the number of outliers detected
+    n_outliers = len(outliers_df)
+    message = f"There are {n_outliers} outliers found during this run. "
+    if n_outliers > 0:
+        message += "Please modify your residual limit."
 
-        typer.echo(message + "\n")
+    typer.echo(message + "\n")
 
     # Extracts process dataset when specified
     process_ds = None
