@@ -32,20 +32,23 @@ Once the software is installed, you should be able to get to the GNATSS Command 
 using the command `gnatss`. For example: `gnatss --help`, will get you to the main GNSS-A Processing in Python help page.
 
 ```console
-Usage: gnatss [OPTIONS] COMMAND [ARGS]...
+ Usage: gnatss [OPTIONS] COMMAND [ARGS]...
 
-  GNSS-A Processing in Python
+ GNSS-A Processing in Python
 
-Options:
-  --install-completion [bash|zsh|fish|powershell|pwsh]
-                                  Install completion for the specified shell.
-  --show-completion [bash|zsh|fish|powershell|pwsh]
-                                  Show completion for the specified shell, to
-                                  copy it or customize the installation.
-  --help                          Show this message and exit.
-
-Commands:
-  run  Runs the full pre-processing routine for GNSS-A
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────╮
+│ --install-completion        [bash|zsh|fish|powershell|pwsh]  Install completion for the specified │
+│                                                              shell.                               │
+│                                                              [default: None]                      │
+│ --show-completion           [bash|zsh|fish|powershell|pwsh]  Show completion for the specified    │
+│                                                              shell, to copy it or customize the   │
+│                                                              installation.                        │
+│                                                              [default: None]                      │
+│ --help                                                       Show this message and exit.          │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────╮
+│ run      Runs the full pre-processing routine for GNSS-A                                          │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Pre-processing solve routine
@@ -54,19 +57,40 @@ Currently there's a single command available in the CLI, `run`, which will run t
 You can retrieve the helper text for this command by running `gnatss run --help`.
 
 ```console
-Usage: gnatss run [OPTIONS]
+ Usage: gnatss run [OPTIONS]
 
-  Runs the full pre-processing routine for GNSS-A
+ Runs the full pre-processing routine for GNSS-A
+ Note: Currently only supports 3 transponders
 
-  Note: Currently only supports 3 transponders
-
-Options:
-  --config-yaml TEXT              Custom path to configuration yaml file.
-                                  **Currently only support local files!**
-  --extract-res / --no-extract-res
-                                  Flag to extract residual files from run.
-                                  [default: no-extract-res]
-  --help                          Show this message and exit.
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────╮
+│ --config-yaml                                              TEXT   Custom path to configuration │
+│                                                                   yaml file. **Currently only  │
+│                                                                   support local files!**       │
+│                                                                   [default: None]              │
+│ --extract-dist-center        --no-extract-dist-center             Flag to extract distance     │
+│                                                                   from center from run.        │
+│                                                                   [default:                    │
+│                                                                   no-extract-dist-center]      │
+│ --extract-process-dataset    --no-extract-process-data…           Flag to extract process      │
+│                                                                   results.                     │
+│                                                                   [default:                    │
+│                                                                   no-extract-process-dataset]  │
+│ --distance-limit                                           FLOAT  Distance in meters from      │
+│                                                                   center beyond which points   │
+│                                                                   will be excluded from        │
+│                                                                   solution. Note that this     │
+│                                                                   will override the value set  │
+│                                                                   as configuration.            │
+│                                                                   [default: None]              │
+│ --residual-limit                                           FLOAT  Maximum residual in          │
+│                                                                   centimeters beyond which     │
+│                                                                   data points will be excluded │
+│                                                                   from solution. Note that     │
+│                                                                   this will override the value │
+│                                                                   set as configuration.        │
+│                                                                   [default: None]              │
+│ --help                                                            Show this message and exit.  │
+╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 *Currently the pre-processing routine have been tested to only supports 3 transponders, but this will be expanded in the future.*
@@ -121,17 +145,18 @@ solver:
       path: /path/to/**/WG_*/pxp_tt # this option will take in glob patterns
     gps_solution:
       path: /path/to/**/posfilter/POS_FREED_TRANS_TWTT # this option will take in glob patterns
-    deletions:
-      path: /path/to/deletns.dat
-
 
 output:
   path: /my/output/dir/
 ```
 
+### Deletions file
+
+This will output the final resulting deletions file to the output directory specified in the configuration yaml file.
+This file will be in Comma Separated Value (CSV) format called `deletions.csv`.
+
 ### Residual file
 
-Currently, you can extract the residual file from the run command by passing in the `--extract-res` flag.
 This will output the final resulting residual file to the output directory specified in the configuration yaml file.
 This file will be in Comma Separated Value (CSV) format called `residuals.csv`.
 
