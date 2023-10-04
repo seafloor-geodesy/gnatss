@@ -84,3 +84,6 @@ source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/gnatss/version.py"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
