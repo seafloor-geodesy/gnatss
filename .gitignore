@@ -132,6 +132,9 @@ dmypy.json
 # VSCode
 .vscode
 
+# PyCharm
+.idea
+
 # Local Package
 version.py
 
