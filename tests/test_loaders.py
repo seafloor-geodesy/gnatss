@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 import pytest
+from numpy import float64
 from pandas import DataFrame
 
 from gnatss.configs.main import Configuration
@@ -39,3 +40,4 @@ def test_load_sound_speed(all_files_dict):
     svdf = load_sound_speed(all_files_dict["sound_speed"])
     assert isinstance(svdf, DataFrame)
     assert {SP_DEPTH, SP_SOUND_SPEED} == set(svdf.columns.values.tolist())
+    assert svdf.dtypes[SP_DEPTH] == float64 and svdf.dtypes[SP_SOUND_SPEED] == float64
