@@ -1,8 +1,19 @@
+from typing import Any, Dict
+
 import pytest
+from pandas import DataFrame
 
 from gnatss.configs.main import Configuration
-from gnatss.loaders import load_configuration
+from gnatss.constants import SP_DEPTH, SP_SOUND_SPEED
+from gnatss.loaders import load_configuration, load_sound_speed
+from gnatss.main import gather_files
 from tests import TEST_DATA_FOLDER
+
+
+@pytest.fixture
+def all_files_dict() -> Dict[str, Any]:
+    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
+    return gather_files(config)
 
 
 @pytest.mark.parametrize(
@@ -22,3 +33,9 @@ def test_load_configuration_invalid_path(config_yaml_path):
 def test_load_configuration_valid_path(config_yaml_path):
     config = load_configuration(config_yaml_path)
     assert isinstance(config, Configuration)
+
+
+def test_load_sound_speed(all_files_dict):
+    svdf = load_sound_speed(all_files_dict["sound_speed"])
+    assert isinstance(svdf, DataFrame)
+    assert {SP_DEPTH, SP_SOUND_SPEED} == set(svdf.columns.values.tolist())
