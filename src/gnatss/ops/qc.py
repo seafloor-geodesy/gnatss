@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +8,19 @@ from .. import constants
 from ..configs.main import Configuration
 from ..utilities.geo import calc_enu_comp
 from ..utilities.time import AstroTime
+
+# The 8 Colorblind from Bang Wong’s
+# Nature Methods paper https://www.nature.com/articles/nmeth.1618.pdf
+CB_COLORS: List[str] = [
+    "#000000",
+    "#E69F00",
+    "#56B4E9",
+    "#009E73",
+    "#F0E442",
+    "#0072B2",
+    "#D55E00",
+    "#CC79A7",
+]
 
 
 def _sec_to_iso(sec: float, fmt: str = "unix_j2000") -> str:
@@ -64,7 +77,7 @@ def _compute_ticks_and_labels(
 def plot_residuals(
     residuals_df: pd.DataFrame,
     outliers_df: Optional[pd.DataFrame] = None,
-    n_ticks: int = 25,
+    n_ticks: int = 15,
     figsize: tuple = (10, 5),
 ) -> plt.Figure:
     """Plot residuals
@@ -75,7 +88,7 @@ def plot_residuals(
         Residuals dataframe
     outliers_df : pd.DataFrame, optional
         Outliers dataframe
-    n_ticks : int, default 25
+    n_ticks : int, default 15
         The desired number of ticks on the x-axis
     figsize : tuple, default (10, 5)
         The figure size
@@ -95,7 +108,7 @@ def plot_residuals(
         if col not in time_labels:
             col_names.append(col)
             residuals_df.plot.scatter(
-                x="time", y=col, s=2, ax=axs, c=f"C{i}", zorder=i + 2
+                x="time", y=col, s=2, ax=axs, c=CB_COLORS[i + 1], zorder=i + 2
             )
 
     # Add outliers to plot
@@ -103,7 +116,7 @@ def plot_residuals(
         for col in outliers_df.columns:
             if col not in time_labels:
                 outliers_df.plot.scatter(
-                    x="time", y=col, s=3, c="lightgray", ax=axs, zorder=999
+                    x="time", y=col, s=3, c=CB_COLORS[0], ax=axs, zorder=999
                 )
         col_names += ["To be removed"]
 
@@ -130,7 +143,7 @@ def plot_residuals(
 def plot_enu_comps(
     residuals_df: pd.DataFrame,
     config: Configuration,
-    n_ticks: int = 25,
+    n_ticks: int = 15,
     figsize: Tuple[int, int] = (10, 5),
 ) -> plt.Figure:
     """Plot averaged ENU components
@@ -141,7 +154,7 @@ def plot_enu_comps(
         The residuals dataframe
     config : Config
         The configuration object
-    n_ticks : int, default 25
+    n_ticks : int, default 15
         The desired number of ticks on the x-axis
     figsize : tuple, default (10, 5)
         The figure size
@@ -178,7 +191,13 @@ def plot_enu_comps(
 
     for i, col in enumerate(constants.GPS_LOCAL_TANGENT):
         default_kwargs = dict(
-            x="time", y=col, ax=axs[i], s=2, ylabel=f"{col.title()} (cm)", zorder=2
+            x="time",
+            y=col,
+            ax=axs[i],
+            s=2,
+            ylabel=f"{col.title()} (cm)",
+            zorder=2,
+            c=CB_COLORS[0],  # Black
         )
         labelbottom = True
 
