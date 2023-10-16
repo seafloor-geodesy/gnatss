@@ -754,6 +754,7 @@ def main(
     config: Configuration,
     all_files_dict: Dict[str, Any],
     extract_process_dataset: bool = False,
+    outlier_threshold: float = 25.0,
 ) -> Tuple[
     List[float],
     Dict[str, Any],
@@ -823,11 +824,18 @@ def main(
 
     # Print out the number of outliers detected
     n_outliers = len(outliers_df)
-    message = f"There are {n_outliers} outliers found during this run. "
+    percent_outliers = np.round((n_outliers / all_epochs.size) * 100.0, 2)
+    message = f"There are {n_outliers} outliers found during this run.\n"
     if n_outliers > 0:
-        message += "Please modify your residual limit."
+        message += f"This is {percent_outliers}% of the total number of data points.\n"
+        message += "Please re-run the program again to remove these outliers.\n"
+        if percent_outliers > outlier_threshold:
+            raise RuntimeError(
+                "The number of outliers is greater than the threshold of "
+                f"{outlier_threshold}%. Please check your residual limit"
+            )
 
-    typer.echo(message + "\n")
+    typer.echo(message)
 
     # Extracts process dataset when specified
     process_ds = None

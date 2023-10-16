@@ -35,6 +35,13 @@ def run(
     extract_process_dataset: Optional[bool] = typer.Option(
         False, help="Flag to extract process results."
     ),
+    outlier_threshold: Optional[float] = typer.Option(
+        25.0,
+        help=(
+            "Threshold for allowable percentage of outliers "
+            "before raising a runtime error."
+        ),
+    ),
     distance_limit: Optional[float] = typer.Option(
         None,
         help=(
@@ -74,6 +81,7 @@ def run(
         config,
         all_files_dict,
         extract_process_dataset=extract_process_dataset,
+        outlier_threshold=outlier_threshold,
     )
 
     # TODO: Switch to fsspec so we can save anywhere
