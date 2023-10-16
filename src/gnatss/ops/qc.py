@@ -123,6 +123,7 @@ def plot_residuals(
     )
     plt.xticks(ticks=ticks, labels=labels, rotation=45, ha="right")
 
+    fig.tight_layout()
     return fig
 
 
@@ -199,4 +200,5 @@ def plot_enu_comps(
 
     plt.xticks(ticks=ticks, labels=labels, rotation=45, ha="right")
 
+    fig.tight_layout()
     return fig
