@@ -754,7 +754,7 @@ def main(
     config: Configuration,
     all_files_dict: Dict[str, Any],
     extract_process_dataset: bool = False,
-    outlier_threshold: float = 25.0,
+    outlier_threshold: float = constants.DATA_OUTLIER_THRESHOLD,
 ) -> Tuple[
     List[float],
     Dict[str, Any],

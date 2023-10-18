@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from . import package_name
+from . import constants, package_name
 from .configs.io import CSVOutput
 from .configs.solver import Solver
 from .loaders import load_configuration
@@ -36,7 +36,7 @@ def run(
         False, help="Flag to extract process results."
     ),
     outlier_threshold: Optional[float] = typer.Option(
-        25.0,
+        constants.DATA_OUTLIER_THRESHOLD,
         help=(
             "Threshold for allowable percentage of outliers "
             "before raising a runtime error."
