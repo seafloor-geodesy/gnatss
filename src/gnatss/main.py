@@ -831,7 +831,7 @@ def main(
         message += "Please re-run the program again to remove these outliers.\n"
         if percent_outliers > outlier_threshold:
             raise RuntimeError(
-                "The number of outliers is greater than the threshold of "
+                f"The number of outliers ({percent_outliers}%) is greater than the threshold of "
                 f"{outlier_threshold}%. Please check your residual limit"
             )
 
