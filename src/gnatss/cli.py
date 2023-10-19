@@ -56,6 +56,9 @@ def run(
             f". {OVERRIDE_MESSAGE}"
         ),
     ),
+    qc: Optional[bool] = typer.Option(
+        False, help="Flag to plot residuals from run and store in output folder."
+    ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
@@ -114,3 +117,17 @@ def run(
             f"dataset to {str(process_dataset_nc.absolute())}"
         )
         process_ds.to_netcdf(process_dataset_nc)
+
+    if qc:
+        from .ops.qc import plot_enu_comps, plot_residuals
+
+        res_png = output_path / "residuals.png"
+        enu_comp_png = output_path / "residuals_enu_components.png"
+
+        # Plot the figures
+        res_figure = plot_residuals(resdf, outliers_df)
+        enu_figure = plot_enu_comps(resdf, config)
+
+        # Save the figures
+        res_figure.savefig(res_png)
+        enu_figure.savefig(enu_comp_png)
