@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from . import package_name
+from . import constants, package_name
 from .configs.io import CSVOutput
 from .configs.solver import Solver
 from .loaders import load_configuration
@@ -34,6 +34,13 @@ def run(
     ),
     extract_process_dataset: Optional[bool] = typer.Option(
         False, help="Flag to extract process results."
+    ),
+    outlier_threshold: Optional[float] = typer.Option(
+        constants.DATA_OUTLIER_THRESHOLD,
+        help=(
+            "Threshold for allowable percentage of outliers "
+            "before raising a runtime error."
+        ),
     ),
     distance_limit: Optional[float] = typer.Option(
         None,
@@ -74,6 +81,7 @@ def run(
         config,
         all_files_dict,
         extract_process_dataset=extract_process_dataset,
+        outlier_threshold=outlier_threshold,
     )
 
     # TODO: Switch to fsspec so we can save anywhere

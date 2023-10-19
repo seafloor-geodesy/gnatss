@@ -9,6 +9,7 @@ __all__ = ["garpos"]
 # General constants
 SIG_3D = "sig_3d"
 DELAY_TIME_PRECISION = 6
+DATA_OUTLIER_THRESHOLD = 25.0
 
 # Data columns for sound profile
 SP_DEPTH = "depth"

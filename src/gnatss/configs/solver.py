@@ -160,7 +160,7 @@ class Solver(BaseModel):
         ),
     )
     residual_limit: float = Field(
-        50.0,
+        10000.0,
         ge=0.0,
         description=(
             "Maximum residual in centimeters beyond "
