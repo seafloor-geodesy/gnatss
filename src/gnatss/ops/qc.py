@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from nptyping import Float64, NDArray, Shape, String
 
 from .. import constants
 from ..configs.main import Configuration
@@ -45,7 +46,7 @@ def _sec_to_iso(sec: float, fmt: str = "unix_j2000") -> str:
 
 def _compute_ticks_and_labels(
     data: pd.DataFrame, n_ticks: int = 25, time_col: str = "time"
-) -> Tuple:
+) -> Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], String]]:
     """Compute ticks and labels for x-axis
 
     Parameters
@@ -61,9 +62,9 @@ def _compute_ticks_and_labels(
 
     Returns
     -------
-    ticks : np.ndarray
+    ticks : (N,) ndarray
         The ticks values
-    labels : np.ndarray
+    labels : (N,) ndarray
         The tick labels
     """
     time_min = data[time_col].min()
