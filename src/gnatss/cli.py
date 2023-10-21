@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from . import package_name
+from . import constants, package_name
 from .configs.io import CSVOutput
 from .configs.solver import Solver
 from .loaders import load_configuration
@@ -35,6 +35,13 @@ def run(
     extract_process_dataset: Optional[bool] = typer.Option(
         False, help="Flag to extract process results."
     ),
+    outlier_threshold: Optional[float] = typer.Option(
+        constants.DATA_OUTLIER_THRESHOLD,
+        help=(
+            "Threshold for allowable percentage of outliers "
+            "before raising a runtime error."
+        ),
+    ),
     distance_limit: Optional[float] = typer.Option(
         None,
         help=(
@@ -48,6 +55,9 @@ def run(
             f"{Solver.model_fields.get('residual_limit').description}"
             f". {OVERRIDE_MESSAGE}"
         ),
+    ),
+    qc: Optional[bool] = typer.Option(
+        False, help="Flag to plot residuals from run and store in output folder."
     ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
@@ -74,6 +84,7 @@ def run(
         config,
         all_files_dict,
         extract_process_dataset=extract_process_dataset,
+        outlier_threshold=outlier_threshold,
     )
 
     # TODO: Switch to fsspec so we can save anywhere
@@ -106,3 +117,17 @@ def run(
             f"dataset to {str(process_dataset_nc.absolute())}"
         )
         process_ds.to_netcdf(process_dataset_nc)
+
+    if qc:
+        from .ops.qc import plot_enu_comps, plot_residuals
+
+        res_png = output_path / "residuals.png"
+        enu_comp_png = output_path / "residuals_enu_components.png"
+
+        # Plot the figures
+        res_figure = plot_residuals(resdf, outliers_df)
+        enu_figure = plot_enu_comps(resdf, config)
+
+        # Save the figures
+        res_figure.savefig(res_png)
+        enu_figure.savefig(enu_comp_png)
