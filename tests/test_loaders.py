@@ -2,7 +2,6 @@ from typing import Any, Dict
 
 import pandas as pd
 import pytest
-from numpy import isclose
 from pandas import DataFrame, read_csv
 from pandas.api.types import is_float_dtype
 
@@ -73,16 +72,5 @@ def test_load_gps_solutions(all_files_dict, time_round):
     assert loaded_gps_solutions.shape == raw_gps_solutions.shape
 
     # Verify rounding decimal precision of GPS_TIME column
-    gps_times = pd.concat(
-        [loaded_gps_solutions[GPS_TIME], raw_gps_solutions[GPS_TIME]],
-        axis=1,
-        keys=[f"loaded_gps_solutions_{GPS_TIME}", f"raw_gps_solutions_{GPS_TIME}"],
-    )
-    gps_times["equality"] = gps_times.apply(
-        lambda row: isclose(
-            row[f"loaded_gps_solutions_{GPS_TIME}"],
-            row[f"raw_gps_solutions_{GPS_TIME}"].round(time_round),
-        ),
-        axis=1,
-    )
-    assert gps_times["equality"].all()
+    raw_gps_solutions[GPS_TIME] = raw_gps_solutions[GPS_TIME].round(time_round)
+    assert loaded_gps_solutions[GPS_TIME].equals(raw_gps_solutions[GPS_TIME])
