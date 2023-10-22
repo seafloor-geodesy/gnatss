@@ -35,7 +35,7 @@ solver:
     sound_speed:
       path: ./tests/data/2022/NCL1/ctd/CTD_NCL1_Ch_Mi
     travel_times:
-      path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt*
+      path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
     gps_solution:
       path: ./tests/data/2022/NCL1/**/posfilter/POS_FREED_TRANS_TWTT
     # Make deletions file optional
