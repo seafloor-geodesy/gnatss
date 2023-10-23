@@ -1,12 +1,13 @@
 from typing import Any, Dict
 
+import pandas as pd
 import pytest
-from numpy import float64
-from pandas import DataFrame
+from pandas import DataFrame, read_csv
+from pandas.api.types import is_float_dtype
 
 from gnatss.configs.main import Configuration
-from gnatss.constants import SP_DEPTH, SP_SOUND_SPEED
-from gnatss.loaders import load_configuration, load_sound_speed
+from gnatss.constants import GPS_COV, GPS_GEOCENTRIC, GPS_TIME, SP_DEPTH, SP_SOUND_SPEED
+from gnatss.loaders import load_configuration, load_gps_solutions, load_sound_speed
 from gnatss.main import gather_files
 from tests import TEST_DATA_FOLDER
 
@@ -19,7 +20,7 @@ def all_files_dict() -> Dict[str, Any]:
 
 @pytest.mark.parametrize(
     "config_yaml_path",
-    [(None), (TEST_DATA_FOLDER / "invalid_config.yaml")],
+    [None, TEST_DATA_FOLDER / "invalid_config.yaml"],
 )
 def test_load_configuration_invalid_path(config_yaml_path):
     if config_yaml_path is None:
@@ -40,4 +41,36 @@ def test_load_sound_speed(all_files_dict):
     svdf = load_sound_speed(all_files_dict["sound_speed"])
     assert isinstance(svdf, DataFrame)
     assert {SP_DEPTH, SP_SOUND_SPEED} == set(svdf.columns.values.tolist())
-    assert svdf.dtypes[SP_DEPTH] == float64 and svdf.dtypes[SP_SOUND_SPEED] == float64
+    assert is_float_dtype(svdf[SP_DEPTH]) and is_float_dtype(svdf[SP_SOUND_SPEED])
+
+
+@pytest.mark.parametrize(
+    "time_round",
+    [3, 6],
+)
+def test_load_gps_solutions(all_files_dict, time_round):
+    loaded_gps_solutions = load_gps_solutions(
+        all_files_dict["gps_solution"], time_round
+    )
+    expected_columns = [GPS_TIME, *GPS_GEOCENTRIC, *GPS_COV]
+
+    assert isinstance(loaded_gps_solutions, DataFrame)
+    assert set(expected_columns) == set(loaded_gps_solutions.columns.values.tolist())
+    assert all(
+        is_float_dtype(loaded_gps_solutions[column])
+        for column in loaded_gps_solutions.columns
+    )
+
+    raw_gps_solutions = pd.concat(
+        [
+            read_csv(i, delim_whitespace=True, header=None, names=expected_columns)
+            for i in all_files_dict["gps_solution"]
+        ]
+    ).reset_index(drop=True)
+
+    # Dimension of raw_gps_solutions df should equal loaded_gps_solutions df
+    assert loaded_gps_solutions.shape == raw_gps_solutions.shape
+
+    # Verify rounding decimal precision of GPS_TIME column
+    raw_gps_solutions[GPS_TIME] = raw_gps_solutions[GPS_TIME].round(time_round)
+    assert loaded_gps_solutions[GPS_TIME].equals(raw_gps_solutions[GPS_TIME])
