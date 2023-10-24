@@ -1,13 +1,26 @@
 from typing import Any, Dict, List
 
+import pandas as pd
 import pytest
-from numpy import float64
 from pandas import DataFrame, concat, read_csv
 from pandas.api.types import is_float_dtype
 
 from gnatss.configs.main import Configuration
-from gnatss.constants import SP_DEPTH, SP_SOUND_SPEED, TT_DATE, TT_TIME
-from gnatss.loaders import load_configuration, load_sound_speed, load_travel_times
+from gnatss.constants import (
+    GPS_COV,
+    GPS_GEOCENTRIC,
+    GPS_TIME,
+    SP_DEPTH,
+    SP_SOUND_SPEED,
+    TT_DATE,
+    TT_TIME,
+)
+from gnatss.loaders import (
+    load_configuration,
+    load_gps_solutions,
+    load_sound_speed,
+    load_travel_times,
+)
 from gnatss.main import gather_files
 from tests import TEST_DATA_FOLDER
 
@@ -31,7 +44,7 @@ def all_files_dict_j2k_travel_times() -> Dict[str, Any]:
 
 @pytest.mark.parametrize(
     "config_yaml_path",
-    [(None), (TEST_DATA_FOLDER / "invalid_config.yaml")],
+    [None, TEST_DATA_FOLDER / "invalid_config.yaml"],
 )
 def test_load_configuration_invalid_path(config_yaml_path):
     if config_yaml_path is None:
@@ -52,7 +65,7 @@ def test_load_sound_speed(all_files_dict):
     svdf = load_sound_speed(all_files_dict["sound_speed"])
     assert isinstance(svdf, DataFrame)
     assert {SP_DEPTH, SP_SOUND_SPEED} == set(svdf.columns.values.tolist())
-    assert svdf.dtypes[SP_DEPTH] == float64 and svdf.dtypes[SP_SOUND_SPEED] == float64
+    assert is_float_dtype(svdf[SP_DEPTH]) and is_float_dtype(svdf[SP_SOUND_SPEED])
 
 
 @pytest.fixture
@@ -69,7 +82,17 @@ def transponder_ids() -> List[str]:
 def test_load_j2k_travel_times(
     transponder_ids, all_files_dict_j2k_travel_times, is_j2k, time_scale
 ):
-    if is_j2k:
+    if not is_j2k:
+        # load_travel_times() should raise Exception
+        # if called with is_j2k=False on j2k type travel time files
+        with pytest.raises(AttributeError):
+            _ = load_travel_times(
+                files=all_files_dict_j2k_travel_times["travel_times"],
+                transponder_ids=transponder_ids,
+                is_j2k=is_j2k,
+                time_scale=time_scale,
+            )
+    else:
         loaded_travel_times = load_travel_times(
             files=all_files_dict_j2k_travel_times["travel_times"],
             transponder_ids=transponder_ids,
@@ -107,16 +130,6 @@ def test_load_j2k_travel_times(
         assert loaded_travel_times[transponder_ids].equals(
             raw_travel_times[transponder_ids].apply(lambda x: x * 1e-6)
         )
-    else:
-        # load_travel_times() should raise Exception
-        # if called with is_j2k=False on j2k type travel time files
-        with pytest.raises(AttributeError):
-            _ = load_travel_times(
-                files=all_files_dict_j2k_travel_times["travel_times"],
-                transponder_ids=transponder_ids,
-                is_j2k=is_j2k,
-                time_scale=time_scale,
-            )
 
 
 @pytest.mark.parametrize(
@@ -172,3 +185,35 @@ def test_load_non_j2k_travel_times(transponder_ids, all_files_dict, is_j2k, time
                 is_j2k=is_j2k,
                 time_scale=time_scale,
             )
+
+
+@pytest.mark.parametrize(
+    "time_round",
+    [3, 6],
+)
+def test_load_gps_solutions(all_files_dict, time_round):
+    loaded_gps_solutions = load_gps_solutions(
+        all_files_dict["gps_solution"], time_round
+    )
+    expected_columns = [GPS_TIME, *GPS_GEOCENTRIC, *GPS_COV]
+
+    assert isinstance(loaded_gps_solutions, DataFrame)
+    assert set(expected_columns) == set(loaded_gps_solutions.columns.values.tolist())
+    assert all(
+        is_float_dtype(loaded_gps_solutions[column])
+        for column in loaded_gps_solutions.columns
+    )
+
+    raw_gps_solutions = pd.concat(
+        [
+            read_csv(i, delim_whitespace=True, header=None, names=expected_columns)
+            for i in all_files_dict["gps_solution"]
+        ]
+    ).reset_index(drop=True)
+
+    # Dimension of raw_gps_solutions df should equal loaded_gps_solutions df
+    assert loaded_gps_solutions.shape == raw_gps_solutions.shape
+
+    # Verify rounding decimal precision of GPS_TIME column
+    raw_gps_solutions[GPS_TIME] = raw_gps_solutions[GPS_TIME].round(time_round)
+    assert loaded_gps_solutions[GPS_TIME].equals(raw_gps_solutions[GPS_TIME])
