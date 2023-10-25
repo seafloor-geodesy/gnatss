@@ -75,6 +75,50 @@ def transponder_ids() -> List[str]:
     return [t.pxp_id for t in transponders]
 
 
+def _load_travel_times_pass_testcase_helper(
+    expected_columns, travel_times, transponder_ids, is_j2k, time_scale
+):
+    loaded_travel_times = load_travel_times(
+        files=travel_times,
+        transponder_ids=transponder_ids,
+        is_j2k=is_j2k,
+        time_scale=time_scale,
+    )
+
+    # raw_travel_times contains the expected df
+    raw_travel_times = concat(
+        [
+            read_csv(i, delim_whitespace=True, header=None)
+            for i in travel_times
+            if PARSED_FILE not in i
+        ]
+    ).reset_index(drop=True)
+
+    column_num_diff = len(expected_columns) - len(raw_travel_times.columns)
+    if column_num_diff < 0:
+        raw_travel_times = raw_travel_times.iloc[:, :column_num_diff]
+    raw_travel_times.columns = expected_columns
+
+    if not is_j2k:
+        raw_travel_times = raw_travel_times.drop([TT_DATE], axis=1)
+
+    # Assert that df returned from "loaded_travel_times()" matches parameters of expected df
+    assert isinstance(loaded_travel_times, DataFrame)
+    assert all(
+        is_float_dtype(loaded_travel_times[column])
+        for column in [*transponder_ids, TT_TIME]
+    )
+    assert loaded_travel_times.shape == raw_travel_times.shape
+    assert set(loaded_travel_times.columns.values.tolist()) == set(
+        raw_travel_times.columns.values.tolist()
+    )
+
+    # Verify microsecond to second conversion for each transponder_id column
+    assert loaded_travel_times[transponder_ids].equals(
+        raw_travel_times[transponder_ids].apply(lambda x: x * 1e-6)
+    )
+
+
 @pytest.mark.parametrize(
     "is_j2k, time_scale",
     [(True, "tt"), (False, "tt")],
@@ -93,42 +137,13 @@ def test_load_j2k_travel_times(
                 time_scale=time_scale,
             )
     else:
-        loaded_travel_times = load_travel_times(
-            files=all_files_dict_j2k_travel_times["travel_times"],
-            transponder_ids=transponder_ids,
-            is_j2k=is_j2k,
-            time_scale=time_scale,
-        )
-
-        # raw_travel_times contains the expected df
-        raw_travel_times = concat(
-            [
-                read_csv(i, delim_whitespace=True, header=None)
-                for i in all_files_dict_j2k_travel_times["travel_times"]
-                if PARSED_FILE not in i
-            ]
-        ).reset_index(drop=True)
-
         expected_columns = [TT_TIME, *transponder_ids]
-        column_num_diff = len(expected_columns) - len(raw_travel_times.columns)
-        if column_num_diff < 0:
-            raw_travel_times = raw_travel_times.iloc[:, :column_num_diff]
-        raw_travel_times.columns = expected_columns
-
-        # Assert that df returned from "loaded_travel_times()" matches parameters of expected df
-        assert isinstance(loaded_travel_times, DataFrame)
-        assert all(
-            is_float_dtype(loaded_travel_times[column])
-            for column in [*transponder_ids, TT_TIME]
-        )
-        assert loaded_travel_times.shape == raw_travel_times.shape
-        assert set(loaded_travel_times.columns.values.tolist()) == set(
-            raw_travel_times.columns.values.tolist()
-        )
-
-        # Verify microsecond to second conversion for each transponder_id column
-        assert loaded_travel_times[transponder_ids].equals(
-            raw_travel_times[transponder_ids].apply(lambda x: x * 1e-6)
+        _load_travel_times_pass_testcase_helper(
+            expected_columns,
+            all_files_dict_j2k_travel_times["travel_times"],
+            transponder_ids,
+            is_j2k,
+            time_scale,
         )
 
 
@@ -137,45 +152,7 @@ def test_load_j2k_travel_times(
     [(True, "tt"), (False, "tt")],
 )
 def test_load_non_j2k_travel_times(transponder_ids, all_files_dict, is_j2k, time_scale):
-    if not is_j2k:
-        expected_columns = [TT_DATE, TT_TIME, *transponder_ids]
-        loaded_travel_times = load_travel_times(
-            files=all_files_dict["travel_times"],
-            transponder_ids=transponder_ids,
-            is_j2k=is_j2k,
-            time_scale=time_scale,
-        )
-
-        # raw_travel_times contains the expected df
-        raw_travel_times = concat(
-            [
-                read_csv(i, delim_whitespace=True, header=None)
-                for i in all_files_dict["travel_times"]
-                if PARSED_FILE not in i
-            ]
-        ).reset_index(drop=True)
-        column_num_diff = len(expected_columns) - len(raw_travel_times.columns)
-        if column_num_diff < 0:
-            raw_travel_times = raw_travel_times.iloc[:, :column_num_diff]
-        raw_travel_times.columns = expected_columns
-        raw_travel_times = raw_travel_times.drop([TT_DATE], axis=1)
-
-        # Assert that df returned from "loaded_travel_times()" matches parameters of expected df
-        assert isinstance(loaded_travel_times, DataFrame)
-        assert all(
-            is_float_dtype(loaded_travel_times[column])
-            for column in [*transponder_ids, TT_TIME]
-        )
-        assert loaded_travel_times.shape == raw_travel_times.shape
-        assert set(loaded_travel_times.columns.values.tolist()) == set(
-            raw_travel_times.columns.values.tolist()
-        )
-
-        # Verify microsecond to second conversion for each transponder_id column
-        assert loaded_travel_times[transponder_ids].equals(
-            raw_travel_times[transponder_ids].apply(lambda x: x * 1e-6)
-        )
-    else:
+    if is_j2k:
         # load_travel_times() should raise Exception
         # if called with is_j2k=True on non-j2k type travel time files
         with pytest.raises(TypeError):
@@ -185,6 +162,15 @@ def test_load_non_j2k_travel_times(transponder_ids, all_files_dict, is_j2k, time
                 is_j2k=is_j2k,
                 time_scale=time_scale,
             )
+    else:
+        expected_columns = [TT_DATE, TT_TIME, *transponder_ids]
+        _load_travel_times_pass_testcase_helper(
+            expected_columns,
+            all_files_dict["travel_times"],
+            transponder_ids,
+            is_j2k,
+            time_scale,
+        )
 
 
 @pytest.mark.parametrize(
