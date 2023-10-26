@@ -24,6 +24,7 @@ classifiers = [
 dependencies = [
     "astropy>=5.2.2,<6",
     "fsspec>=2023.3.0,<2024",
+    "matplotlib>=3.8.0<4",
     "numba>=0.56.4,<1",
     "numpy>=1.23.5,<2",
     "nptyping>=2.5.0,<3",
