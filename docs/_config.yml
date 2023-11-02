@@ -15,6 +15,12 @@ latex:
   latex_documents:
     targetname: book.tex
 
+# Parsing latex configs
+parse:
+  myst_enable_extensions:
+  - amsmath
+  - dollarmath
+
 # Add a bibtex file so that we can create citations
 # bibtex_bibfiles:
 #   - references.bib
