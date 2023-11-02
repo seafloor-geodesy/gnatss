@@ -1,10 +1,10 @@
 # Welcome to GNATSS!
 
-$`\vec{D}_1`$
+$\vec{D}_1$
 
-```math
+$$
 \vec{D}_1
-```
+$$
 
 GNATSS is an open-source software for processing Global Navigation Satellite Systems - Acoustic (GNSS-A) data for seafloor horizontal positioning.
 The software is a redevelopment of existing FORTRAN codes and shell scripts developed by C. David Chadwell for processing data including measurements made with Wave Gliders.
