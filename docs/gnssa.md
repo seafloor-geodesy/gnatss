@@ -19,21 +19,21 @@ As a quick unit check, note that $c$ has units of velocity (nominally m/s), $\ve
 
 Now let us assume that the seafloor transponder remains stationary but is offset from $X_1$, while holding the transducer position $X_G$ constant. In this case, let $a_{mod}$ be the expected travel time had the acoustic pulse traveled along $\vec{D}\_1$ and $a_{meas}$ be the measured travel time. If $a_{meas} \neq a_{mod}$, then the “true” raypath $\vec{D}_{1t}$ must differ from $\vec{D}_1$ by offset $\Delta X_1$. Assuming that 
 
-$$||X_1|| << ||\vec{D}_1||,$$ 
+$$||\Delta X_1|| << ||\vec{D}_1||,$$ 
 
-we may approximate $\hat{D}_{1t} \approx \hat{D}_1$. This lets us write a simplified equation solving for the travel time residual a1=ameas-amod,
+we may approximate $\hat{D}\_{1t} \approx \hat{D}\_1$. This lets us write a simplified equation solving for the travel time residual $\Delta a_1 = a_{meas}-a_{mod}$,
 
-D1cX1=a1.
+$$\frac{\hat{D}_1}{c} \cdot \Delta X_1 = \Delta a_1$$
 
-If we instead consider the two-way travel time, the only difference is that the raypath is multiplied by 2/c instead of 1/c.
+If we instead consider the two-way travel time, the only difference is that the raypath is multiplied by $2/c$ instead of $1/c$.
 
-Now, let us relax the constraint that XG is constant and allow the transducer at the sea surface to move, defining the transducer position when it sends an acoustic pulse to the transponder as XS and its position when it receives a reply as XR. During this time, the transponder on the seafloor is stationary but may still be offset from its assumed position by X1. In this case the travel time residual is the sum of the residual from the raypath D1S from the initial transducer position to the transponder and the residual from the return raypath D1R from the transponder to the final transducer position:
+Now, let us relax the constraint that $X_G$ is constant and allow the transducer at the sea surface to move, defining the transducer position when it sends an acoustic pulse to the transponder as $X_S$ and its position when it receives a reply as $X_R$. During this time, the transponder on the seafloor is stationary but may still be offset from its assumed position by $\Delta X_1$. In this case the travel time residual is the sum of the residual from the raypath $\vec{D}\_{1S}$ from the initial transducer position to the transponder and the residual from the return raypath $\vec{D}_{1R}$ from the transponder to the final transducer position:
 
-D1S+D1RcX1=a1S+a1R=a1.
+$$\left( \frac{\vec{D}\_{1S} + \vec{D}\_{1R}}{c} \right) \cdot \Delta X_1 = \Delta a_{1S} + \Delta a_{1R} = \Delta a_1$$
 
-Until now we have only considered a single transponder, but we may generalize this to an array with i transponders. Assuming that the array moves as a block, each transponder has the same offset, so X1=X2==Xi=X. Furthermore, since there may be subtle oceanographic variations across the array, let us assume that the raypath from the transducer to each transponder travels through a different mean sound velocity ci. With this assumption, we can define the variable Pi as
+Until now we have only considered a single transponder, but we may generalize this to an array with $i$ transponders. Assuming that the array moves as a block, each transponder has the same offset, so $\Delta X_1 = \Delta X_2 = \cdots = \Delta X_i = \Delta X$. Furthermore, since there may be subtle oceanographic variations across the array, let us assume that the raypath from the transducer to each transponder travels through a different mean sound velocity $c_i$. With this assumption, we can define the variable $\vec{P}_i$ as
 
-Pi=DiS+DiRci.
+$$\vec{P}\_i = \left( \frac{\vec{D}\_{iS} + \vec{D}_{iR}}{c_i} \right)$$
 
 Now, we can write a generalized equation relating the change in array position to the travel time residuals:
 
