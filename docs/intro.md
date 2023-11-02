@@ -1,6 +1,6 @@
 # Welcome to GNATSS!
 
-$\vec{D}_1$
+$\vec{D}_1$ blah blah blah $a_{edfg1}$ some more blah blahs
 
 $$
 \vec{D}_1
