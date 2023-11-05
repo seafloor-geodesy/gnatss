@@ -260,7 +260,7 @@ def load_gps_solutions(
 
 
 def load_deletions(
-    file_path: str, config: Configuration, time_scale="tt"
+    file_path: Optional[str], config: Configuration, time_scale="tt"
 ) -> pd.DataFrame:
     """
     Loads the raw deletion text file into a pandas dataframe
