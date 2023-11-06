@@ -63,36 +63,53 @@ You will no doubt have noticed at this point that I have very deliberately struc
 
 The observations used in this inversion are not perfect, so it is a good idea to construct a weighting matrix W which depends on the uncertainties of the travel time residuals. The travel time residuals have uncertainties dependent on three sources: the acoustic measurement uncertainty of the transducer, the position uncertainty of the transducer when the acoustic pulse is sent, and the position uncertainty of the transducer when the return acoustic pulse is received. Let $\sigma_a^2$ be the variance of an acoustic measurement, $C_S$ be the $3 \times 3$ covariance matrix of the transducer position $X_S$, and $C_R$ be the $3 \times 3$ covariance matrix of the transducer position $X_R$. Assuming that $\Delta a$ is a stochastic variable, the error propagation to derive the $i \times i$ matrix $W$ may be written out as:
 
-W=a2I+aXSTCSaXS+aXRTCRaXR.
+$$
+W = \sigma_a^2 I + \left( \left( \frac{\partial \Delta \vec{a}}{\partial X_S} \right)^T \cdot C_S \cdot \left( \frac{\partial \Delta \vec{a}}{\partial X_S} \right) \right) + \left( \left( \frac{\partial \Delta \vec{a}}{\partial X_R} \right)^T \cdot C_R \cdot \left( \frac{\partial \Delta \vec{a}}{\partial X_R} \right) \right)
+$$
 
 Note that in the above formulation, the partial derivatives simplify to:
 
-aXS=D1Sc1, D2Sc2,,DiSci,
-aXR=D1Rc1, D2Rc2,,DiRci.
+$$
+\frac{\partial \Delta \vec{a}}{\partial X_S} = \left( \frac{\hat{D}_{1S}}{c_1}, \frac{\hat{D}_{2S}}{c2}, \cdots , \frac{\hat{D}_{iS}}{ci} \right),
+$$
 
-As another unit check, the elements in the partial derivatives above all have units of slowness (nominally s/m) and the elements of Cs and CR all have units of length squared (nominally m2), so the entire matrix multiplication will result in a covariance matrix whose elements have units of time squared (nominally s2). Likewise, a2 also has units of time squared so the units of W are consistent.
+$$
+\frac{\partial \Delta \vec{a}}{\partial X_R} = \left( \frac{\hat{D}_{1R}}{c_1}, \frac{\hat{D}_{2R}}{c2}, \cdots , \frac{\hat{D}_{iR}}{ci} \right)
+$$
 
-As one final note for constructing W, it is possible to save some computing time by assuming that XS and XR are close to each other and that CSCR. In this case you only have to compute the above matrix multiplication once and can write W as
+As another unit check, the elements in the partial derivatives above all have units of slowness (nominally s/m) and the elements of $C_S$ and $C_R$ all have units of length squared (nominally m{sup}`2`), so the entire matrix multiplication will result in a covariance matrix whose elements have units of time squared (nominally s{sup}`2`). Likewise, $\sigma_a^2$ also has units of time squared so the units of $W$ are consistent.
 
-W=a2I+2aXSTCSaXS.
+As one final note for constructing $W$, it is possible to save some computing time by assuming that $X_S$ and $X_R$ are close to each other and that $C_S \approx C_R$. In this case you only have to compute the above matrix multiplication once and can write $W$ as
+
+$$
+W = \sigma_a^2 I + 2 \left( \left( \frac{\partial \Delta \vec{a}}{\partial X_S} \right)^T \cdot C_S \cdot \left( \frac{\partial \Delta \vec{a}}{\partial X_S} \right) \right)
+$$
 
 Following this, the weighted inversion may be written out as
 
-ATWAX=ATWa.
+$$
+A^T W A \cdot \Delta X = A^T W \cdot \Delta \vec{a}
+$$
 
 This inversion may be solved according to the user’s preference, such as with the method of least squares.
 
-One more consideration is that in the real world we do not collect a single travel time measurement for each transponder but rather a time series of measurements during which the seafloor transponders are stationary but the sea surface transducer moves. In this case, we can construct the A, W, and a variables by calculating them at each epoch j as detailed above and then summing them prior to the inversion. Thus,
+One more consideration is that in the real world we do not collect a single travel time measurement for each transponder but rather a time series of measurements during which the seafloor transponders are stationary but the sea surface transducer moves. In this case, we can construct the $A$, $W$, and $\Delta \vec{a}$ variables by calculating them at each epoch $j$ as detailed above and then summing them prior to the inversion. Thus,
 
-jAjTWjAjX=jAjTWjaj.
+$$
+\left( \sum_j A_j^T W_j A_j \right) \cdot \Delta X = \left( \sum_j A_j^T W_j \Delta \vec{a}_j \right)
+$$
 
-You may also want to construct a pseudo-constraint matrix Q in addition to the above variables to perform a constrained inversion. For instance, you could construct a Q matrix to keep the baselines between transponders constant and force them to resolve the same X.
+You may also want to construct a pseudo-constraint matrix $Q$ in addition to the above variables to perform a constrained inversion. For instance, you could construct a $Q$ matrix to keep the baselines between transponders constant and force them to resolve the same $\Delta X$.
 
-In addition, the inversion may not always converge immediately. In this case you may iterate the inversion until its solution converges. Let the solution of the kth inversion be Xk. Simply repeat the inversion on subsequent iterations while updating the transponder positions such that 
+In addition, the inversion may not always converge immediately. In this case you may iterate the inversion until its solution converges. Let the solution of the $k$th inversion be $\Delta X_k$. Simply repeat the inversion on subsequent iterations while updating the transponder positions such that 
 
-Xki=Xi+0k-1Xk.
+$$
+\Delta X_{ki} = \Delta X_i + \sum_0^{k-1} \Delta X_k
+$$
 
 The final transponder offsets will be
 
-X=kXk.
+$$
+\Delta X = \sum_k \Delta X_k
+$$
 
