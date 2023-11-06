@@ -6,5 +6,6 @@ root: intro
 parts:
   - caption: Help & reference
     chapters:
+    - file: gnssa
     - file: configs
     - file: api
