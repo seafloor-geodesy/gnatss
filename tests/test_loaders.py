@@ -5,7 +5,7 @@ import pytest
 from pandas import DataFrame, concat, read_csv
 from pandas.api.types import is_float_dtype
 
-from gnatss.configs.io import CSVOutput
+from gnatss.configs.io import CSVOutput, InputData
 from gnatss.configs.main import Configuration
 from gnatss.constants import (
     DEL_ENDTIME,
@@ -222,6 +222,7 @@ def create_and_cleanup_outliers_file(
     configuration,
 ):
     outliers_file = Path(configuration.output.path) / CSVOutput.outliers.value
+    deletions_file = Path(configuration.output.path) / CSVOutput.deletions.value
     loaded_travel_times = load_travel_times(
         files=all_files_dict["travel_times"],
         transponder_ids=transponder_ids,
@@ -229,12 +230,13 @@ def create_and_cleanup_outliers_file(
         time_scale="tt",
     )
     outliers_df = loaded_travel_times.sample(frac=0.05)
+    outliers_file.unlink(missing_ok=True)
+    deletions_file.unlink(missing_ok=True)
     outliers_df.to_csv(outliers_file, index=False)
 
     yield
 
     # deletions_file is created by load_deletions()
-    deletions_file = Path(configuration.output.path) / CSVOutput.deletions.value
     deletions_file.unlink()
 
 
@@ -259,7 +261,10 @@ def create_and_cleanup_outliers_and_deletions_files(
         columns=[DEL_STARTTIME, DEL_ENDTIME],
     )
 
+    outliers_file.unlink(missing_ok=True)
     outliers_df.to_csv(outliers_file, index=False)
+
+    deletions_file.unlink(missing_ok=True)
     deletions_df.to_csv(deletions_file, index=False)
 
     yield
@@ -267,7 +272,7 @@ def create_and_cleanup_outliers_and_deletions_files(
     deletions_file.unlink()
 
 
-def test_load_deletions_outliers_and_deletions_case(
+def test_load_deletions_outliers_and_deletions(
     configuration,
     create_and_cleanup_outliers_and_deletions_files,
 ):
@@ -280,13 +285,13 @@ def test_load_deletions_outliers_and_deletions_case(
     assert outliers_file.is_file()
     assert deletions_file.is_file()
 
-    loaded_cut_df = load_deletions(None, configuration, "tt")
+    loaded_deletions_df = load_deletions(None, configuration, "tt")
 
     # Assert concatenation of outliers and deletions df
-    assert loaded_cut_df.shape[0] == outliers_rows + deletions_rows
-    assert loaded_cut_df.columns.tolist() == [DEL_STARTTIME, DEL_ENDTIME]
-    assert is_float_dtype(loaded_cut_df[DEL_STARTTIME]) and is_float_dtype(
-        loaded_cut_df[DEL_ENDTIME]
+    assert loaded_deletions_df.shape[0] == outliers_rows + deletions_rows
+    assert loaded_deletions_df.columns.tolist() == [DEL_STARTTIME, DEL_ENDTIME]
+    assert is_float_dtype(loaded_deletions_df[DEL_STARTTIME]) and is_float_dtype(
+        loaded_deletions_df[DEL_ENDTIME]
     )
 
     # Verify outliers_file is not present and
@@ -308,15 +313,53 @@ def test_load_deletions_outliers_only_case(
     assert outliers_file.is_file()
     assert not deletions_file.is_file()
 
-    loaded_cut_df = load_deletions(None, configuration, "tt")
+    loaded_deletions_df = load_deletions(None, configuration, "tt")
 
-    assert loaded_cut_df.shape[0] == outliers_rows
-    assert loaded_cut_df.columns.tolist() == [DEL_STARTTIME, DEL_ENDTIME]
-    assert is_float_dtype(loaded_cut_df[DEL_STARTTIME]) and is_float_dtype(
-        loaded_cut_df[DEL_ENDTIME]
+    assert loaded_deletions_df.shape[0] == outliers_rows
+    assert loaded_deletions_df.columns.tolist() == [DEL_STARTTIME, DEL_ENDTIME]
+    assert is_float_dtype(loaded_deletions_df[DEL_STARTTIME]) and is_float_dtype(
+        loaded_deletions_df[DEL_ENDTIME]
     )
 
     # Verify outliers_file is not present and
     # deletions_file is present after calling load_deletions()
     assert not outliers_file.is_file()
     assert deletions_file.is_file()
+
+
+def test_load_deletions_outliers_and_deletions_from_config(
+    configuration,
+    create_and_cleanup_outliers_file,
+):
+    # Use config.yaml to load deletions file
+    configuration.solver.input_files.deletions = InputData(
+        path="./tests/data/2022/**/deletns.dat"
+    )
+
+    config_deletions_file = gather_files(configuration)["deletions"][0]
+    outliers_file = Path(configuration.output.path) / CSVOutput.outliers.value
+    deletions_file = Path(configuration.output.path) / CSVOutput.deletions.value
+
+    outliers_rows = pd.read_csv(outliers_file).shape[0]
+    config_deletions_rows = pd.read_fwf(config_deletions_file, header=None).shape[0]
+
+    # Verify outliers_file and config_deletions_file is present and
+    # output deletions_file is not present before calling load_deletions()
+    assert outliers_file.is_file()
+    assert Path(config_deletions_file).is_file()
+    assert not deletions_file.is_file()
+
+    loaded_deletions_df = load_deletions(config_deletions_file, configuration, "tt")
+
+    # Assert concatenation of outliers and deletions df
+    assert loaded_deletions_df.shape[0] == outliers_rows + config_deletions_rows
+    assert loaded_deletions_df.columns.tolist() == [DEL_STARTTIME, DEL_ENDTIME]
+    assert is_float_dtype(loaded_deletions_df[DEL_STARTTIME]) and is_float_dtype(
+        loaded_deletions_df[DEL_ENDTIME]
+    )
+
+    # Verify outliers_file is not present and
+    # deletions_file and config_deletions_file are present after calling load_deletions()
+    assert not outliers_file.is_file()
+    assert deletions_file.is_file()
+    assert Path(config_deletions_file).is_file()
