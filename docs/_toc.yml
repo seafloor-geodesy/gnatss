@@ -4,8 +4,13 @@
 format: jb-book
 root: intro
 parts:
-  - caption: Help & reference
+  - caption: Running GNATSS
+    chapters:
+    - file: input
+  - caption: GNSS-Acoustic Experimental Design
     chapters:
     - file: gnssa
+  - caption: Help & reference
+    chapters:
     - file: configs
     - file: api
