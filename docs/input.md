@@ -33,7 +33,7 @@ Acoustic two-way travel times are defined as the duration between when the trans
 26-JUN-23 00:00:52.00   2243723   2359242   2445547
 ```
 
-Each of the two-way travel time columns corresponds to the replies from a specific transponder as defined in the config.yaml file. In order to prevent interference between the replies, each transponder may be assigned an internal delay time that will elapse before sending a reply to an interrogation ping. These delay times must be defined in the config.yaml file and will be removed during positioning. 
+Each of the two-way travel time columns corresponds to the replies from a specific transponder as defined in the config.yaml file. In order to prevent interference between the replies, each transponder may be assigned an internal delay time that will elapse before sending a reply to an interrogation ping. These delay times must be defined in the config.yaml file and will be removed during positioning.
 
 There may also be a delay time associated with the surface platform corresponding to the time between when the computer sends an interrogation command and when the transducer emits an acoustic pulse. For instance, the Sonardyne GNSS-A payload has a 0.13 second delay time that is recorded in its raw two-way travel times. This delay must be removed prior to GNATSS positioning because there is not an acoustic pulse physically traveling through the water column during this time.
 
@@ -71,5 +71,3 @@ The sound velocity profile is a simple two-column text file with the first colum
 -6.9429999999999996 1502.3599999999999
 -7.9349999999999996 1502.3000000000000
 ```
-
-
