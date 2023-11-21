@@ -56,7 +56,7 @@ The information that should be defined in the config.yaml file is as follows:
   - lon: The longitude of the transponder in decimal degrees
   - height: The ellipsoidal height of the transponder in meters (negative down)
   - internal_delay: The user-defined transponder wait time in seconds. When the transponder receives an interrogation ping, it will wait for this amount of time before sending a reply ping in order to avoid interference between the replies from the array.
-  - sv_mean: An initial estimate of the average sound velocity throughout the water collumn above the transponder in m/s
+  - sv_mean: An initial estimate of the average sound velocity throughout the water column above the transponder in m/s
 - **Reference Ellipsoid** Ellipsoidal parameters of the Earth. These should not have to change.
 - **GPS Sigma Limit** This is an uncertainty threshold in meters. If the uncertainty of the surface platform position crosses this threshold, the data will not be considered in the GNSS-A positioning due to poor positioning
 - **Std_dev** Determines the uncertainty parameters of the surface platform positions. If *std_dev=true*, the position uncertainties are assumed to be standard deviations. If *std_dev=false*, the uncertainties are assumed to be variances.
@@ -74,4 +74,3 @@ The information that should be defined in the config.yaml file is as follows:
 - **Harmonic Mean Start Depth** GNATSS will automatically recalculate the harmonic mean sound velocity for each transponder in the array between the transponder depth and the starting depth defined here in meters.
 - **Input files** File paths to the CTD, *pxp_tt*, and *POS_FREED_TRANS_TWTT* files. You may choose to provide UNIX wildcard characters in the filepaths if you chose to prepare the data in daily batches, in which case GNATSS will automatically compile them. Alternatively, you may choose to provide single *pxp_tt* and *POS_FREED_TRANS_TWTT* files.
 - **Output Path** File path in which GNATSS will store positioning results.
-
