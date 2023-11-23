@@ -27,13 +27,15 @@ SECS_IN_MINUTE = 60
 SECS_IN_HOUR = 3600
 SECS_IN_DAY = 86400
 
+MAX_PLOT_XAXIS_TICKS = 15
+
 
 def _compute_ticks_and_labels(
     data: pd.DataFrame, time_col: str = "time"
 ) -> Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], String]]:
-    """Compute ticks and labels for x-axis ensuring that number of ticks stays between 5 and 15.
-    Standard intervals of 1s, 5s, 30s, 1min, 5min, 30min, 1hr, and 5hr are used whenever possible.
-    Datetime formats with 0.01s, 1s, and 1hr precision are used accordingly.
+    """Compute ticks and labels for x-axis ensuring that number of ticks stays between 4 and 15.
+    Standard intervals of 1s, 5s, 30s, 1min, 5min, 30min, 1hr, 6hr, 24hr are used whenever possible.
+    Datetime formats with 1s, and 1hr precision are used accordingly.
     Parameters
     ----------
     data : pd.DataFrame
@@ -57,13 +59,9 @@ def _compute_ticks_and_labels(
     # step defines the interval in seconds between x-axis ticks
     step = None
 
-    # Standard intervals of 1s, 5s, 30s, 1min, 5min, 30min, 1hr, 5hr
+    # Standard intervals of 1s, 5s, 30s, 1min, 5min, 30min, 1hr, 6hr, 24hr
     # are used whenever possible.
-    if time_delta <= 3:
-        num_intervals = 15
-        # step is made to 0.01 second precision
-        step = ceil((time_delta / num_intervals) * 100.0) / 100.0
-    elif time_delta <= 15:
+    if time_delta <= 15:
         step = 1
     elif time_delta <= 75:
         step = 5
@@ -77,12 +75,13 @@ def _compute_ticks_and_labels(
         step = 30 * SECS_IN_MINUTE
     elif time_delta <= 15 * SECS_IN_HOUR:
         step = 1 * SECS_IN_HOUR
-    elif time_delta <= 75 * SECS_IN_HOUR:
-        step = 5 * SECS_IN_HOUR
+    elif time_delta <= 90 * SECS_IN_HOUR:
+        step = 6 * SECS_IN_HOUR
+    elif time_delta <= 15 * SECS_IN_DAY:
+        step = 1 * SECS_IN_DAY
     else:
-        num_intervals = 15
-        # step is made to hourly precision
-        step = ceil((time_delta / num_intervals) / SECS_IN_HOUR)
+        # step is made to suitable day multiple
+        step = ceil((time_delta / MAX_PLOT_XAXIS_TICKS) / SECS_IN_DAY) * SECS_IN_DAY
 
     # Find largest multiple of step which is not greater than time_min
     initial_tick = floor(time_min / step) * step
@@ -90,19 +89,10 @@ def _compute_ticks_and_labels(
     # Find smallest multiple of step which is greater than time_max
     final_tick = (floor(time_max / step) * step) + step
 
-    ticks = np.arange(initial_tick, final_tick + step, step)
+    ticks = np.arange(float(initial_tick), float(final_tick + step), float(step))
 
-    # Datetime formats with 0.01s, 1s, and 1hr precision are used accordingly.
-    if time_delta <= 3:
-        # Format ticks with 0.01 second precision
-        labels = np.apply_along_axis(
-            lambda x: AstroTime(x, format="unix_j2000").strftime(
-                "%Y-%m-%dT%H:%M:%S.%2f"
-            ),
-            0,
-            ticks,
-        )
-    elif time_delta > 450 * SECS_IN_MINUTE:
+    # Datetime formats with 1s and 1hr precision are used accordingly.
+    if time_delta > 450 * SECS_IN_MINUTE:
         # Format ticks with hourly precision
         labels = np.apply_along_axis(
             lambda x: AstroTime(x, format="unix_j2000").strftime("%Y-%m-%dT%H:00"),
