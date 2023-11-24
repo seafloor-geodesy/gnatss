@@ -27,7 +27,7 @@ from .utilities.io import _get_filesystem
 
 def gather_files(
     config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
-) -> Dict[str, Any]:
+) -> Dict[str, List[str]]:
     """Gather file paths for the various dataset files
 
     Parameters
