@@ -33,7 +33,7 @@ solver:
   harmonic_mean_start_depth: -4.0
   input_files:
     sound_speed:
-      path: ./tests/data/2022/NCL1/ctd/CTD_NCL1_Ch_Mi
+      path: ./tests/data/2022/**/ctd/CTD_NCL_Ch_Mi
     travel_times:
       path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
     gps_solution:

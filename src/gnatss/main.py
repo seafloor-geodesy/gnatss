@@ -56,7 +56,7 @@ def gather_files(
             if "**" in path:
                 all_files = fs.glob(path)
             else:
-                all_files = path
+                all_files = [path]
 
             all_files_dict.setdefault(k, all_files)
     return all_files_dict

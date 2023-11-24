@@ -32,14 +32,14 @@ def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
     return config
 
 
-def load_sound_speed(sv_file: str) -> pd.DataFrame:
+def load_sound_speed(sv_files: List[str]) -> pd.DataFrame:
     """
     Loads sound speed file data into pandas dataframe
 
     Parameters
     ----------
-    sv_file : str
-        Path to the sound speed file to be loaded
+    sv_files : List[str]
+        The list of path string to the sound speed files to be loaded
 
     Returns
     -------
@@ -48,13 +48,14 @@ def load_sound_speed(sv_file: str) -> pd.DataFrame:
     """
     columns = [constants.SP_DEPTH, constants.SP_SOUND_SPEED]
 
-    # Read sound speed
-    return pd.read_csv(
-        sv_file,
-        delim_whitespace=True,
-        header=None,
-        names=columns,
-    )
+    sv_dfs = [
+        pd.read_csv(sv_file, delim_whitespace=True, header=None, names=columns)
+        .drop_duplicates(constants.SP_DEPTH)
+        .reset_index(drop=True)
+        for sv_file in sv_files
+    ]
+
+    return pd.concat(sv_dfs).reset_index(drop=True)
 
 
 def load_travel_times(
@@ -260,14 +261,14 @@ def load_gps_solutions(
 
 
 def load_deletions(
-    file_path: str, config: Configuration, time_scale="tt"
+    file_paths: List[str], config: Configuration, time_scale="tt"
 ) -> pd.DataFrame:
     """
     Loads the raw deletion text file into a pandas dataframe
 
     Parameters
     ----------
-    file_path : str
+    file_paths : List[str]
         Path to the deletion file to be loaded
     config : Configuration
         The configuration object
@@ -286,10 +287,26 @@ def load_deletions(
     output_path = Path(config.output.path)
     # TODO: Add additional files to be used for deletions
     default_deletions = output_path / CSVOutput.deletions.value
-    if file_path:
+    if file_paths:
         from .utilities.time import AstroTime
 
-        cut_df = pd.read_fwf(file_path, header=None)
+        """
+        Loads sound speed file data into pandas dataframe
+
+        Parameters
+        ----------
+        sv_files : List[str]
+            The list of path string to the sound speed files to be loaded
+
+        Returns
+        -------
+        pd.DataFrame
+            Sound speed profile pandas dataframe
+        """
+        cut_dfs = [pd.read_fwf(file_path, header=None) for file_path in file_paths]
+
+        cut_df = pd.concat(cut_dfs).reset_index(drop=True)
+
         # Date example: 28-JUL-22 12:30:00
         cut_df[constants.DEL_STARTTIME] = pd.to_datetime(
             cut_df[0] + "T" + cut_df[1], format="%d-%b-%yT%H:%M:%S"
