@@ -1,3 +1,4 @@
+from math import ceil, floor
 from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -22,41 +23,25 @@ CB_COLORS: List[str] = [
     "#D55E00",
     "#CC79A7",
 ]
+SECS_IN_MINUTE = 60
+SECS_IN_HOUR = 3600
+SECS_IN_DAY = 86400
 
-
-def _sec_to_iso(sec: float, fmt: str = "unix_j2000") -> str:
-    """Convert seconds to ISO format via AstroTime
-
-    Parameters
-    ----------
-    sec : float
-        The seconds to convert
-    fmt : str, default "unix_j2000"
-        The astropy time format
-
-    Returns
-    -------
-    str
-       The ISO formatted time string
-       as 'YYYY-MM-DDThh:mm:ss.dddddd'
-    """
-    astro_time = AstroTime(sec, format=fmt)
-    return astro_time.strftime("%Y-%m-%dT%H:%M:%S.%f")
+MAX_PLOT_XAXIS_TICKS = 15
 
 
 def _compute_ticks_and_labels(
-    data: pd.DataFrame, n_ticks: int = 25, time_col: str = "time"
+    data: pd.DataFrame, time_col: str = "time"
 ) -> Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], String]]:
-    """Compute ticks and labels for x-axis
-
+    """Compute ticks and labels for x-axis ensuring that number of ticks stays between 4 and 15.
+    Standard intervals of 1s, 5s, 30s, 1min, 5min, 30min, 1hr, 6hr, 24hr are used whenever possible.
+    Datetime formats with 1s, and 1hr precision are used accordingly.
     Parameters
     ----------
     data : pd.DataFrame
         The data to compute ticks and labels for
         assuming that the data has a time column
         and that the time column is in seconds
-    n_ticks : int, default 25
-        The desired number of ticks on the x-axis
     time_col : str, default "time"
         The name of the time column
 
@@ -69,16 +54,65 @@ def _compute_ticks_and_labels(
     """
     time_min = data[time_col].min()
     time_max = data[time_col].max()
-    step = (time_max - time_min) / n_ticks
-    ticks = np.arange(time_min, time_max + step, step)
-    labels = np.apply_along_axis(_sec_to_iso, 0, ticks)
+    time_delta = time_max - time_min
+
+    # step defines the interval in seconds between x-axis ticks
+    step = None
+
+    # Standard intervals of 1s, 5s, 30s, 1min, 5min, 30min, 1hr, 6hr, 24hr
+    # are used whenever possible.
+    if time_delta <= 15:
+        step = 1
+    elif time_delta <= 75:
+        step = 5
+    elif time_delta <= 450:
+        step = 30
+    elif time_delta <= 15 * SECS_IN_MINUTE:
+        step = 1 * SECS_IN_MINUTE
+    elif time_delta <= 75 * SECS_IN_MINUTE:
+        step = 5 * SECS_IN_MINUTE
+    elif time_delta <= 450 * SECS_IN_MINUTE:
+        step = 30 * SECS_IN_MINUTE
+    elif time_delta <= 15 * SECS_IN_HOUR:
+        step = 1 * SECS_IN_HOUR
+    elif time_delta <= 90 * SECS_IN_HOUR:
+        step = 6 * SECS_IN_HOUR
+    elif time_delta <= 15 * SECS_IN_DAY:
+        step = 1 * SECS_IN_DAY
+    else:
+        # step is made to suitable day multiple
+        step = ceil((time_delta / MAX_PLOT_XAXIS_TICKS) / SECS_IN_DAY) * SECS_IN_DAY
+
+    # Find largest multiple of step which is not greater than time_min
+    initial_tick = floor(time_min / step) * step
+
+    # Find smallest multiple of step which is greater than time_max
+    final_tick = (floor(time_max / step) * step) + step
+
+    ticks = np.arange(float(initial_tick), float(final_tick + step), float(step))
+
+    # Datetime formats with 1s and 1hr precision are used accordingly.
+    if time_delta > 450 * SECS_IN_MINUTE:
+        # Format ticks with hourly precision
+        labels = np.apply_along_axis(
+            lambda x: AstroTime(x, format="unix_j2000").strftime("%Y-%m-%dT%H:00"),
+            0,
+            ticks,
+        )
+    else:
+        # Format ticks with second precision
+        labels = np.apply_along_axis(
+            lambda x: AstroTime(x, format="unix_j2000").strftime("%Y-%m-%dT%H:%M:%S"),
+            0,
+            ticks,
+        )
+
     return ticks, labels
 
 
 def plot_residuals(
     residuals_df: pd.DataFrame,
     outliers_df: Optional[pd.DataFrame] = None,
-    n_ticks: int = 15,
     figsize: tuple = (10, 5),
 ) -> plt.Figure:
     """Plot residuals
@@ -89,8 +123,6 @@ def plot_residuals(
         Residuals dataframe
     outliers_df : pd.DataFrame, optional
         Outliers dataframe
-    n_ticks : int, default 15
-        The desired number of ticks on the x-axis
     figsize : tuple, default (10, 5)
         The figure size
 
@@ -133,7 +165,7 @@ def plot_residuals(
 
     # Calculate ticks and labels
     ticks, labels = _compute_ticks_and_labels(
-        residuals_df, n_ticks=n_ticks, time_col=constants.TIME_J2000
+        residuals_df, time_col=constants.TIME_J2000
     )
     plt.xticks(ticks=ticks, labels=labels, rotation=45, ha="right")
 
@@ -144,7 +176,6 @@ def plot_residuals(
 def plot_enu_comps(
     residuals_df: pd.DataFrame,
     config: Configuration,
-    n_ticks: int = 15,
     figsize: Tuple[int, int] = (10, 5),
 ) -> plt.Figure:
     """Plot averaged ENU components
@@ -155,8 +186,6 @@ def plot_enu_comps(
         The residuals dataframe
     config : Config
         The configuration object
-    n_ticks : int, default 15
-        The desired number of ticks on the x-axis
     figsize : tuple, default (10, 5)
         The figure size
 
@@ -186,9 +215,7 @@ def plot_enu_comps(
     fig, axs = plt.subplots(nrows=n_axis, figsize=figsize)
 
     # Calculate ticks and labels
-    ticks, labels = _compute_ticks_and_labels(
-        comps_df, n_ticks=n_ticks, time_col=constants.TIME_J2000
-    )
+    ticks, labels = _compute_ticks_and_labels(comps_df, time_col=constants.TIME_J2000)
 
     for i, col in enumerate(constants.GPS_LOCAL_TANGENT):
         default_kwargs = dict(
