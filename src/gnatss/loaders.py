@@ -290,21 +290,7 @@ def load_deletions(
     if file_paths:
         from .utilities.time import AstroTime
 
-        """
-        Loads sound speed file data into pandas dataframe
-
-        Parameters
-        ----------
-        sv_files : List[str]
-            The list of path string to the sound speed files to be loaded
-
-        Returns
-        -------
-        pd.DataFrame
-            Sound speed profile pandas dataframe
-        """
         cut_dfs = [pd.read_fwf(file_path, header=None) for file_path in file_paths]
-
         cut_df = pd.concat(cut_dfs).reset_index(drop=True)
 
         # Date example: 28-JUL-22 12:30:00
