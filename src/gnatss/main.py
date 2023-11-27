@@ -27,7 +27,7 @@ from .utilities.io import _get_filesystem
 
 def gather_files(
     config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
-) -> Dict[str, Any]:
+) -> Dict[str, List[str]]:
     """Gather file paths for the various dataset files
 
     Parameters
@@ -56,7 +56,7 @@ def gather_files(
             if "**" in path:
                 all_files = fs.glob(path)
             else:
-                all_files = path
+                all_files = [path]
 
             all_files_dict.setdefault(k, all_files)
     return all_files_dict

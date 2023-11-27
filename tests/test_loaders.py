@@ -331,25 +331,31 @@ def test_load_deletions_outliers_and_deletions_from_config(
     configuration,
     create_and_cleanup_outliers_file,
 ):
-    # Use config.yaml to load deletions file
+    # Use config.yaml to load deletions files
     configuration.solver.input_files.deletions = InputData(
         path="./tests/data/2022/**/deletns.dat"
     )
 
-    config_deletions_file = gather_files(configuration)["deletions"][0]
+    config_deletions_files = gather_files(configuration)["deletions"]
     outliers_file = Path(configuration.output.path) / CSVOutput.outliers.value
     deletions_file = Path(configuration.output.path) / CSVOutput.deletions.value
 
     outliers_rows = pd.read_csv(outliers_file).shape[0]
-    config_deletions_rows = pd.read_fwf(config_deletions_file, header=None).shape[0]
+    config_deletions_rows = sum(
+        [
+            pd.read_fwf(config_deletions_file, header=None).shape[0]
+            for config_deletions_file in config_deletions_files
+        ]
+    )
 
     # Verify outliers_file and config_deletions_file is present and
     # output deletions_file is not present before calling load_deletions()
     assert outliers_file.is_file()
-    assert Path(config_deletions_file).is_file()
+    for config_deletions_file in config_deletions_files:
+        assert Path(config_deletions_file).is_file()
     assert not deletions_file.is_file()
 
-    loaded_deletions_df = load_deletions(config_deletions_file, configuration, "tt")
+    loaded_deletions_df = load_deletions(config_deletions_files, configuration, "tt")
 
     # Assert concatenation of outliers and deletions df
     assert loaded_deletions_df.shape[0] == outliers_rows + config_deletions_rows
@@ -362,4 +368,5 @@ def test_load_deletions_outliers_and_deletions_from_config(
     # deletions_file and config_deletions_file are present after calling load_deletions()
     assert not outliers_file.is_file()
     assert deletions_file.is_file()
-    assert Path(config_deletions_file).is_file()
+    for config_deletions_file in config_deletions_files:
+        assert Path(config_deletions_file).is_file()
