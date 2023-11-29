@@ -423,7 +423,7 @@ def prepare_and_solve(
 
             # Get lat lon alt
             lat, lon, alt = ecef2geodetic(x, y, z)
-            lat_lon.append([lat, lon, alt])
+            lat_lon.append([lat, lon, alt - config.solver.geoid_undulation])
 
             # Retrieve apriori xyz and lat lon alt
             original_xyz = original_positions[idx]
