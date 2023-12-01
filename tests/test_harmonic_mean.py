@@ -18,7 +18,19 @@ def sound_profile_data() -> pd.DataFrame:
     "end_depth,expected_hm",
     [(-1176.5866, 1481.542), (-1146.5881, 1481.513), (-1133.7305, 1481.5)],
 )
-def test_sv_harmonic_mean(end_depth, expected_hm, sound_profile_data):
+def test_sv_harmonic_mean_scipy(end_depth, expected_hm, sound_profile_data):
+    svdf = sound_profile_data
+    start_depth = -4
+    harmonic_mean = round(sv_harmonic_mean(svdf, start_depth, end_depth, "scipy"), 3)
+
+    assert harmonic_mean == expected_hm
+
+
+@pytest.mark.parametrize(
+    "end_depth,expected_hm",
+    [(-1176.5866, 1481.551), (-1146.5881, 1481.521), (-1133.7305, 1481.509)],
+)
+def test_sv_harmonic_mean_fortran(end_depth, expected_hm, sound_profile_data):
     svdf = sound_profile_data
     start_depth = -4
     harmonic_mean = round(sv_harmonic_mean(svdf, start_depth, end_depth), 3)
