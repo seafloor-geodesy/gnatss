@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from gnatss.constants import SP_DEPTH, SP_SOUND_SPEED
-from gnatss.harmonic_mean import _compute_hm, sv_harmonic_mean
+from gnatss.harmonic_mean import _compute_hm, _sv_harmon_mean, sv_harmonic_mean
 
 from . import TEST_DATA_FOLDER
 
@@ -86,3 +86,16 @@ def test_sv_harmonic_mean_empty_dataframe():
     end_depth = 2
     with pytest.raises(ValueError):
         sv_harmonic_mean(svdf, start_depth, end_depth)
+
+
+# Add test for _sv_harmon_mean
+def test__sv_harmon_mean():
+    dd = np.array([-10, -20, -30, -40, -50])
+    sv = np.array([1500, 1490, 1480, 1470, 1460])
+    zs = -10
+    ze = -50
+
+    result = _sv_harmon_mean(dd, sv, zs, ze)
+    expected_result = 1480.0
+
+    assert np.round(result) == expected_result
