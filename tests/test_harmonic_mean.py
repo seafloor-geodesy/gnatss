@@ -38,6 +38,16 @@ def test_sv_harmonic_mean_fortran(end_depth, expected_hm, sound_profile_data):
     assert harmonic_mean == expected_hm
 
 
+def test_not_implemented(sound_profile_data):
+    svdf = sound_profile_data
+
+    start_depth = -4
+    end_depth = -1176.5866
+
+    with pytest.raises(NotImplementedError):
+        sv_harmonic_mean(svdf, start_depth, end_depth, "not_implemented")
+
+
 @pytest.mark.parametrize(
     "start_idx,end_idx,expected_hm",
     [(0, 3, 1501.535), (0, 6, 1501.07), (2, 5, 1500.915), (4, 7, 1500.295)],

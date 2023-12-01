@@ -173,5 +173,7 @@ def sv_harmonic_mean(
         sv = np.abs(svdf[SP_SOUND_SPEED].values)
 
         svhm = _sv_harmon_mean(dd, sv, start_depth, end_depth)
+    else:
+        raise NotImplementedError(f"Method {method} is not implemented!")
 
     return svhm
