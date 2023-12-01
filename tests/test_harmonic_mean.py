@@ -75,7 +75,7 @@ def test__compute_hm_missing_columns():
     svdf = pd.DataFrame({"random_column1": [1, 2, 3], "random_column2": [4, 5, 6]})
     start_depth = 0
     end_depth = 2
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         _compute_hm(svdf, start_depth, end_depth)
 
 
