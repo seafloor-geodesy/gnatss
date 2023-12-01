@@ -9,6 +9,7 @@ parts:
     chapters:
     - file: input
     - file: config_yaml
+    - file: position_inversion
   - caption: GNSS-Acoustic Experimental Design
     chapters:
     - file: gnssa
