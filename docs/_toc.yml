@@ -3,10 +3,12 @@
 
 format: jb-book
 root: intro
+  - file: install
 parts:
   - caption: Running GNATSS
     chapters:
     - file: input
+    - file: config_yaml
   - caption: GNSS-Acoustic Experimental Design
     chapters:
     - file: gnssa
