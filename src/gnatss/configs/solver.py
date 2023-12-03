@@ -48,6 +48,9 @@ class SolverInputs(BaseModel):
     deletions: Optional[InputData] = Field(
         None, description="Deletions file for unwanted data points."
     )
+    quality_controls: Optional[InputData] = Field(
+        None, description="Quality control file for user defined unwanted data points."
+    )
 
 
 class SolverGlobal(BaseModel):

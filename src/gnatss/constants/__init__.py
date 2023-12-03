@@ -19,6 +19,11 @@ SP_SOUND_SPEED = "speed"
 DEL_STARTTIME = "starttime"
 DEL_ENDTIME = "endtime"
 
+# Data columns for quality control file
+QC_STARTTIME = "starttime"
+QC_ENDTIME = "endtime"
+QC_NOTES = "notes"
+
 # Data columns for time
 TIME_ASTRO = "astro_time"  # astropy time obj
 TIME_TAI = "tai_time"  # unix tai (includes leap seconds)

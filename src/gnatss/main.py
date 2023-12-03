@@ -14,6 +14,7 @@ from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
     load_deletions,
     load_gps_solutions,
+    load_quality_control,
     load_sound_speed,
     load_travel_times,
 )
@@ -515,6 +516,15 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     all_files_dict.setdefault("deletions", "")
     typer.echo("Load deletions data...")
     cut_df = load_deletions(all_files_dict["deletions"], config=config)
+
+    # Read quality control file
+    # Set default to empty string
+    all_files_dict.setdefault("quality_controls", "")
+    typer.echo("Load quality controls data...")
+    qc_df = load_quality_control(all_files_dict["quality_controls"])
+    # Concatenate quality_controls data onto deletions data
+    if not qc_df.empty:
+        cut_df = pd.concat([cut_df, qc_df]).reset_index(drop=True)
 
     # Load travel times data
     typer.echo("Load travel times...")

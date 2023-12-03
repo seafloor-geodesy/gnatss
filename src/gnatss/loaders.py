@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import pandas as pd
 import yaml
+from pandas.api.types import is_integer_dtype, is_string_dtype
 from pydantic import ValidationError
 
 from . import constants
@@ -339,3 +340,67 @@ def load_deletions(
         cut_df.to_csv(output_path / CSVOutput.deletions.value, index=False)
 
     return cut_df
+
+
+def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
+    """
+    Loads the quality controls csv files into a pandas dataframe
+
+    Parameters
+    ----------
+    qc_files : List[str]
+        Path to the quality control files to be loaded
+    time_scale : str
+        The time scale of the datetime string input.
+        Default is 'tt' for Terrestrial Time,
+        Must be one of the following:
+        (`tai`, `tcb`, `tcg`, `tdb`,
+        `tt`, `ut1`, `utc`)
+
+    Returns
+    -------
+    pd.DataFrame
+        Deletion ranges data pandas dataframe
+    """
+    csv_columns = [constants.QC_STARTTIME, constants.QC_ENDTIME, constants.QC_NOTES]
+
+    if qc_files:
+        qc_dfs = [
+            pd.read_csv(qc_file, header=None, names=csv_columns).reset_index(drop=True)
+            for qc_file in qc_files
+        ]
+        qc_df = (
+            pd.concat(qc_dfs).reset_index(drop=True).drop(columns=[constants.QC_NOTES])
+        )
+
+        # If QC_STARTTIME & QC_ENDTIME are of string type, convert to unix_j2000 float
+        if is_string_dtype(qc_df[constants.QC_STARTTIME]) and is_string_dtype(
+            qc_df[constants.QC_ENDTIME]
+        ):
+            from .utilities.time import AstroTime
+
+            qc_df[constants.QC_STARTTIME] = qc_df[constants.QC_STARTTIME].apply(
+                lambda row: AstroTime(row, scale=time_scale, format="isot").unix_j2000
+            )
+            qc_df[constants.QC_ENDTIME] = qc_df[constants.QC_ENDTIME].apply(
+                lambda row: AstroTime(row, scale=time_scale, format="isot").unix_j2000
+            )
+
+        # If QC_STARTTIME & QC_ENDTIME are of int type,
+        # convert to float for consistency with unix_j2000 float
+        elif is_integer_dtype(qc_df[constants.QC_STARTTIME]) and is_integer_dtype(
+            qc_df[constants.QC_ENDTIME]
+        ):
+            qc_df[constants.QC_ENDTIME] = qc_df[constants.QC_ENDTIME].apply(
+                lambda row: float(row)
+            )
+
+        else:
+            # TODO: Requesting PR feedback for suitable Error message
+            raise Exception("Requesting PR feedback for suitable Error message")
+
+    # If quality control files are not configured, return empty dataframe
+    else:
+        qc_df = pd.DataFrame(columns=csv_columns)
+
+    return qc_df
