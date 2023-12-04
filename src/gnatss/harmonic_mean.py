@@ -76,7 +76,7 @@ def _sv_harmon_mean(
     """
     # Ensure that depth and sound speed arrays
     # are the same shape
-    assert dd.shape == sv.shape
+    assert dd.shape == sv.shape, f"dd and sv should have the same shape. dd:{dd.shape} != sv:{sv.shape}"
 
     zi = zs
     sum = 0.0
@@ -98,7 +98,7 @@ def _sv_harmon_mean(
         b = (c_z2 - c_z1) / (z2 - z1)
 
         # Ensure that slope is not 0
-        assert b != 0.0
+        assert b != 0.0, "Slope is zero"
 
         # Compute the weight
         wi = np.log((zi - z1) * b + c_z1) / b
@@ -149,7 +149,9 @@ def sv_harmonic_mean(
     for col in [SP_DEPTH, SP_SOUND_SPEED]:
         if col not in svdf.columns:
             raise ValueError(f"{col} column must exist in the input dataframe!")
-
+    
+    # lower the strings to normalize input
+    method = method.lower()
     if method == "scipy":
         # Make all of the values absolute values, so we're only dealing with positives
         abs_start = abs(start_depth)
@@ -163,7 +165,7 @@ def sv_harmonic_mean(
         end_depth = -np.abs(end_depth)
 
         if start_depth < end_depth:
-            raise ValueError("Start depth must be greater than end depth!")
+            raise ValueError(f"Start depth {start_depth} must be greater than end depth {end_depth}!")
 
         svdf = svdf[(svdf[SP_DEPTH].round() <= start_depth)]
         # Extract the numpy arrays for depth and sound speed
