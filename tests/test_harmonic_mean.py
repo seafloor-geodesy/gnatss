@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from gnatss.constants import SP_DEPTH, SP_SOUND_SPEED
-from gnatss.harmonic_mean import _compute_hm, sv_harmonic_mean
+from gnatss.harmonic_mean import _compute_hm, _sv_harmon_mean, sv_harmonic_mean
 
 from . import TEST_DATA_FOLDER
 
@@ -18,12 +18,34 @@ def sound_profile_data() -> pd.DataFrame:
     "end_depth,expected_hm",
     [(-1176.5866, 1481.542), (-1146.5881, 1481.513), (-1133.7305, 1481.5)],
 )
-def test_sv_harmonic_mean(end_depth, expected_hm, sound_profile_data):
+def test_sv_harmonic_mean_scipy(end_depth, expected_hm, sound_profile_data):
+    svdf = sound_profile_data
+    start_depth = -4
+    harmonic_mean = round(sv_harmonic_mean(svdf, start_depth, end_depth, "scipy"), 3)
+
+    assert harmonic_mean == expected_hm
+
+
+@pytest.mark.parametrize(
+    "end_depth,expected_hm",
+    [(-1176.5866, 1481.551), (-1146.5881, 1481.521), (-1133.7305, 1481.509)],
+)
+def test_sv_harmonic_mean_fortran(end_depth, expected_hm, sound_profile_data):
     svdf = sound_profile_data
     start_depth = -4
     harmonic_mean = round(sv_harmonic_mean(svdf, start_depth, end_depth), 3)
 
     assert harmonic_mean == expected_hm
+
+
+def test_not_implemented(sound_profile_data):
+    svdf = sound_profile_data
+
+    start_depth = -4
+    end_depth = -1176.5866
+
+    with pytest.raises(NotImplementedError):
+        sv_harmonic_mean(svdf, start_depth, end_depth, "not_implemented")
 
 
 @pytest.mark.parametrize(
@@ -63,7 +85,7 @@ def test__compute_hm_missing_columns():
     svdf = pd.DataFrame({"random_column1": [1, 2, 3], "random_column2": [4, 5, 6]})
     start_depth = 0
     end_depth = 2
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         _compute_hm(svdf, start_depth, end_depth)
 
 
@@ -74,3 +96,16 @@ def test_sv_harmonic_mean_empty_dataframe():
     end_depth = 2
     with pytest.raises(ValueError):
         sv_harmonic_mean(svdf, start_depth, end_depth)
+
+
+# Add test for _sv_harmon_mean
+def test__sv_harmon_mean():
+    dd = np.array([-10, -20, -30, -40, -50])
+    sv = np.array([1500, 1490, 1480, 1470, 1460])
+    zs = -10
+    ze = -50
+
+    result = _sv_harmon_mean(dd, sv, zs, ze)
+    expected_result = 1480.0
+
+    assert np.round(result) == expected_result
