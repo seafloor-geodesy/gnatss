@@ -396,11 +396,14 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
             )
 
         else:
-            # TODO: Requesting PR feedback for suitable Error message
-            raise Exception("Requesting PR feedback for suitable Error message")
+            msg = (
+                f"Unsupported data type found in quality_controls "
+                f"{constants.QC_STARTTIME} or {constants.QC_ENDTIME} columns."
+            )
+            raise ValueError(msg)
 
     # If quality control files are not configured, return empty dataframe
     else:
-        qc_df = pd.DataFrame(columns=csv_columns)
+        qc_df = pd.DataFrame(columns=[constants.QC_STARTTIME, constants.QC_ENDTIME])
 
     return qc_df
