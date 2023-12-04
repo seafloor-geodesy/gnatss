@@ -3,8 +3,9 @@
 
 format: jb-book
 root: intro
-  - file: install
 parts:
+  - caption: Installation
+    - file: install
   - caption: Running GNATSS
     chapters:
     - file: input
