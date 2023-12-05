@@ -4,17 +4,15 @@
 format: jb-book
 root: intro
 parts:
-  - caption: Installation
+  - caption: Getting Started
     chapters:
     - file: install
-  - caption: Running GNATSS
+    - file: gnssa
+  - caption: User Guide
     chapters:
     - file: input
     - file: config_yaml
     - file: position_inversion
-  - caption: GNSS-Acoustic Experimental Design
-    chapters:
-    - file: gnssa
   - caption: Help & reference
     chapters:
     - file: configs
