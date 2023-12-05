@@ -9,6 +9,7 @@ from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 
 from . import constants
 from .configs.main import Configuration
+from .configs.solver import SolverTransponder
 from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
     load_deletions,
@@ -26,7 +27,7 @@ from .utilities.io import _get_filesystem
 
 def gather_files(
     config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
-) -> Dict[str, Any]:
+) -> Dict[str, List[str]]:
     """Gather file paths for the various dataset files
 
     Parameters
@@ -55,7 +56,7 @@ def gather_files(
             if "**" in path:
                 all_files = fs.glob(path)
             else:
-                all_files = path
+                all_files = [path]
 
             all_files_dict.setdefault(k, all_files)
     return all_files_dict
@@ -255,6 +256,57 @@ def get_reply_times(
     return reply_times
 
 
+def _print_final_stats(
+    transponders: List[SolverTransponder], process_data: Dict[str, Any]
+):
+    """Print out final solution statistics and results"""
+    num_transponders = len(transponders)
+    # Get the latest process data
+    process_info = _get_latest_process(process_data)
+    typer.echo("---- FINAL SOLUTION ----")
+    data = process_info["data"]
+    lat_lon = process_info["transponders_lla"]
+    enu_arr = process_info["enu"]
+    sig_enu = process_info["sig_enu"]
+    transponders_xyz = process_info["transponders_xyz"]
+    for idx, tp in enumerate(transponders):
+        pxp_id = tp.pxp_id
+        typer.echo(pxp_id)
+        x, y, z = transponders_xyz[idx]
+        lat, lon, alt = lat_lon[idx]
+
+        SIGPX = np.array_split(data["sigpx"], num_transponders)
+        sigX, sigY, sigZ = SIGPX[idx]
+
+        # Compute enu
+        e, n, u = enu_arr[idx]
+
+        # Get sig enu
+        sigE, sigN, sigU = sig_enu[idx]
+
+        typer.echo(
+            (
+                f"x = {np.round(x, 4)} +/- {np.format_float_scientific(sigX, 6)} m "
+                f"del_e = {np.round(e, 4)} +/- {np.format_float_scientific(sigE, 6)} m"
+            )
+        )
+        typer.echo(
+            (
+                f"y = {np.round(y, 4)} +/- {np.format_float_scientific(sigY, 6)} m "
+                f"del_n = {np.round(n, 4)} +/- {np.format_float_scientific(sigN, 6)} m"
+            )
+        )
+        typer.echo(
+            (
+                f"z = {np.round(z, 4)} +/- {np.format_float_scientific(sigZ, 6)} m "
+                f"del_u = {np.round(u, 4)} +/- {np.format_float_scientific(sigU, 6)} m"
+            )
+        )
+        typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
+    typer.echo("------------------------")
+    typer.echo()
+
+
 def prepare_and_solve(
     all_observations: pd.DataFrame, config: Configuration, max_iter: int = 6
 ) -> Tuple[Dict[int, Any], bool]:
@@ -310,7 +362,7 @@ def prepare_and_solve(
             warnings.warn(
                 "Exceeds the allowed number of attempt, " "please adjust your data."
             )
-            return process_dict, is_converged
+            break
 
         # Increase iter num
         n_iter += 1
@@ -371,7 +423,7 @@ def prepare_and_solve(
 
             # Get lat lon alt
             lat, lon, alt = ecef2geodetic(x, y, z)
-            lat_lon.append([lat, lon, alt])
+            lat_lon.append([lat, lon, alt - config.solver.geoid_undulation])
 
             # Retrieve apriori xyz and lat lon alt
             original_xyz = original_positions[idx]
@@ -420,45 +472,8 @@ def prepare_and_solve(
         process_dict[n_iter]["enu"] = np.array(enu_arr)
         process_dict[n_iter]["sig_enu"] = np.array(sig_enu)
         process_dict[n_iter]["transponders_lla"] = np.array(lat_lon)
-        if is_converged:
-            typer.echo()
-            typer.echo("---- FINAL SOLUTION ----")
-            for idx, tp in enumerate(transponders):
-                typer.echo(pxp_id)
-
-                lat, lon, alt = lat_lon[idx]
-
-                SIGPX = np.array_split(data["sigpx"], num_transponders)
-                sigX, sigY, sigZ = SIGPX[idx]
-
-                # Compute enu
-                e, n, u = enu_arr[idx]
-
-                # Get sig enu
-                sigE, sigN, sigU = sig_enu[idx]
-
-                typer.echo(
-                    (
-                        f"x = {np.round(x, 4)} +/- {np.format_float_scientific(sigX, 6)} m "
-                        f"del_e = {np.round(e, 4)} +/- {np.format_float_scientific(sigE, 6)} m"
-                    )
-                )
-                typer.echo(
-                    (
-                        f"y = {np.round(y, 4)} +/- {np.format_float_scientific(sigY, 6)} m "
-                        f"del_n = {np.round(n, 4)} +/- {np.format_float_scientific(sigN, 6)} m"
-                    )
-                )
-                typer.echo(
-                    (
-                        f"z = {np.round(z, 4)} +/- {np.format_float_scientific(sigZ, 6)} m "
-                        f"del_u = {np.round(u, 4)} +/- {np.format_float_scientific(sigU, 6)} m"
-                    )
-                )
-                typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
-            typer.echo("------------------------")
-            typer.echo()
-            return process_dict, is_converged
+        typer.echo()
+    return process_dict, is_converged
 
 
 def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataFrame:
@@ -611,6 +626,11 @@ def extract_distance_from_center(
     )
 
 
+def _get_latest_process(process_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Get the latest process data"""
+    return process_data[max(process_data.keys())]
+
+
 def extract_latest_residuals(
     config: Configuration, all_epochs: List[float], process_data: Dict[str, Any]
 ) -> pd.DataFrame:
@@ -642,7 +662,7 @@ def extract_latest_residuals(
     iso_epochs = np.apply_along_axis(to_iso, 0, astro_epochs)
 
     # Get the latest process data
-    process_info = process_data[max(process_data.keys())]
+    process_info = _get_latest_process(process_data)
 
     # Retrieve residuals data
     all_residuals_data = []
@@ -809,7 +829,10 @@ def main(
     ].reset_index(drop=True)
 
     all_epochs = all_observations[constants.garpos.ST].unique()
-    process_data, _ = prepare_and_solve(all_observations, config)
+    process_data, is_converged = prepare_and_solve(all_observations, config)
+
+    if is_converged:
+        _print_final_stats(config.solver.transponders, process_data)
 
     # Extracts latest residuals when specified
     resdf = extract_latest_residuals(config, all_epochs, process_data)
