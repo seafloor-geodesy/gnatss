@@ -2,16 +2,16 @@
 
 ## Overview
 
-Step 1: Generate the required input files (acoustic two-way travel times, surface platform positions, sound velocity profile)
-Step 2: Create working directory and config.yaml file
-Step 3: From working directory, execute
+Step 1: Generate the required input files (acoustic two-way travel times, surface platform positions, sound velocity profile)<br />
+Step 2: Create working directory and config.yaml file<br />
+Step 3: From working directory, execute<br />
 
 ```
 gnatss run --extract-dist-center --extract-process-dataset --qc --distance-limit 150 --residual-limit 10000
 ```
 
-Step 4: Repeat Step 3, reducing the residual limit as desired in each successive iteration in order to remove erroneous residuals
-Step 5: Array positions, offsets, and statistics are stored in the process_dataset.nc file.
+Step 4: Repeat Step 3, reducing the residual limit as desired in each successive iteration in order to remove erroneous residuals<br />
+Step 5: Array positions, offsets, and statistics are stored in the process_dataset.nc file.<br />
 
 
 ## Required Input Data
