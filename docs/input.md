@@ -2,31 +2,33 @@
 
 ## Overview
 
-Step 1: Generate the required input files (acoustic two-way travel times, surface platform positions, sound velocity profile)<br />
-Step 2: Create working directory and config.yaml file<br />
-Step 3: From working directory, execute<br />
+Step 1: Generate the required input files (acoustic two-way travel times, surface platform positions, sound velocity profile)
 
-```
+Step 2: Create working directory and config.yaml file
+
+Step 3: From working directory, execute
+
+```bash
 gnatss run --extract-dist-center --extract-process-dataset --qc --distance-limit 150 --residual-limit 10000
 ```
 
-Step 4: Repeat Step 3, reducing the residual limit as desired in each successive iteration in order to remove erroneous residuals<br />
-Step 5: Array positions, offsets, and statistics are stored in the process_dataset.nc file.<br />
+Step 4: Repeat Step 3, reducing the residual limit as desired in each successive iteration in order to remove erroneous residuals
 
+Step 5: Array positions, offsets, and statistics are stored in the process_dataset.nc file.
 
 ## Required Input Data
 
-GNATSS requires the following data in order to generate an array position:<br />
-<br />
-  -Acoustic two-way travel times<br />
-  -Surface platform positions<br />
-  -A sound velocity profile
+GNATSS requires the following data in order to generate an array position:
+
+- Acoustic two-way travel times
+- Surface platform positions
+- A sound velocity profile
 
 ### Acoustic Two-Way Travel Times
 
 Acoustic two-way travel times are defined as the duration between when the transducer on the surface platform sends an acoustic interrogation and when it receives a reply from a seafloor transponder. Multiple transponders may respond to the same interrogation if they each receive the ping. Two-way travel times should be stored in a file named “pxp_tt”, with a text column format in which each row corresponds to a ping, containing UTC timestamps and two-way travel times in microseconds. Example:
 
-```
+```console
 26-JUN-23 00:00:07.00   2241985   2337422   2469996
 26-JUN-23 00:00:22.00   2240506   2346387   2463020
 26-JUN-23 00:00:37.00   2240627   2353454   2454958
