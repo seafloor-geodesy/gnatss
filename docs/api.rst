@@ -1,24 +1,26 @@
+=============
 API reference
-==============
+=============
+
 
 API components that are currently available.
 
 **NOTE: This package is still under heavy development, so API listed below will change**
 
 Harmonic Mean module
---------------------
+====================
 .. automodapi:: gnatss.harmonic_mean
    :no-inheritance-diagram:
    :no-heading:
 
 Loaders module
---------------
+==============
 .. automodapi:: gnatss.loaders
    :no-inheritance-diagram:
    :no-heading:
 
 Operations modules
-------------------
+==================
 Data
 ----
 .. automodapi:: gnatss.ops.data
