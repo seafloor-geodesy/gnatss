@@ -38,10 +38,10 @@ solver:
       path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
     gps_solution:
       path: ./tests/data/2022/NCL1/**/posfilter/POS_FREED_TRANS_TWTT
-    # Make deletions file optional
-    # the program will take care of it
-    # users should be able to also add their points
-    # in ./output/deletions.csv
+    # deletions and quality_controls files are optional
+    # users should be able to also add their points in ./output/deletions.csv
+    # quality_controls:
+    #   path: ./tests/data/2022/NCL1/quality_control.csv
     # deletions:
     #   path: ./tests/data/2022/NCL1/deletns.dat
 
