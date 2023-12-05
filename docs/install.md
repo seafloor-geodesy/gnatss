@@ -9,5 +9,5 @@ conda activate gnatss
 Once you have the appropriate python environment enabled, GNATSS may be installed via pip:
 
 ```
-pip install --extra-index-url https://test.pypi.org/simple/ gnatss
+pip install gnatss
 ```
