@@ -20,6 +20,7 @@ parse:
   myst_enable_extensions:
   - amsmath
   - dollarmath
+  - html_image
 
 # Add a bibtex file so that we can create citations
 # bibtex_bibfiles:
