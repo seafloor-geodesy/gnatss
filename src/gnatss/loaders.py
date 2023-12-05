@@ -366,7 +366,7 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
 
     if qc_files:
         qc_dfs = [
-            pd.read_csv(qc_file, header=None, names=csv_columns).reset_index(drop=True)
+            pd.read_csv(qc_file, header=0, names=csv_columns).reset_index(drop=True)
             for qc_file in qc_files
         ]
         qc_df = (
