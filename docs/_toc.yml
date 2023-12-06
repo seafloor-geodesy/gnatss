@@ -4,6 +4,15 @@
 format: jb-book
 root: intro
 parts:
+  - caption: Getting Started
+    chapters:
+    - file: install
+    - file: gnssa
+  - caption: User Guide
+    chapters:
+    - file: input
+    - file: config_yaml
+    - file: position_inversion
   - caption: Help & reference
     chapters:
     - file: configs
