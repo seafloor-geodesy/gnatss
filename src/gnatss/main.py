@@ -24,6 +24,7 @@ from .ops.utils import _prep_col_names
 from .ops.validate import check_sig3d, check_solutions
 from .utilities.geo import _get_rotation_matrix
 from .utilities.io import _get_filesystem
+from .utilities.time import AstroTime
 
 
 def gather_files(
@@ -662,7 +663,6 @@ def extract_latest_residuals(
     pd.DataFrame
         The final dataframe for residuals
     """
-    from .utilities.time import AstroTime  # noqa
 
     def to_iso(astro_time):
         return [t.strftime("%Y-%m-%dT%H:%M:%S.%f") for t in astro_time]
@@ -877,4 +877,13 @@ def main(
             [_create_process_dataset(v, k, config) for k, v in process_data.items()],
             dim="iteration",
         )
+
+        # Get the median time of residuals
+        median_time = AstroTime(
+            np.median(resdf[constants.TIME_J2000].values), format="unix_j2000"
+        )
+        median_time_str = median_time.strftime("%Y-%m-%dT%H:00:00")
+
+        # Set the median time to the process dataset
+        process_ds.attrs["session_time"] = median_time_str
     return all_epochs, process_data, resdf, dist_center_df, process_ds, outliers_df
