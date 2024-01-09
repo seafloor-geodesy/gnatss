@@ -64,14 +64,18 @@ You can retrieve the helper text for this command by running `gnatss run --help`
 │                                                                   yaml file. **Currently only  │
 │                                                                   support local files!**       │
 │                                                                   [default: None]              │
-│ --extract-dist-center        --no-extract-dist-center             Flag to extract distance     │
+│ --extract-dist-center         --no-extract-dist-center            Flag to extract distance     │
 │                                                                   from center from run.        │
 │                                                                   [default:                    │
-│                                                                   no-extract-dist-center]      │
-│ --extract-process-dataset    --no-extract-process-data…           Flag to extract process      │
+│                                                                   extract-dist-center]         │
+│ --extract-process-dataset     --no-extract-process-data           Flag to extract process      │
 │                                                                   results.                     │
 │                                                                   [default:                    │
-│                                                                   no-extract-process-dataset]  │
+│                                                                   extract-process-dataset]     │
+│ --qc                          --no-qc                             Flag to plot residuals from  │
+│                                                                   run and store in             │
+│                                                                   output folder.               │
+│                                                                   [default: qc]                │
 │ --distance-limit                                           FLOAT  Distance in meters from      │
 │                                                                   center beyond which points   │
 │                                                                   will be excluded from        │
