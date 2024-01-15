@@ -52,7 +52,7 @@ posfilter:
     downward: 0.92813
   input_files:
     roll_pitch_heading:
-      path: ./tests/data/2022/NCL1/**/posfilter/RPH
+      path: ./tests/data/2022/NCL1/**/WG_*/RPH_TWTT
 
 
 output:

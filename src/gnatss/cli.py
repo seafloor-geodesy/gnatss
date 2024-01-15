@@ -30,10 +30,10 @@ def run(
         help="Custom path to configuration yaml file. **Currently only support local files!**",
     ),
     extract_dist_center: Optional[bool] = typer.Option(
-        False, help="Flag to extract distance from center from run."
+        True, help="Flag to extract distance from center from run."
     ),
     extract_process_dataset: Optional[bool] = typer.Option(
-        False, help="Flag to extract process results."
+        True, help="Flag to extract process results."
     ),
     outlier_threshold: Optional[float] = typer.Option(
         constants.DATA_OUTLIER_THRESHOLD,
@@ -57,7 +57,7 @@ def run(
         ),
     ),
     qc: Optional[bool] = typer.Option(
-        False, help="Flag to plot residuals from run and store in output folder."
+        True, help="Flag to plot residuals from run and store in output folder."
     ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
