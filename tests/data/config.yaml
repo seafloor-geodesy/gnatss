@@ -45,6 +45,11 @@ solver:
     # deletions:
     #   path: ./tests/data/2022/NCL1/deletns.dat
 
+posfilter:
+  input_files:
+    roll_pitch_heading:
+      path: ./tests/data/2022/NCL1/**/WG_*/RPH_TWTT
+
 
 output:
   path: ./tests/data/output/
