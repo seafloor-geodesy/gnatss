@@ -13,7 +13,6 @@ def test_valid_position_filter_input(blank_csv_test_file: Path) -> None:
     See root/conftest.py for fixture definition.
     """
     test_path = str(blank_csv_test_file)
-    print(f"blank_csv_test_file {blank_csv_test_file}")
 
     # Test initialization of PositionFilter
     input_files = PositionFilterInputs(roll_pitch_heading=InputData(path=test_path))
