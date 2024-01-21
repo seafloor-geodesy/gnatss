@@ -46,6 +46,10 @@ solver:
     #   path: ./tests/data/2022/NCL1/deletns.dat
 
 posfilter:
+  atd_offsets:
+    forward: 0.0053
+    rightward: 0
+    downward: 0.92813
   input_files:
     roll_pitch_heading:
       path: ./tests/data/2022/NCL1/**/WG_*/RPH_TWTT

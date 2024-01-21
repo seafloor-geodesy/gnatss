@@ -23,3 +23,6 @@ def blank_env(blank_csv_test_file: Path) -> None:
         "GNATSS_POSFILTER__INPUT_FILES__ROLL_PITCH_HEADING__PATH",
         str(blank_csv_test_file),
     )
+    os.environ.setdefault("GNATSS_POSFILTER__ATD_OFFSETS__FORWARD", str(0.000053))
+    os.environ.setdefault("GNATSS_POSFILTER__ATD_OFFSETS__RIGHTWARD", str(0))
+    os.environ.setdefault("GNATSS_POSFILTER__ATD_OFFSETS__DOWNWARD", str(0.92813))
