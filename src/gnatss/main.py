@@ -48,7 +48,7 @@ def gather_files(
         raise AttributeError(f"Unknown process type: {proc}")
 
     proc_config = getattr(config, proc)
-    for k, v in proc_config.input_files.dict().items():
+    for k, v in proc_config.input_files.model_dump().items():
         if v:
             path = v.get("path", "")
             typer.echo(f"Gathering {k} at {path}")
