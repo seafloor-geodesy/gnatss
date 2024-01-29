@@ -122,7 +122,6 @@ def load_travel_times(
     Additionally, there's an assumption that wave glider delays
     have been removed from the data.
     """
-    PARSED_FILE = "parsed"
     DATETIME_FORMAT = "%d-%b-%y %H:%M:%S.%f"
 
     columns = [constants.TT_DATE, constants.TT_TIME, *transponder_ids]
@@ -130,11 +129,7 @@ def load_travel_times(
         # If it's already j2k then pop off date column, idx 0
         columns.pop(0)
     # Read all travel times
-    travel_times = [
-        pd.read_csv(i, delim_whitespace=True, header=None)
-        for i in files
-        if PARSED_FILE not in i
-    ]
+    travel_times = [pd.read_csv(i, delim_whitespace=True, header=None) for i in files]
     all_travel_times = pd.concat(travel_times).reset_index(drop=True)
 
     # Remove any columns that are not being used

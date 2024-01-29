@@ -29,8 +29,6 @@ from gnatss.loaders import (
 from gnatss.main import gather_files
 from tests import TEST_DATA_FOLDER
 
-PARSED_FILE = "parsed"
-
 
 @pytest.fixture
 def configuration() -> Dict[str, Any]:
@@ -97,11 +95,7 @@ def _load_travel_times_pass_testcase_helper(
 
     # raw_travel_times contains the expected df
     raw_travel_times = concat(
-        [
-            read_csv(i, delim_whitespace=True, header=None)
-            for i in travel_times
-            if PARSED_FILE not in i
-        ]
+        [read_csv(i, delim_whitespace=True, header=None) for i in travel_times]
     ).reset_index(drop=True)
 
     column_num_diff = len(expected_columns) - len(raw_travel_times.columns)
