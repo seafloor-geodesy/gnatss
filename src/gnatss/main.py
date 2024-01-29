@@ -15,6 +15,7 @@ from .loaders import (
     load_deletions,
     load_gps_solutions,
     load_quality_control,
+    load_roll_pitch_heading,
     load_sound_speed,
     load_travel_times,
 )
@@ -28,7 +29,7 @@ from .utilities.time import AstroTime
 
 
 def gather_files(
-    config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
+    config: Configuration, procs: tuple = ("solver", "posfilter")
 ) -> Dict[str, List[str]]:
     """Gather file paths for the various dataset files
 
@@ -42,25 +43,29 @@ def gather_files(
     Dict[str, Any]
         A dictionary containing the various datasets file paths
     """
+    typer.echo(f"procs: {procs}")
     all_files_dict = {}
     # Check for process type first
-    if not hasattr(config, proc):
-        raise AttributeError(f"Unknown process type: {proc}")
+    for proc in procs:
+        typer.echo(f"gether_files(): proc: {proc}")
+        if not hasattr(config, proc):
+            raise AttributeError(f"Unknown process type: {proc}")
 
-    proc_config = getattr(config, proc)
-    for k, v in proc_config.input_files.model_dump().items():
-        if v:
-            path = v.get("path", "")
-            typer.echo(f"Gathering {k} at {path}")
-            storage_options = v.get("storage_options", {})
+        proc_config = getattr(config, proc)
+        for k, v in proc_config.input_files.dict().items():
+            if v:
+                path = v.get("path", "")
+                typer.echo(f"Gathering {k} at {path}")
+                storage_options = v.get("storage_options", {})
 
-            fs = _get_filesystem(path, storage_options)
-            if "**" in path:
-                all_files = fs.glob(path)
-            else:
-                all_files = [path]
+                fs = _get_filesystem(path, storage_options)
+                if "**" in path:
+                    all_files = fs.glob(path)
+                else:
+                    all_files = [path]
 
-            all_files_dict.setdefault(k, all_files)
+                all_files_dict.setdefault(k, all_files)
+
     return all_files_dict
 
 
@@ -141,6 +146,7 @@ def clean_tt(
 def get_transmit_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
+    rph_data: pd.DataFrame,
     gps_sigma_limit: float,
 ) -> pd.DataFrame:
     """
@@ -169,6 +175,17 @@ def get_transmit_times(
         right_on=constants.GPS_TIME,
     )
 
+    typer.echo(f"transmit_times:{transmit_times.shape}\n{transmit_times.head(10)}")
+    typer.echo(f"rph_data:{rph_data.shape}\n{rph_data.head(10)}")
+
+    # Merge with rph data
+    transmit_times = pd.merge(
+        transmit_times,
+        rph_data,
+        left_on=constants.TT_TIME,
+        right_on=constants.RPH_TIME,
+    )
+
     # Compute and check 3d standard deviation
     transmit_times = check_sig3d(data=transmit_times, gps_sigma_limit=gps_sigma_limit)
 
@@ -177,6 +194,9 @@ def get_transmit_times(
         f"{col}0" if col != constants.TT_TIME else constants.garpos.ST
         for col in transmit_times.columns
     ]
+    typer.echo(
+        f"transmit_times after merging with rph data: {transmit_times.shape} {transmit_times.columns}\n{transmit_times[[constants.garpos.ST, 'roll0', 'pitch0', 'heading0']].head(10)}"
+    )
 
     return transmit_times
 
@@ -184,6 +204,7 @@ def get_transmit_times(
 def get_reply_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
+    rph_data: pd.DataFrame,
     gps_sigma_limit: float,
     transponder_ids: List[str],
 ):
@@ -230,6 +251,17 @@ def get_reply_times(
         right_on=constants.GPS_TIME,
     )
     reply_times = reply_times.drop(constants.GPS_TIME, axis="columns")
+    typer.echo(
+        f"reply_times:{reply_times.shape} {reply_times.columns}\n{reply_times.head(10)}"
+    )
+    typer.echo(f"rph_data:{rph_data.shape} {rph_data.columns}\n{rph_data.head(10)}")
+    # Merge with rph data
+    reply_times = pd.merge(
+        reply_times,
+        rph_data,
+        left_on=constants.garpos.RT,
+        right_on=constants.RPH_TIME,
+    )
 
     # Compute and check 3d standard deviation
     reply_times = check_sig3d(data=reply_times, gps_sigma_limit=gps_sigma_limit)
@@ -255,6 +287,10 @@ def get_reply_times(
         else col
         for col in reply_times.columns
     ]
+    typer.echo(
+        f"reply_times after merging with rph data: {reply_times.shape} {reply_times.columns}\n{reply_times[[constants.garpos.ST, constants.garpos.RT, 'roll1', 'pitch1', 'heading1']].head(10)}"
+    )
+
     return reply_times
 
 
@@ -476,6 +512,62 @@ def prepare_and_solve(
         process_dict[n_iter]["transponders_lla"] = np.array(lat_lon)
         typer.echo()
     return process_dict, is_converged
+
+
+def load_data_posfilter(
+    all_files_dict: Dict[str, Any], config: Configuration
+) -> pd.DataFrame:
+    pd.set_option("display.float_format", lambda x: f"{x:.3f}")
+    transponders = config.solver.transponders
+
+    cut_df = load_deletions(all_files_dict["deletions"], config=config)
+
+    transponder_ids = [t.pxp_id for t in transponders]
+    all_travel_times = load_travel_times(
+        files=all_files_dict["travel_times"], transponder_ids=transponder_ids
+    )
+
+    rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
+
+    # Cleaning travel times
+    typer.echo("Cleaning travel times data...")
+    cleaned_travel_times = clean_tt(
+        all_travel_times,
+        cut_df,
+        transponder_ids,
+        config.solver.travel_times_correction,
+        config.solver.transducer_delay_time,
+    )
+
+    all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
+
+    transmit_times = get_transmit_times(
+        cleaned_travel_times, all_gps_solutions, rph_data, config.solver.gps_sigma_limit
+    )
+
+    reply_times = get_reply_times(
+        cleaned_travel_times,
+        all_gps_solutions,
+        rph_data,
+        config.solver.gps_sigma_limit,
+        transponder_ids,
+    )
+
+    all_observations = pd.merge(
+        transmit_times, reply_times, on=constants.garpos.ST
+    ).reset_index(
+        drop=True
+    )  # Reset index ensures that it is sequential
+
+    typer.echo(f"Roll pitch heading data: {rph_data.shape}\n{rph_data.head(20)}")
+    # typer.echo(f"transmit times data: {transmit_times.shape}\n{transmit_times[['ST']].head(10)}")
+    # typer.echo(f"reply times data: {reply_times.shape}\n{reply_times[['ST', 'MT', 'RT']].head(10)}")
+    typer.echo(
+        f"all observations times data: {all_observations.shape} {all_observations.columns}\n{all_observations[['ST', 'MT', 'RT', 'roll0', 'pitch0', 'heading0', 'roll1', 'pitch1', 'heading1',]].head(20)}"
+    )
+    # typer.echo(f"all observations times data: {all_observations.columns}")
+
+    return all_observations
 
 
 def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataFrame:
@@ -820,7 +912,7 @@ def main(
     outliers_df : Union[pd.DataFrame, None]
         Extracted residual outliers as dataframe, by default None
     """
-    all_observations = load_data(all_files_dict, config)
+    all_observations = load_data_posfilter(all_files_dict, config)
 
     # Extracts distance from center
     dist_center_df = extract_distance_from_center(all_observations, config)

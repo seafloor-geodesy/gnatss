@@ -42,8 +42,8 @@ solver:
     # users should be able to also add their points in ./output/deletions.csv
     # quality_controls:
     #   path: ./tests/data/2022/NCL1/quality_control.csv
-    # deletions:
-    #   path: ./tests/data/2022/NCL1/deletns.dat
+    deletions:
+     path: ./tests/data/2022/NCL1/deletns.dat
 
 posfilter:
   atd_offsets:
