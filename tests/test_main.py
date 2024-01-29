@@ -46,7 +46,7 @@ def test_gather_files(mocker, proc):
     config = mocker.patch("gnatss.configs.main.Configuration")
     if proc in list(expected_procs.keys()):
         # Test for actual proc that exists
-        getattr(config, proc).input_files.dict.return_value = sample_dict
+        getattr(config, proc).input_files.model_dump.return_value = sample_dict
 
         all_files_dict = gather_files(config, proc=proc)
         # Check all_files_dict
