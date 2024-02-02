@@ -2,6 +2,7 @@ import warnings
 from typing import Any, Dict, List, Literal, Tuple, Union
 
 import numpy as np
+import pandas
 import pandas as pd
 import typer
 import xarray as xr
@@ -29,7 +30,7 @@ from .utilities.time import AstroTime
 
 
 def gather_files(
-    config: Configuration, procs: tuple = ("solver", "posfilter")
+    config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
 ) -> Dict[str, List[str]]:
     """Gather file paths for the various dataset files
 
@@ -43,29 +44,25 @@ def gather_files(
     Dict[str, Any]
         A dictionary containing the various datasets file paths
     """
-    typer.echo(f"procs: {procs}")
     all_files_dict = {}
     # Check for process type first
-    for proc in procs:
-        typer.echo(f"gether_files(): proc: {proc}")
-        if not hasattr(config, proc):
-            raise AttributeError(f"Unknown process type: {proc}")
+    if not hasattr(config, proc):
+        raise AttributeError(f"Unknown process type: {proc}")
 
-        proc_config = getattr(config, proc)
-        for k, v in proc_config.input_files.dict().items():
-            if v:
-                path = v.get("path", "")
-                typer.echo(f"Gathering {k} at {path}")
-                storage_options = v.get("storage_options", {})
+    proc_config = getattr(config, proc)
+    for k, v in proc_config.input_files.model_dump().items():
+        if v:
+            path = v.get("path", "")
+            typer.echo(f"Gathering {k} at {path}")
+            storage_options = v.get("storage_options", {})
 
-                fs = _get_filesystem(path, storage_options)
-                if "**" in path:
-                    all_files = fs.glob(path)
-                else:
-                    all_files = [path]
+            fs = _get_filesystem(path, storage_options)
+            if "**" in path:
+                all_files = fs.glob(path)
+            else:
+                all_files = [path]
 
-                all_files_dict.setdefault(k, all_files)
-
+            all_files_dict.setdefault(k, all_files)
     return all_files_dict
 
 
@@ -143,11 +140,34 @@ def clean_tt(
     return cleaned_travel_times
 
 
+from scipy.spatial.transform import Rotation
+
+
+def rotation(df, atd_offsets, input_columns, output_columns) -> pandas.DataFrame:
+    r = Rotation.from_euler("xyz", df[input_columns], degrees=True)
+    offsets = r.as_matrix() @ atd_offsets
+
+    # d_e0 = offsets[:, 1]
+    # d_n0 = offsets[:, 0]
+    # d_u0 = -offsets[:, 2]
+
+    df[output_columns[0]] = offsets[:, 0]
+    df[output_columns[1]] = offsets[:, 1]
+    df[output_columns[2]] = -offsets[:, 2]
+
+    return df
+
+    # typer.echo(f"offsets: {offsets.}")
+    # return np.array([offsets[1], offsets[0], -offsets[2]])
+    # typer.echo(f"Rotation: {np.array([offsets[1], offsets[0], -offsets[2]])}")
+
+
 def get_transmit_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
-    rph_data: pd.DataFrame,
+    rph_data: Union[pd.DataFrame, None],
     gps_sigma_limit: float,
+    atd_offsets,
 ) -> pd.DataFrame:
     """
     Merges cleaned transmit times with gps solutions into one
@@ -159,6 +179,8 @@ def get_transmit_times(
         The full cleaned travel times data
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
+    rph_data : Union[pd.DataFrame, None]
+        The full roll-pitch-heading data
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
 
@@ -175,16 +197,23 @@ def get_transmit_times(
         right_on=constants.GPS_TIME,
     )
 
-    typer.echo(f"transmit_times:{transmit_times.shape}\n{transmit_times.head(10)}")
-    typer.echo(f"rph_data:{rph_data.shape}\n{rph_data.head(10)}")
-
     # Merge with rph data
-    transmit_times = pd.merge(
-        transmit_times,
-        rph_data,
-        left_on=constants.TT_TIME,
-        right_on=constants.RPH_TIME,
-    )
+    if not rph_data.empty:
+        # typer.echo(f"rph_data:{rph_data.shape}\n{rph_data.head(10)}")
+        transmit_times = pd.merge(
+            transmit_times,
+            rph_data,
+            left_on=constants.TT_TIME,
+            right_on=constants.RPH_TIME,
+        )
+        transmit_times = rotation(
+            transmit_times,
+            atd_offsets,
+            ["roll", "pitch", "heading"],
+            ["d_n", "d_e", "d_u"],
+        )
+
+        # transmit_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
 
     # Compute and check 3d standard deviation
     transmit_times = check_sig3d(data=transmit_times, gps_sigma_limit=gps_sigma_limit)
@@ -195,7 +224,7 @@ def get_transmit_times(
         for col in transmit_times.columns
     ]
     typer.echo(
-        f"transmit_times after merging with rph data: {transmit_times.shape} {transmit_times.columns}\n{transmit_times[[constants.garpos.ST, 'roll0', 'pitch0', 'heading0']].head(10)}"
+        f"transmit_times after merging with rph data: {transmit_times.shape} {transmit_times.columns}\n{transmit_times.head()}"
     )
 
     return transmit_times
@@ -204,9 +233,10 @@ def get_transmit_times(
 def get_reply_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
-    rph_data: pd.DataFrame,
+    rph_data: Union[pd.DataFrame, None],
     gps_sigma_limit: float,
     transponder_ids: List[str],
+    atd_offsets,
 ):
     """
     Merges cleaned reply times with gps solutions into one
@@ -218,6 +248,8 @@ def get_reply_times(
         The full cleaned travel times data
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
+    rph_data : Union[pd.DataFrame, None]
+        The full roll-pitch-heading data
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
     transponder_ids : List[str]
@@ -251,17 +283,22 @@ def get_reply_times(
         right_on=constants.GPS_TIME,
     )
     reply_times = reply_times.drop(constants.GPS_TIME, axis="columns")
-    typer.echo(
-        f"reply_times:{reply_times.shape} {reply_times.columns}\n{reply_times.head(10)}"
-    )
-    typer.echo(f"rph_data:{rph_data.shape} {rph_data.columns}\n{rph_data.head(10)}")
-    # Merge with rph data
-    reply_times = pd.merge(
-        reply_times,
-        rph_data,
-        left_on=constants.garpos.RT,
-        right_on=constants.RPH_TIME,
-    )
+
+    if not rph_data.empty:
+        # Merge with rph data
+        reply_times = pd.merge(
+            reply_times,
+            rph_data,
+            left_on=constants.garpos.RT,
+            right_on=constants.RPH_TIME,
+        )
+        reply_times = rotation(
+            reply_times,
+            atd_offsets,
+            ["roll", "pitch", "heading"],
+            ["d_n", "d_e", "d_u"],
+        )
+        reply_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
 
     # Compute and check 3d standard deviation
     reply_times = check_sig3d(data=reply_times, gps_sigma_limit=gps_sigma_limit)
@@ -288,7 +325,7 @@ def get_reply_times(
         for col in reply_times.columns
     ]
     typer.echo(
-        f"reply_times after merging with rph data: {reply_times.shape} {reply_times.columns}\n{reply_times[[constants.garpos.ST, constants.garpos.RT, 'roll1', 'pitch1', 'heading1']].head(10)}"
+        f"reply_times after merging with rph data: {reply_times.shape}\n{reply_times.columns}\n{reply_times.head()}"
     )
 
     return reply_times
@@ -514,62 +551,6 @@ def prepare_and_solve(
     return process_dict, is_converged
 
 
-def load_data_posfilter(
-    all_files_dict: Dict[str, Any], config: Configuration
-) -> pd.DataFrame:
-    pd.set_option("display.float_format", lambda x: f"{x:.3f}")
-    transponders = config.solver.transponders
-
-    cut_df = load_deletions(all_files_dict["deletions"], config=config)
-
-    transponder_ids = [t.pxp_id for t in transponders]
-    all_travel_times = load_travel_times(
-        files=all_files_dict["travel_times"], transponder_ids=transponder_ids
-    )
-
-    rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
-
-    # Cleaning travel times
-    typer.echo("Cleaning travel times data...")
-    cleaned_travel_times = clean_tt(
-        all_travel_times,
-        cut_df,
-        transponder_ids,
-        config.solver.travel_times_correction,
-        config.solver.transducer_delay_time,
-    )
-
-    all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
-
-    transmit_times = get_transmit_times(
-        cleaned_travel_times, all_gps_solutions, rph_data, config.solver.gps_sigma_limit
-    )
-
-    reply_times = get_reply_times(
-        cleaned_travel_times,
-        all_gps_solutions,
-        rph_data,
-        config.solver.gps_sigma_limit,
-        transponder_ids,
-    )
-
-    all_observations = pd.merge(
-        transmit_times, reply_times, on=constants.garpos.ST
-    ).reset_index(
-        drop=True
-    )  # Reset index ensures that it is sequential
-
-    typer.echo(f"Roll pitch heading data: {rph_data.shape}\n{rph_data.head(20)}")
-    # typer.echo(f"transmit times data: {transmit_times.shape}\n{transmit_times[['ST']].head(10)}")
-    # typer.echo(f"reply times data: {reply_times.shape}\n{reply_times[['ST', 'MT', 'RT']].head(10)}")
-    typer.echo(
-        f"all observations times data: {all_observations.shape} {all_observations.columns}\n{all_observations[['ST', 'MT', 'RT', 'roll0', 'pitch0', 'heading0', 'roll1', 'pitch1', 'heading1',]].head(20)}"
-    )
-    # typer.echo(f"all observations times data: {all_observations.columns}")
-
-    return all_observations
-
-
 def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataFrame:
     """
     Loads all of the necessary datasets for processing into a singular
@@ -626,6 +607,13 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         files=all_files_dict["travel_times"], transponder_ids=transponder_ids
     )
 
+    # Load roll-pitch-heading data
+    # Set default to empty string
+    all_files_dict.setdefault("roll_pitch_heading", "")
+    typer.echo("Load roll-pitch-heading data...")
+    rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
+    typer.echo(f"rph_data: \n{rph_data}")
+
     # Cleaning travel times
     typer.echo("Cleaning travel times data...")
     cleaned_travel_times = clean_tt(
@@ -642,15 +630,28 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
 
     typer.echo("Cross referencing transmit, reply, and gps solutions...")
     # Parse transmit times
+    atd_offsets = np.array(
+        [
+            config.posfilter.atd_offsets.forward,
+            config.posfilter.atd_offsets.rightward,
+            config.posfilter.atd_offsets.downward,
+        ]
+    )
     transmit_times = get_transmit_times(
-        cleaned_travel_times, all_gps_solutions, config.solver.gps_sigma_limit
+        cleaned_travel_times,
+        all_gps_solutions,
+        rph_data,
+        config.solver.gps_sigma_limit,
+        atd_offsets,
     )
     # Parse reply times
     reply_times = get_reply_times(
         cleaned_travel_times,
         all_gps_solutions,
+        rph_data,
         config.solver.gps_sigma_limit,
         transponder_ids,
+        atd_offsets,
     )
 
     # Merge times
@@ -659,6 +660,10 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     ).reset_index(
         drop=True
     )  # Reset index ensures that it is sequential
+
+    typer.echo(
+        f"all_observations: {all_observations.shape}:\n{all_observations.columns}\n{all_observations.head}"
+    )
 
     return all_observations
 
@@ -912,7 +917,7 @@ def main(
     outliers_df : Union[pd.DataFrame, None]
         Extracted residual outliers as dataframe, by default None
     """
-    all_observations = load_data_posfilter(all_files_dict, config)
+    all_observations = load_data(all_files_dict, config)
 
     # Extracts distance from center
     dist_center_df = extract_distance_from_center(all_observations, config)

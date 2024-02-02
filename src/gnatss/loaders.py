@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pandas as pd
 import yaml
@@ -170,7 +170,7 @@ def load_travel_times(
     return all_travel_times
 
 
-def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
+def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.
 
@@ -193,15 +193,19 @@ def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
         constants.RPH_PITCH,
         constants.RPH_HEADING,
     ]
-    # Read all rph files
-    rph_dfs = [
-        pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
-        .drop_duplicates(constants.RPH_TIME)
-        .reset_index(drop=True)
-        for i in files
-    ]
-    all_rph = pd.concat(rph_dfs).reset_index(drop=True)
-    return all_rph
+    if files:
+        # Read all rph files
+        rph_dfs = [
+            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+            .drop_duplicates(constants.RPH_TIME)
+            .reset_index(drop=True)
+            for i in files
+        ]
+        all_rph = pd.concat(rph_dfs).reset_index(drop=True)
+        return all_rph
+    else:
+        # If no files is empty, return empty dataframe
+        return pd.DataFrame(columns=columns)
 
 
 def load_gps_solutions(
