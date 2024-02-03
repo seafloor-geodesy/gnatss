@@ -77,3 +77,8 @@ RPH_TIME = TIME_J2000
 RPH_ROLL = "roll"
 RPH_PITCH = "pitch"
 RPH_HEADING = "heading"
+
+# Rotation direction columns
+DIR_NORTHWARD = "d_n"
+DIR_EASTWARD = "d_e"
+DIR_UPWARD = "d_u"

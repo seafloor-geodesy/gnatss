@@ -6,13 +6,16 @@ import pandas
 import pandas as pd
 import typer
 import xarray as xr
+from nptyping import Float, NDArray, Shape
 from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
+from scipy.spatial.transform import Rotation
 
 from . import constants
 from .configs.main import Configuration
 from .configs.solver import SolverTransponder
 from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
+    load_atd_offsets,
     load_deletions,
     load_gps_solutions,
     load_quality_control,
@@ -140,16 +143,14 @@ def clean_tt(
     return cleaned_travel_times
 
 
-from scipy.spatial.transform import Rotation
-
-
-def rotation(df, atd_offsets, input_columns, output_columns) -> pandas.DataFrame:
+def rotation(
+    df: pandas.DataFrame,
+    atd_offsets: NDArray[Shape["3"], Float],
+    input_columns: List[str],
+    output_columns: List[str],
+) -> pandas.DataFrame:
     r = Rotation.from_euler("xyz", df[input_columns], degrees=True)
     offsets = r.as_matrix() @ atd_offsets
-
-    # d_e0 = offsets[:, 1]
-    # d_n0 = offsets[:, 0]
-    # d_u0 = -offsets[:, 2]
 
     df[output_columns[0]] = offsets[:, 0]
     df[output_columns[1]] = offsets[:, 1]
@@ -157,21 +158,17 @@ def rotation(df, atd_offsets, input_columns, output_columns) -> pandas.DataFrame
 
     return df
 
-    # typer.echo(f"offsets: {offsets.}")
-    # return np.array([offsets[1], offsets[0], -offsets[2]])
-    # typer.echo(f"Rotation: {np.array([offsets[1], offsets[0], -offsets[2]])}")
-
 
 def get_transmit_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
     rph_data: Union[pd.DataFrame, None],
     gps_sigma_limit: float,
-    atd_offsets,
+    atd_offsets: NDArray[Shape["3"], Float],
 ) -> pd.DataFrame:
     """
-    Merges cleaned transmit times with gps solutions into one
-    dataframe and check for 3d std deviation
+    Merges cleaned transmit times with gps solutions and roll-pitch-heading solutions into
+    one dataframe. Then performs rotation and check for 3d std deviation.
 
     Parameters
     ----------
@@ -183,6 +180,8 @@ def get_transmit_times(
         The full roll-pitch-heading data
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
+    atd_offsets : NDArray[Shape["3"], Float]
+        A Numpy array containing forward, rightward, and downward atd offset values
 
     Returns
     -------
@@ -209,8 +208,8 @@ def get_transmit_times(
         transmit_times = rotation(
             transmit_times,
             atd_offsets,
-            ["roll", "pitch", "heading"],
-            ["d_n", "d_e", "d_u"],
+            [constants.RPH_ROLL, constants.RPH_PITCH, constants.RPH_HEADING],
+            [constants.DIR_NORTHWARD, constants.DIR_EASTWARD, constants.DIR_UPWARD],
         )
 
         # transmit_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
@@ -224,7 +223,8 @@ def get_transmit_times(
         for col in transmit_times.columns
     ]
     typer.echo(
-        f"transmit_times after merging with rph data: {transmit_times.shape} {transmit_times.columns}\n{transmit_times.head()}"
+        f"transmit_times after merging with rph data: "
+        f"{transmit_times.shape} {transmit_times.columns}\n{transmit_times.head()}"
     )
 
     return transmit_times
@@ -239,8 +239,8 @@ def get_reply_times(
     atd_offsets,
 ):
     """
-    Merges cleaned reply times with gps solutions into one
-    dataframe and check for 3d std deviation
+    Merges cleaned reply times with gps solutions and roll-pitch-heading solutions into one
+    dataframe. Then performs rotation operation and checks for 3d std deviation.
 
     Parameters
     ----------
@@ -255,6 +255,9 @@ def get_reply_times(
     transponder_ids : List[str]
         A list of the transponder ids that matches the order
         with ``cleaned_travel_times`` data
+    atd_offsets : NDArray[Shape["3"], Float]
+        A Numpy array containing forward, rightward, and downward atd offset values
+
 
     Returns
     -------
@@ -295,8 +298,8 @@ def get_reply_times(
         reply_times = rotation(
             reply_times,
             atd_offsets,
-            ["roll", "pitch", "heading"],
-            ["d_n", "d_e", "d_u"],
+            [constants.RPH_ROLL, constants.RPH_PITCH, constants.RPH_HEADING],
+            [constants.DIR_NORTHWARD, constants.DIR_EASTWARD, constants.DIR_UPWARD],
         )
         reply_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
 
@@ -325,7 +328,8 @@ def get_reply_times(
         for col in reply_times.columns
     ]
     typer.echo(
-        f"reply_times after merging with rph data: {reply_times.shape}\n{reply_times.columns}\n{reply_times.head()}"
+        f"reply_times after merging with rph data: "
+        f"{reply_times.shape}\n{reply_times.columns}\n{reply_times.head()}"
     )
 
     return reply_times
@@ -629,14 +633,10 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
 
     typer.echo("Cross referencing transmit, reply, and gps solutions...")
+
+    atd_offsets = load_atd_offsets(config)
+
     # Parse transmit times
-    atd_offsets = np.array(
-        [
-            config.posfilter.atd_offsets.forward,
-            config.posfilter.atd_offsets.rightward,
-            config.posfilter.atd_offsets.downward,
-        ]
-    )
     transmit_times = get_transmit_times(
         cleaned_travel_times,
         all_gps_solutions,
@@ -662,7 +662,8 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     )  # Reset index ensures that it is sequential
 
     typer.echo(
-        f"all_observations: {all_observations.shape}:\n{all_observations.columns}\n{all_observations.head}"
+        f"all_observations: "
+        f"{all_observations.shape}:\n{all_observations.columns}\n{all_observations.head}"
     )
 
     return all_observations

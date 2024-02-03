@@ -2,8 +2,10 @@ import warnings
 from pathlib import Path
 from typing import List, Optional, Union
 
+import numpy as np
 import pandas as pd
 import yaml
+from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
 from pydantic import ValidationError
 
@@ -176,8 +178,8 @@ def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
 
     Parameters
     ----------
-    files : List[str]
-        The list of path string to files to load
+    files : Union[List[str], str]
+        The list of path string to files to load, or an empty string if no file paths found
 
     Returns
     -------
@@ -204,8 +206,34 @@ def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
         all_rph = pd.concat(rph_dfs).reset_index(drop=True)
         return all_rph
     else:
-        # If no files is empty, return empty dataframe
         return pd.DataFrame(columns=columns)
+
+
+def load_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], None]:
+    """
+     Loads Antenna Transducer Offset values into a numpy array.
+     Returns None if atd_offsets not present in configuration.
+
+     Parameters
+     ----------
+     config : Configuration
+     The configuration object
+
+     Returns
+     -------
+    Union[NDArray[Shape["3"], Float], None]
+         Numpy array containing the forward, rightward and downward
+         antenna transducer offsets.
+    """
+    if config.posfilter and config.posfilter.atd_offsets:
+        return np.array(
+            [
+                config.posfilter.atd_offsets.forward,
+                config.posfilter.atd_offsets.rightward,
+                config.posfilter.atd_offsets.downward,
+            ]
+        )
+    return None
 
 
 def load_gps_solutions(
