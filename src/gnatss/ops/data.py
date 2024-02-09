@@ -40,6 +40,50 @@ def _split_cov(
     return cov
 
 
+from typing import List
+def ecef_to_enu(
+    df: pd.DataFrame,
+    ecef_inputs: List[str],
+    enu_outputs: List[str],
+    array_center: ArrayCenter,
+) -> pd.DataFrame:
+    """
+    Calculate ENU coordinates from input ECEF coordinates
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        The full dataset for computation
+    ecef_cols: List[str]
+        Columns in the df that contain ENU coordinates
+    enu_outputs: List[str]
+        Columns that should be created in the df for ENU coordinates
+    array_center : ArrayCenter
+        An object containing the center of the array
+
+    Returns
+    -------
+    pd.DataFrame
+        Modified dataset with ECEF and ENU coordinates
+    """
+    import typer
+    # typer.echo(f"ecef_to_enu enu_outputs: {enu_outputs}")
+    enu = df[ecef_inputs].apply(
+        lambda row: ecef2enu(
+            *row.values,
+            lat0=array_center.lat,
+            lon0=array_center.lon,
+            h0=array_center.alt,
+        ),
+        axis=1,
+    )
+    df = df.assign(
+        **dict(zip(enu_outputs, zip(*enu)))
+    )
+    return df
+
+
+
 def calc_lla_and_enu(
     all_observations: pd.DataFrame, array_center: ArrayCenter
 ) -> pd.DataFrame:
@@ -58,11 +102,16 @@ def calc_lla_and_enu(
     pd.DataFrame
         Modified dataset with LLA and ENU coordinates
     """
+    # TRANSMIT_LOC_COLS = x0, y0, z0
+    # lla = lon, lat, alt
     lla = all_observations[TRANSMIT_LOC_COLS].apply(
         lambda row: ecef2geodetic(*row.values), axis=1
     )
+
+    # TRANSMIT_LOC_COLS = x0, y0, z0
+    # enu = east, north, up
     enu = all_observations[TRANSMIT_LOC_COLS].apply(
-        lambda row: ecef2enu(
+        lambda row: ecef2enu(  ### We need this result
             *row.values,
             lat0=array_center.lat,
             lon0=array_center.lon,
@@ -70,9 +119,11 @@ def calc_lla_and_enu(
         ),
         axis=1,
     )
+    # GPS_GEODETIC = lon, lat, alt
     all_observations = all_observations.assign(
         **dict(zip(_prep_col_names(constants.GPS_GEODETIC), zip(*lla)))
     )
+    # GPS_LOCAL_TANGENT = east, north, up
     all_observations = all_observations.assign(
         **dict(zip(_prep_col_names(constants.GPS_LOCAL_TANGENT), zip(*enu)))
     )
