@@ -199,10 +199,8 @@ def get_transmit_times(
             atd_offsets,
             array_center,
             constants.RPH_COLUMNS,
-            constants.ROTATION_DIRECTIONS,
-            constants.CORRECTED_ROTATION_DIRECTIONS,
             constants.GPS_GEOCENTRIC,
-            constants.GPS_LOCAL_TANGENT,
+            constants.ANTENNA_DIRECTIONS,
         )
 
         # transmit_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
@@ -295,10 +293,8 @@ def get_reply_times(
             atd_offsets,
             array_center,
             constants.RPH_COLUMNS,
-            constants.ROTATION_DIRECTIONS,
-            constants.CORRECTED_ROTATION_DIRECTIONS,
             constants.GPS_GEOCENTRIC,
-            constants.GPS_LOCAL_TANGENT,
+            constants.ANTENNA_DIRECTIONS,
         )
 
         reply_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
@@ -616,7 +612,6 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     all_files_dict.setdefault("roll_pitch_heading", "")
     typer.echo("Load roll-pitch-heading data...")
     rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
-    typer.echo(f"rph_data: \n{rph_data}")
 
     # Cleaning travel times
     typer.echo("Cleaning travel times data...")

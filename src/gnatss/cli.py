@@ -77,9 +77,9 @@ def run(
 
     typer.echo("Configuration loaded.")
     all_files_dict = dict()
-    for config_field in ("solver", "posfilter"):
-        if getattr(config, config_field):
-            all_files_dict.update(gather_files(config, config_field))
+    for proc in ("solver", "posfilter"):
+        if getattr(config, proc):
+            all_files_dict.update(gather_files(config, proc))
 
     # Run the main function
     # TODO: Clean up so that we aren't throwing data away
