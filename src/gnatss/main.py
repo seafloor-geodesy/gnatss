@@ -199,7 +199,7 @@ def get_transmit_times(
             transmit_times,
             atd_offsets,
             array_center,
-            constants.RPH_COLUMNS,
+            constants.RPH_LOCAL_TANGENTS,
             constants.GPS_GEOCENTRIC,
             constants.ANTENNA_DIRECTIONS,
         )
@@ -293,7 +293,7 @@ def get_reply_times(
             reply_times,
             atd_offsets,
             array_center,
-            constants.RPH_COLUMNS,
+            constants.RPH_LOCAL_TANGENTS,
             constants.GPS_GEOCENTRIC,
             constants.ANTENNA_DIRECTIONS,
         )

@@ -186,11 +186,13 @@ def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
     pd.DataFrame
         Pandas DataFrame containing all of the roll pitch heading data.
         Expected columns will have 'time' and the 'roll', 'pitch', 'heading' values.
+        Optional roll, pitch, heading covariance columns will be dropped from the dataframe.
         Return empty Dataframe if files is empty string.
     """
     columns = [
         constants.RPH_TIME,
-        *constants.RPH_COLUMNS,
+        *constants.RPH_LOCAL_TANGENTS,
+        *constants.RPH_COV,
     ]
     if files:
         # Read all rph files
@@ -201,6 +203,14 @@ def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
             for i in files
         ]
         all_rph = pd.concat(rph_dfs).reset_index(drop=True)
+
+        # Drop optional roll, pitch, heading covariance columns
+        # only if not present in csv files
+        # all_rph.dropna(axis="columns", inplace=True, how='all')
+
+        # Drop optional roll, pitch, heading covariance columns
+        all_rph.drop(columns=constants.RPH_COV, inplace=True)
+
         return all_rph
     else:
         return pd.DataFrame(columns=columns)
