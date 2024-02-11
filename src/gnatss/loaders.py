@@ -184,10 +184,9 @@ def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Pandas DataFrame containing all of
-        the roll pitch heading data.
-        Expected columns will have 'time' and
-        the 'roll', 'pitch', 'heading' values
+        Pandas DataFrame containing all of the roll pitch heading data.
+        Expected columns will have 'time' and the 'roll', 'pitch', 'heading' values.
+        Return empty Dataframe if files is empty string.
     """
     columns = [
         constants.RPH_TIME,

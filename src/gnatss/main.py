@@ -152,7 +152,7 @@ def get_transmit_times(
 ) -> pd.DataFrame:
     """
     Merges cleaned transmit times with gps solutions and roll-pitch-heading solutions into
-    one dataframe. Then performs rotation and check for 3d std deviation.
+    one dataframe. Then calculates GNSS antenna positions, and checks for 3d std deviation.
 
     Parameters
     ----------
@@ -227,7 +227,7 @@ def get_reply_times(
 ):
     """
     Merges cleaned reply times with gps solutions and roll-pitch-heading solutions into one
-    dataframe. Then performs rotation operation and checks for 3d std deviation.
+    dataframe. Then calculates GNSS antenna positions, and checks for 3d std deviation.
 
     Parameters
     ----------
@@ -653,13 +653,6 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     ).reset_index(
         drop=True
     )  # Reset index ensures that it is sequential
-
-    # from .ops.data import calc_lla_and_enu
-    # all_observations = calc_lla_and_enu(all_observations, config.solver.array_center)
-    # typer.echo(
-    #     f"all_observations: after "
-    #     f"{all_observations.shape}:\n{all_observations.columns}\n{all_observations.head()}"
-    # )
 
     return all_observations
 
