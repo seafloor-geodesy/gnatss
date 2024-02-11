@@ -191,9 +191,7 @@ def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
     """
     columns = [
         constants.RPH_TIME,
-        constants.RPH_ROLL,
-        constants.RPH_PITCH,
-        constants.RPH_HEADING,
+        *constants.RPH_COLUMNS,
     ]
     if files:
         # Read all rph files
@@ -223,7 +221,7 @@ def load_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float],
      -------
     Union[NDArray[Shape["3"], Float], None]
          Numpy array containing the forward, rightward and downward
-         antenna transducer offsets.
+         antenna transducer offsets. Return None if atd_offsets not present in configuration.
     """
     if config.posfilter and config.posfilter.atd_offsets:
         return np.array(

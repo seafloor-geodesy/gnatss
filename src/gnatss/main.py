@@ -2,7 +2,6 @@ import warnings
 from typing import Any, Dict, List, Literal, Tuple, Union
 
 import numpy as np
-import pandas
 import pandas as pd
 import typer
 import xarray as xr
@@ -11,7 +10,7 @@ from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 
 from . import constants
 from .configs.main import Configuration
-from .configs.solver import SolverTransponder, ArrayCenter
+from .configs.solver import ArrayCenter, SolverTransponder
 from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
     load_atd_offsets,
@@ -22,10 +21,10 @@ from .loaders import (
     load_sound_speed,
     load_travel_times,
 )
-from .ops.data import get_data_inputs, ecef_to_enu
+from .ops.data import get_data_inputs
+from .ops.posfilter import rotation
 from .ops.solve import perform_solve
 from .ops.utils import _prep_col_names
-from .ops.posfilter import rotation
 from .ops.validate import check_sig3d, check_solutions
 from .utilities.geo import _get_rotation_matrix
 from .utilities.io import _get_filesystem
@@ -143,8 +142,6 @@ def clean_tt(
     return cleaned_travel_times
 
 
-
-
 def get_transmit_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
@@ -187,13 +184,17 @@ def get_transmit_times(
 
     # Merge with rph data
     if not rph_data.empty:
-        # typer.echo(f"rph_data:{rph_data.shape}\n{rph_data.head(10)}")
         transmit_times = pd.merge(
             transmit_times,
             rph_data,
             left_on=constants.TT_TIME,
             right_on=constants.RPH_TIME,
         )
+        # Remove RPH_TIME column from transmit_times df after merge
+        if constants.TT_TIME != constants.RPH_TIME:
+            transmit_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
+
+        # Calculate GNSS antenna positions
         transmit_times = rotation(
             transmit_times,
             atd_offsets,
@@ -203,8 +204,6 @@ def get_transmit_times(
             constants.ANTENNA_DIRECTIONS,
         )
 
-        # transmit_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
-
     # Compute and check 3d standard deviation
     transmit_times = check_sig3d(data=transmit_times, gps_sigma_limit=gps_sigma_limit)
 
@@ -213,10 +212,6 @@ def get_transmit_times(
         f"{col}0" if col != constants.TT_TIME else constants.garpos.ST
         for col in transmit_times.columns
     ]
-    typer.echo(
-        f"transmit_times after merging with rph data: "
-        f"{transmit_times.shape} {transmit_times.columns}\n{transmit_times.head()}"
-    )
 
     return transmit_times
 
@@ -228,7 +223,7 @@ def get_reply_times(
     gps_sigma_limit: float,
     transponder_ids: List[str],
     atd_offsets: NDArray[Shape["3"], Float],
-    array_center : ArrayCenter,
+    array_center: ArrayCenter,
 ):
     """
     Merges cleaned reply times with gps solutions and roll-pitch-heading solutions into one
@@ -271,6 +266,7 @@ def get_reply_times(
     reply_times[constants.garpos.RT] = reply_times.apply(
         lambda row: row[constants.garpos.ST] + row[constants.garpos.TT], axis=1
     )
+
     # Merge with gps solutions
     reply_times = pd.merge(
         reply_times,
@@ -288,6 +284,11 @@ def get_reply_times(
             left_on=constants.garpos.RT,
             right_on=constants.RPH_TIME,
         )
+        # Remove RPH_TIME column from reply_times df after merge
+        if constants.garpos.RT != constants.RPH_TIME:
+            reply_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
+
+        # Calculate GNSS antenna positions
         reply_times = rotation(
             reply_times,
             atd_offsets,
@@ -296,8 +297,6 @@ def get_reply_times(
             constants.GPS_GEOCENTRIC,
             constants.ANTENNA_DIRECTIONS,
         )
-
-        reply_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
 
     # Compute and check 3d standard deviation
     reply_times = check_sig3d(data=reply_times, gps_sigma_limit=gps_sigma_limit)
@@ -323,10 +322,6 @@ def get_reply_times(
         else col
         for col in reply_times.columns
     ]
-    typer.echo(
-        f"reply_times after merging with rph data: "
-        f"{reply_times.shape}\n{reply_times.columns}\n{reply_times.head()}"
-    )
 
     return reply_times
 
@@ -626,7 +621,6 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     # Load gps solutions data
     typer.echo("Load GPS data...")
     all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
-    typer.echo(f"all_gps_solutions:\n{all_gps_solutions.columns}\n{all_gps_solutions.head()}")
 
     typer.echo("Cross referencing transmit, reply, and gps solutions...")
 
@@ -641,6 +635,7 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         atd_offsets,
         config.solver.array_center,
     )
+
     # Parse reply times
     reply_times = get_reply_times(
         cleaned_travel_times,
@@ -659,17 +654,12 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         drop=True
     )  # Reset index ensures that it is sequential
 
-    typer.echo(
-        f"all_observations: before "
-        f"{all_observations.shape}:\n{all_observations.columns}\n{all_observations.head()}"
-    )
     # from .ops.data import calc_lla_and_enu
     # all_observations = calc_lla_and_enu(all_observations, config.solver.array_center)
     # typer.echo(
     #     f"all_observations: after "
     #     f"{all_observations.shape}:\n{all_observations.columns}\n{all_observations.head()}"
     # )
-
 
     return all_observations
 
