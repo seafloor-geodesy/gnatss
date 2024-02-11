@@ -145,7 +145,7 @@ def clean_tt(
 def get_transmit_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
-    rph_data: Union[pd.DataFrame, None],
+    rph_data: pd.DataFrame,
     gps_sigma_limit: float,
     atd_offsets: NDArray[Shape["3"], Float],
     array_center: ArrayCenter,
@@ -160,7 +160,7 @@ def get_transmit_times(
         The full cleaned travel times data
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
-    rph_data : Union[pd.DataFrame, None]
+    rph_data : pd.DataFrame
         The full roll-pitch-heading data
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
@@ -219,7 +219,7 @@ def get_transmit_times(
 def get_reply_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
-    rph_data: Union[pd.DataFrame, None],
+    rph_data: pd.DataFrame,
     gps_sigma_limit: float,
     transponder_ids: List[str],
     atd_offsets: NDArray[Shape["3"], Float],
@@ -235,7 +235,7 @@ def get_reply_times(
         The full cleaned travel times data
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
-    rph_data : Union[pd.DataFrame, None]
+    rph_data : pd.DataFrame
         The full roll-pitch-heading data
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
