@@ -172,7 +172,7 @@ def load_travel_times(
     return all_travel_times
 
 
-def load_roll_pitch_heading(files: Union[List[str], str]) -> pd.DataFrame:
+def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.
 

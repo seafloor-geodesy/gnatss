@@ -580,17 +580,13 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         typer.echo(transponder)
     typer.echo("Finished computing harmonic mean")
 
-    # Read deletion file
-    # Set default to empty string
-    all_files_dict.setdefault("deletions", "")
+    # Read deletion file, and set default to empty list
     typer.echo("Load deletions data...")
-    cut_df = load_deletions(all_files_dict["deletions"], config=config)
+    cut_df = load_deletions(all_files_dict.get("deletions", list()), config=config)
 
-    # Read quality control file
-    # Set default to empty string
-    all_files_dict.setdefault("quality_controls", "")
+    # Read quality control file, and set default to empty list
     typer.echo("Load quality controls data...")
-    qc_df = load_quality_control(all_files_dict["quality_controls"])
+    qc_df = load_quality_control(all_files_dict.get("quality_controls", list()))
     # Concatenate quality_controls data onto deletions data
     if not qc_df.empty:
         cut_df = pd.concat([cut_df, qc_df]).reset_index(drop=True)
@@ -602,11 +598,11 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         files=all_files_dict["travel_times"], transponder_ids=transponder_ids
     )
 
-    # Load roll-pitch-heading data
-    # Set default to empty string
-    all_files_dict.setdefault("roll_pitch_heading", "")
+    # Load roll-pitch-heading data, and set default to empty list
     typer.echo("Load roll-pitch-heading data...")
-    rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
+    rph_data = load_roll_pitch_heading(
+        files=all_files_dict.get("roll_pitch_heading", list())
+    )
 
     # Cleaning travel times
     typer.echo("Cleaning travel times data...")
