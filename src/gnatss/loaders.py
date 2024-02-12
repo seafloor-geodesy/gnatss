@@ -206,21 +206,21 @@ def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
         return pd.DataFrame(columns=columns)
 
 
-def load_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], None]:
+def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], None]:
     """
-     Loads Antenna Transducer Offset values into a numpy array.
-     Returns None if atd_offsets not present in configuration.
+        Retrieves the Antenna Transducer Offset values from configuration and turn them
+        into a numpy array. Returns None if atd_offsets not present in configuration.
 
-     Parameters
-     ----------
-     config : Configuration
-     The configuration object
+        Parameters
+        ----------
+        config : Configuration
+        The configuration object
 
-     Returns
-     -------
-    Union[NDArray[Shape["3"], Float], None]
-         Numpy array containing the forward, rightward and downward
-         antenna transducer offsets. Return None if atd_offsets not present in configuration.
+        Returns
+    -------
+        Union[NDArray[Shape["3"], Float], None]
+             Numpy array containing the forward, rightward and downward
+             antenna transducer offsets. Return None if atd_offsets not present in configuration.
     """
     if config.posfilter and config.posfilter.atd_offsets:
         return np.array(

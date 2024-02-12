@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, List, Literal, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from .configs.main import Configuration
 from .configs.solver import ArrayCenter, SolverTransponder
 from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
-    load_atd_offsets,
+    get_atd_offsets,
     load_deletions,
     load_gps_solutions,
     load_quality_control,
@@ -147,8 +147,8 @@ def get_transmit_times(
     all_gps_solutions: pd.DataFrame,
     rph_data: pd.DataFrame,
     gps_sigma_limit: float,
-    atd_offsets: NDArray[Shape["3"], Float],
-    array_center: ArrayCenter,
+    atd_offsets: Optional[NDArray[Shape["3"], Float]] = None,
+    array_center: Optional[ArrayCenter] = None,
 ) -> pd.DataFrame:
     """
     Merges cleaned transmit times with gps solutions and roll-pitch-heading solutions into
@@ -161,13 +161,15 @@ def get_transmit_times(
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
     rph_data : pd.DataFrame
-        The full roll-pitch-heading data
+        The full roll-pitch-heading data. If non-empty Dataframe, calculate GNSS antenna positions.
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
-    atd_offsets : NDArray[Shape["3"], Float]
-        A Numpy array containing forward, rightward, and downward atd offset values
-    array_center : ArrayCenter
-        An object containing the center of the array
+    atd_offsets : Optional[NDArray[Shape["3"], Float]]
+        (Optional argument) Numpy array containing forward, rightward, and downward atd offset
+        values. Required argument if GNSS antenna position calculation being performed.
+    array_center : Optional[ArrayCenter]
+        (Optional argument) An object containing the center of the array.
+        Required argument if GNSS antenna position calculation being performed.
 
     Returns
     -------
@@ -182,7 +184,7 @@ def get_transmit_times(
         right_on=constants.GPS_TIME,
     )
 
-    # Merge with rph data
+    # Merge with rph data if rph_data df is non-empty
     if not rph_data.empty:
         transmit_times = pd.merge(
             transmit_times,
@@ -222,8 +224,8 @@ def get_reply_times(
     rph_data: pd.DataFrame,
     gps_sigma_limit: float,
     transponder_ids: List[str],
-    atd_offsets: NDArray[Shape["3"], Float],
-    array_center: ArrayCenter,
+    atd_offsets: Optional[NDArray[Shape["3"], Float]] = None,
+    array_center: Optional[ArrayCenter] = None,
 ):
     """
     Merges cleaned reply times with gps solutions and roll-pitch-heading solutions into one
@@ -236,16 +238,18 @@ def get_reply_times(
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
     rph_data : pd.DataFrame
-        The full roll-pitch-heading data
+        The full roll-pitch-heading data. If non-empty Dataframe, calculate GNSS antenna positions.
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
     transponder_ids : List[str]
         A list of the transponder ids that matches the order
         with ``cleaned_travel_times`` data
-    atd_offsets : NDArray[Shape["3"], Float]
-        A Numpy array containing forward, rightward, and downward atd offset values
-    array_center : ArrayCenter
-        An object containing the center of the array
+    atd_offsets : Optional[NDArray[Shape["3"], Float]]
+        (Optional argument) Numpy array containing forward, rightward, and downward atd
+        offset values. Required argument if GNSS antenna position calculation being performed.
+    array_center : Optional[ArrayCenter]
+        (Optional argument) An object containing the center of the array.
+        Required argument if GNSS antenna position calculation being performed.
 
     Returns
     -------
@@ -276,6 +280,7 @@ def get_reply_times(
     )
     reply_times = reply_times.drop(constants.GPS_TIME, axis="columns")
 
+    # Merge with rph data if rph_data df is non-empty
     if not rph_data.empty:
         # Merge with rph data
         reply_times = pd.merge(
@@ -580,13 +585,16 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         typer.echo(transponder)
     typer.echo("Finished computing harmonic mean")
 
-    # Read deletion file, and set default to empty list
-    typer.echo("Load deletions data...")
-    cut_df = load_deletions(all_files_dict.get("deletions", list()), config=config)
+    if all_files_dict.get("deletions"):
+        # Read deletion file
+        typer.echo("Load deletions data...")
+        cut_df = load_deletions(all_files_dict["deletions"], config=config)
 
-    # Read quality control file, and set default to empty list
-    typer.echo("Load quality controls data...")
-    qc_df = load_quality_control(all_files_dict.get("quality_controls", list()))
+    if all_files_dict.get("quality_controls"):
+        # Read quality control file
+        typer.echo("Load quality controls data...")
+        qc_df = load_quality_control(all_files_dict["quality_controls"])
+
     # Concatenate quality_controls data onto deletions data
     if not qc_df.empty:
         cut_df = pd.concat([cut_df, qc_df]).reset_index(drop=True)
@@ -598,11 +606,10 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         files=all_files_dict["travel_times"], transponder_ids=transponder_ids
     )
 
-    # Load roll-pitch-heading data, and set default to empty list
-    typer.echo("Load roll-pitch-heading data...")
-    rph_data = load_roll_pitch_heading(
-        files=all_files_dict.get("roll_pitch_heading", list())
-    )
+    if all_files_dict.get("roll_pitch_heading"):
+        # Load roll-pitch-heading data
+        typer.echo("Load roll-pitch-heading data...")
+        rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
 
     # Cleaning travel times
     typer.echo("Cleaning travel times data...")
@@ -620,7 +627,7 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
 
     typer.echo("Cross referencing transmit, reply, and gps solutions...")
 
-    atd_offsets = load_atd_offsets(config)
+    atd_offsets = get_atd_offsets(config)
 
     # Parse transmit times
     transmit_times = get_transmit_times(
