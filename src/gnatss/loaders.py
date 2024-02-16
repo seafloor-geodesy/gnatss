@@ -179,7 +179,7 @@ def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
     Parameters
     ----------
     files : List[str]
-        The list of path string to files to load, or an empty string if no file paths found
+        The list of path string to files to load.
 
     Returns
     -------
