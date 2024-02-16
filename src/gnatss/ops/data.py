@@ -1,3 +1,5 @@
+from typing import List
+
 import numba
 import numpy as np
 import pandas as pd
@@ -38,6 +40,44 @@ def _split_cov(
     for i in range(n):
         cov[i] = cov_values[i * n : i * n + n]  # noqa
     return cov
+
+
+def ecef_to_enu(
+    df: pd.DataFrame,
+    input_ecef_columns: List[str],
+    output_enu_columns: List[str],
+    array_center: ArrayCenter,
+) -> pd.DataFrame:
+    """
+    Calculate ENU coordinates from input ECEF coordinates
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        The full dataset for computation
+    input_ecef_columns: List[str]
+        Columns in the df that contain ENU coordinates
+    output_enu_columns: List[str]
+        Columns that should be created in the df for ENU coordinates
+    array_center : ArrayCenter
+        An object containing the center of the array
+
+    Returns
+    -------
+    pd.DataFrame
+        Modified dataset with ECEF and ENU coordinates
+    """
+    enu = df[input_ecef_columns].apply(
+        lambda row: ecef2enu(
+            *row.values,
+            lat0=array_center.lat,
+            lon0=array_center.lon,
+            h0=array_center.alt,
+        ),
+        axis=1,
+    )
+    df = df.assign(**dict(zip(output_enu_columns, zip(*enu))))
+    return df
 
 
 def calc_lla_and_enu(

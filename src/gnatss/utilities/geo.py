@@ -92,6 +92,9 @@ def ecef2ae(
     elev: float
         elevation (degrees)
     """
+    if ell is None:
+        ell = Ellipsoid.from_name("wgs84")
+
     e, n, u = ecef2enu(x, y, z, lat0, lon0, h0, ell, deg=deg)
 
     # 1 millimeter precision for singularity stability

@@ -76,7 +76,10 @@ def run(
         config.solver.residual_limit = residual_limit
 
     typer.echo("Configuration loaded.")
-    all_files_dict = gather_files(config)
+    all_files_dict = dict()
+    for proc in ("solver", "posfilter"):
+        if getattr(config, proc):
+            all_files_dict.update(gather_files(config, proc))
 
     # Run the main function
     # TODO: Clean up so that we aren't throwing data away

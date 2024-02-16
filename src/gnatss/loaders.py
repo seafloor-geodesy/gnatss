@@ -1,9 +1,11 @@
 import warnings
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
+import numpy as np
 import pandas as pd
 import yaml
+from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
 from pydantic import ValidationError
 
@@ -177,31 +179,58 @@ def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
     Parameters
     ----------
     files : List[str]
-        The list of path string to files to load
+        The list of path string to files to load.
 
     Returns
     -------
     pd.DataFrame
-        Pandas DataFrame containing all of
-        the roll pitch heading data.
-        Expected columns will have 'time' and
-        the 'roll', 'pitch', 'heading' values
+        Pandas DataFrame containing all of the roll pitch heading data.
+        Expected columns will have 'time' and the 'roll', 'pitch', 'heading' values.
+        Return empty Dataframe if files is empty string.
     """
     columns = [
         constants.RPH_TIME,
-        constants.RPH_ROLL,
-        constants.RPH_PITCH,
-        constants.RPH_HEADING,
+        *constants.RPH_COLUMNS,
     ]
-    # Read all rph files
-    rph_dfs = [
-        pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
-        .drop_duplicates(constants.RPH_TIME)
-        .reset_index(drop=True)
-        for i in files
-    ]
-    all_rph = pd.concat(rph_dfs).reset_index(drop=True)
-    return all_rph
+    if files:
+        # Read all rph files
+        rph_dfs = [
+            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+            .drop_duplicates(constants.RPH_TIME)
+            .reset_index(drop=True)
+            for i in files
+        ]
+        all_rph = pd.concat(rph_dfs).reset_index(drop=True)
+        return all_rph
+    else:
+        return pd.DataFrame(columns=columns)
+
+
+def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], None]:
+    """
+        Retrieves the Antenna Transducer Offset values from configuration and turn them
+        into a numpy array. Returns None if atd_offsets not present in configuration.
+
+        Parameters
+        ----------
+        config : Configuration
+        The configuration object
+
+        Returns
+    -------
+        Union[NDArray[Shape["3"], Float], None]
+             Numpy array containing the forward, rightward and downward
+             antenna transducer offsets. Return None if atd_offsets not present in configuration.
+    """
+    if config.posfilter and config.posfilter.atd_offsets:
+        return np.array(
+            [
+                config.posfilter.atd_offsets.forward,
+                config.posfilter.atd_offsets.rightward,
+                config.posfilter.atd_offsets.downward,
+            ]
+        )
+    return None
 
 
 def load_gps_solutions(

@@ -1,24 +1,28 @@
 import warnings
-from typing import Any, Dict, List, Literal, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import typer
 import xarray as xr
+from nptyping import Float, NDArray, Shape
 from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 
 from . import constants
 from .configs.main import Configuration
-from .configs.solver import SolverTransponder
+from .configs.solver import ArrayCenter, SolverTransponder
 from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
+    get_atd_offsets,
     load_deletions,
     load_gps_solutions,
     load_quality_control,
+    load_roll_pitch_heading,
     load_sound_speed,
     load_travel_times,
 )
 from .ops.data import get_data_inputs
+from .ops.posfilter import rotation
 from .ops.solve import perform_solve
 from .ops.utils import _prep_col_names
 from .ops.validate import check_sig3d, check_solutions
@@ -141,11 +145,14 @@ def clean_tt(
 def get_transmit_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
+    rph_data: pd.DataFrame,
     gps_sigma_limit: float,
+    atd_offsets: Optional[NDArray[Shape["3"], Float]] = None,
+    array_center: Optional[ArrayCenter] = None,
 ) -> pd.DataFrame:
     """
-    Merges cleaned transmit times with gps solutions into one
-    dataframe and check for 3d std deviation
+    Merges cleaned transmit times with gps solutions and roll-pitch-heading solutions into
+    one dataframe. Then calculates GNSS antenna positions, and checks for 3d std deviation.
 
     Parameters
     ----------
@@ -153,8 +160,16 @@ def get_transmit_times(
         The full cleaned travel times data
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
+    rph_data : pd.DataFrame
+        The full roll-pitch-heading data. If non-empty Dataframe, calculate GNSS antenna positions.
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
+    atd_offsets : Optional[NDArray[Shape["3"], Float]]
+        (Optional argument) Numpy array containing forward, rightward, and downward atd offset
+        values. Required argument if GNSS antenna position calculation being performed.
+    array_center : Optional[ArrayCenter]
+        (Optional argument) An object containing the center of the array.
+        Required argument if GNSS antenna position calculation being performed.
 
     Returns
     -------
@@ -168,6 +183,28 @@ def get_transmit_times(
         left_on=constants.TT_TIME,
         right_on=constants.GPS_TIME,
     )
+
+    # Merge with rph data if rph_data df is non-empty
+    if not rph_data.empty:
+        transmit_times = pd.merge(
+            transmit_times,
+            rph_data,
+            left_on=constants.TT_TIME,
+            right_on=constants.RPH_TIME,
+        )
+        # Remove RPH_TIME column from transmit_times df after merge
+        if constants.TT_TIME != constants.RPH_TIME:
+            transmit_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
+
+        # Calculate GNSS antenna positions
+        transmit_times = rotation(
+            transmit_times,
+            atd_offsets,
+            array_center,
+            constants.RPH_COLUMNS,
+            constants.GPS_GEOCENTRIC,
+            constants.ANTENNA_DIRECTIONS,
+        )
 
     # Compute and check 3d standard deviation
     transmit_times = check_sig3d(data=transmit_times, gps_sigma_limit=gps_sigma_limit)
@@ -184,12 +221,15 @@ def get_transmit_times(
 def get_reply_times(
     cleaned_travel_times: pd.DataFrame,
     all_gps_solutions: pd.DataFrame,
+    rph_data: pd.DataFrame,
     gps_sigma_limit: float,
     transponder_ids: List[str],
+    atd_offsets: Optional[NDArray[Shape["3"], Float]] = None,
+    array_center: Optional[ArrayCenter] = None,
 ):
     """
-    Merges cleaned reply times with gps solutions into one
-    dataframe and check for 3d std deviation
+    Merges cleaned reply times with gps solutions and roll-pitch-heading solutions into one
+    dataframe. Then calculates GNSS antenna positions, and checks for 3d std deviation.
 
     Parameters
     ----------
@@ -197,11 +237,19 @@ def get_reply_times(
         The full cleaned travel times data
     all_gps_solutions : pd.DataFrame
         The full gps solutions data
+    rph_data : pd.DataFrame
+        The full roll-pitch-heading data. If non-empty Dataframe, calculate GNSS antenna positions.
     gps_sigma_limit : float
         Maximum positional sigma allowed to use GPS positions
     transponder_ids : List[str]
         A list of the transponder ids that matches the order
         with ``cleaned_travel_times`` data
+    atd_offsets : Optional[NDArray[Shape["3"], Float]]
+        (Optional argument) Numpy array containing forward, rightward, and downward atd
+        offset values. Required argument if GNSS antenna position calculation being performed.
+    array_center : Optional[ArrayCenter]
+        (Optional argument) An object containing the center of the array.
+        Required argument if GNSS antenna position calculation being performed.
 
     Returns
     -------
@@ -222,6 +270,7 @@ def get_reply_times(
     reply_times[constants.garpos.RT] = reply_times.apply(
         lambda row: row[constants.garpos.ST] + row[constants.garpos.TT], axis=1
     )
+
     # Merge with gps solutions
     reply_times = pd.merge(
         reply_times,
@@ -230,6 +279,29 @@ def get_reply_times(
         right_on=constants.GPS_TIME,
     )
     reply_times = reply_times.drop(constants.GPS_TIME, axis="columns")
+
+    # Merge with rph data if rph_data df is non-empty
+    if not rph_data.empty:
+        # Merge with rph data
+        reply_times = pd.merge(
+            reply_times,
+            rph_data,
+            left_on=constants.garpos.RT,
+            right_on=constants.RPH_TIME,
+        )
+        # Remove RPH_TIME column from reply_times df after merge
+        if constants.garpos.RT != constants.RPH_TIME:
+            reply_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
+
+        # Calculate GNSS antenna positions
+        reply_times = rotation(
+            reply_times,
+            atd_offsets,
+            array_center,
+            constants.RPH_COLUMNS,
+            constants.GPS_GEOCENTRIC,
+            constants.ANTENNA_DIRECTIONS,
+        )
 
     # Compute and check 3d standard deviation
     reply_times = check_sig3d(data=reply_times, gps_sigma_limit=gps_sigma_limit)
@@ -255,6 +327,7 @@ def get_reply_times(
         else col
         for col in reply_times.columns
     ]
+
     return reply_times
 
 
@@ -534,6 +607,11 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
         files=all_files_dict["travel_times"], transponder_ids=transponder_ids
     )
 
+    if all_files_dict.get("roll_pitch_heading"):
+        # Load roll-pitch-heading data
+        typer.echo("Load roll-pitch-heading data...")
+        rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
+
     # Cleaning travel times
     typer.echo("Cleaning travel times data...")
     cleaned_travel_times = clean_tt(
@@ -549,16 +627,28 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
 
     typer.echo("Cross referencing transmit, reply, and gps solutions...")
+
+    atd_offsets = get_atd_offsets(config)
+
     # Parse transmit times
     transmit_times = get_transmit_times(
-        cleaned_travel_times, all_gps_solutions, config.solver.gps_sigma_limit
+        cleaned_travel_times,
+        all_gps_solutions,
+        rph_data,
+        config.solver.gps_sigma_limit,
+        atd_offsets,
+        config.solver.array_center,
     )
+
     # Parse reply times
     reply_times = get_reply_times(
         cleaned_travel_times,
         all_gps_solutions,
+        rph_data,
         config.solver.gps_sigma_limit,
         transponder_ids,
+        atd_offsets,
+        config.solver.array_center,
     )
 
     # Merge times
