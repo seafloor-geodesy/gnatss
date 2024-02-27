@@ -186,24 +186,33 @@ def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
     pd.DataFrame
         Pandas DataFrame containing all of the roll pitch heading data.
         Expected columns will have 'time' and the 'roll', 'pitch', 'heading' values.
+        Optional roll, pitch, heading covariance columns will be dropped from the dataframe.
         Return empty Dataframe if files is empty string.
     """
-    columns = [
+    required_columns = [
         constants.RPH_TIME,
-        *constants.RPH_COLUMNS,
+        *constants.RPH_LOCAL_TANGENTS,
     ]
+    optional_columns = [*constants.RPH_COV]
+
     if files:
         # Read all rph files
         rph_dfs = [
-            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+            pd.read_csv(
+                i,
+                delim_whitespace=True,
+                header=None,
+                names=[*required_columns, *optional_columns],
+            )
             .drop_duplicates(constants.RPH_TIME)
             .reset_index(drop=True)
             for i in files
         ]
-        all_rph = pd.concat(rph_dfs).reset_index(drop=True)
+        # Remove optional columns from all_rph df
+        all_rph = pd.concat(rph_dfs)[required_columns].reset_index(drop=True)
         return all_rph
     else:
-        return pd.DataFrame(columns=columns)
+        return pd.DataFrame(columns=required_columns)
 
 
 def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], None]:

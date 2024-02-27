@@ -8,7 +8,7 @@ from . import constants, package_name
 from .configs.io import CSVOutput
 from .configs.solver import Solver
 from .loaders import load_configuration
-from .main import gather_files, main
+from .main import gather_files_all_procs, main
 
 # Global variables
 OVERRIDE_MESSAGE = "Note that this will override the value set as configuration."
@@ -76,10 +76,7 @@ def run(
         config.solver.residual_limit = residual_limit
 
     typer.echo("Configuration loaded.")
-    all_files_dict = dict()
-    for proc in ("solver", "posfilter"):
-        if getattr(config, proc):
-            all_files_dict.update(gather_files(config, proc))
+    all_files_dict = gather_files_all_procs(config)
 
     # Run the main function
     # TODO: Clean up so that we aren't throwing data away

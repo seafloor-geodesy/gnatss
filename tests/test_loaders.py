@@ -13,6 +13,8 @@ from gnatss.constants import (
     GPS_COV,
     GPS_GEOCENTRIC,
     GPS_TIME,
+    RPH_LOCAL_TANGENTS,
+    RPH_TIME,
     SP_DEPTH,
     SP_SOUND_SPEED,
     TT_DATE,
@@ -23,10 +25,11 @@ from gnatss.loaders import (
     load_configuration,
     load_deletions,
     load_gps_solutions,
+    load_roll_pitch_heading,
     load_sound_speed,
     load_travel_times,
 )
-from gnatss.main import gather_files
+from gnatss.main import gather_files_all_procs
 from tests import TEST_DATA_FOLDER
 
 
@@ -38,7 +41,7 @@ def configuration() -> Dict[str, Any]:
 @pytest.fixture
 def all_files_dict() -> Dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    return gather_files(config)
+    return gather_files_all_procs(config)
 
 
 @pytest.fixture
@@ -47,7 +50,7 @@ def all_files_dict_j2k_travel_times() -> Dict[str, Any]:
     config.solver.input_files.travel_times.path = (
         "./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k"
     )
-    return gather_files(config)
+    return gather_files_all_procs(config)
 
 
 @pytest.mark.parametrize(
@@ -209,6 +212,30 @@ def test_load_gps_solutions(all_files_dict, time_round):
     assert loaded_gps_solutions[GPS_TIME].equals(raw_gps_solutions[GPS_TIME])
 
 
+def test_load_roll_pitch_heading(all_files_dict):
+    # TODO: Add test for load_roll_pitch_heading data with Covariance rows
+
+    loaded_rph_solutions = load_roll_pitch_heading(all_files_dict["roll_pitch_heading"])
+    expected_columns = [RPH_TIME, *RPH_LOCAL_TANGENTS]
+
+    assert isinstance(loaded_rph_solutions, DataFrame)
+    assert set(expected_columns) == set(loaded_rph_solutions.columns.values.tolist())
+    assert all(
+        is_float_dtype(loaded_rph_solutions[column])
+        for column in loaded_rph_solutions.columns
+    )
+
+    raw_rph_solutions = pd.concat(
+        [
+            read_csv(i, delim_whitespace=True, header=None, names=expected_columns)
+            for i in all_files_dict["roll_pitch_heading"]
+        ]
+    ).reset_index(drop=True)
+
+    # Dimension of raw_rph_solutions df should equal loaded_rph_solutions df
+    assert loaded_rph_solutions.shape == raw_rph_solutions.shape
+
+
 @pytest.fixture()
 def create_and_cleanup_outliers_file(
     all_files_dict,
@@ -330,7 +357,7 @@ def test_load_deletions_outliers_and_deletions_from_config(
         path="./tests/data/2022/**/deletns.dat"
     )
 
-    config_deletions_files = gather_files(configuration)["deletions"]
+    config_deletions_files = gather_files_all_procs(configuration)["deletions"]
     outliers_file = Path(configuration.output.path) / CSVOutput.outliers.value
     deletions_file = Path(configuration.output.path) / CSVOutput.deletions.value
 
