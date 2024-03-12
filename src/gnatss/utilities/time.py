@@ -9,7 +9,7 @@ from astropy.time import Time as AstroTime  # noqa
 from astropy.time import TimeDelta
 from astropy.time.formats import TimeFromEpoch, erfa
 
-__all__ = ["AstroTime", "erfa"]
+__all__ = ["AstroTime", "erfa", "gpsws_to_time"]
 
 
 class TimeUnixJ2000(TimeFromEpoch):
