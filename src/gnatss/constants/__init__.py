@@ -6,6 +6,9 @@ from . import garpos
 
 __all__ = ["garpos"]
 
+# Config constants
+DEFAULT_CONFIG_PROCS = ("solver", "posfilter")
+
 # General constants
 SIG_3D = "sig_3d"
 DELAY_TIME_PRECISION = 6
@@ -77,7 +80,28 @@ RPH_TIME = TIME_J2000
 RPH_ROLL = "roll"
 RPH_PITCH = "pitch"
 RPH_HEADING = "heading"
-RPH_COLUMNS = [RPH_ROLL, RPH_PITCH, RPH_HEADING]
+RPH_LOCAL_TANGENTS = [RPH_ROLL, RPH_PITCH, RPH_HEADING]
+RPH_COV_RR = "roll_roll"
+RPH_COV_RP = "roll_pitch"
+RPH_COV_RH = "roll_heading"
+RPH_COV_PR = "pitch_roll"
+RPH_COV_PP = "pitch_pitch"
+RPH_COV_PH = "pitch_heading"
+RPH_COV_HR = "heading_roll"
+RPH_COV_HP = "heading_pitch"
+RPH_COV_HH = "heading_heading"
+RPH_COV_DIAG = [RPH_COV_RR, RPH_COV_PP, RPH_COV_HH]  # Covariance matrix diagonal values
+RPH_COV = [
+    RPH_COV_RR,
+    RPH_COV_RP,
+    RPH_COV_RH,
+    RPH_COV_PR,
+    RPH_COV_PP,
+    RPH_COV_PH,
+    RPH_COV_HR,
+    RPH_COV_HP,
+    RPH_COV_HH,
+]  # Covariance matrix columns
 
 # Antenna Position Direction columns
 ANTENNA_EASTWARD = "ant_e"

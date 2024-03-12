@@ -34,12 +34,14 @@ from .utilities.time import AstroTime
 def gather_files(
     config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
 ) -> Dict[str, List[str]]:
-    """Gather file paths for the various dataset files
+    """Gather file paths for the various dataset files defined in proc config.
 
     Parameters
     ----------
     config : Configuration
         A configuration object
+    proc: Literal["solver", "posfilter"]
+        Process name as defined in config
 
     Returns
     -------
@@ -65,6 +67,26 @@ def gather_files(
                 all_files = [path]
 
             all_files_dict.setdefault(k, all_files)
+    return all_files_dict
+
+
+def gather_files_all_procs(config: Configuration) -> Dict[str, List[str]]:
+    """Gather file paths for the various dataset files from all procs in config.
+
+    Parameters
+    ----------
+    config : Configuration
+        A configuration object
+
+    Returns
+    -------
+    Dict[str, Any]
+        A dictionary containing the various datasets file paths
+    """
+    all_files_dict = dict()
+    for proc in constants.DEFAULT_CONFIG_PROCS:
+        if getattr(config, proc):
+            all_files_dict.update(gather_files(config, proc))
     return all_files_dict
 
 
@@ -201,7 +223,7 @@ def get_transmit_times(
             transmit_times,
             atd_offsets,
             array_center,
-            constants.RPH_COLUMNS,
+            constants.RPH_LOCAL_TANGENTS,
             constants.GPS_GEOCENTRIC,
             constants.ANTENNA_DIRECTIONS,
         )
@@ -298,7 +320,7 @@ def get_reply_times(
             reply_times,
             atd_offsets,
             array_center,
-            constants.RPH_COLUMNS,
+            constants.RPH_LOCAL_TANGENTS,
             constants.GPS_GEOCENTRIC,
             constants.ANTENNA_DIRECTIONS,
         )
