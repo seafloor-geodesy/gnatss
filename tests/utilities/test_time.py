@@ -1,8 +1,22 @@
 import pytest
+from astropy.units import isclose
 
-from gnatss.utilities.time import AstroTime, erfa, isclose
+from gnatss.utilities.time import AstroTime, erfa, gpsws_to_time
 
 DATETIME_FORMAT = "%Y-%b-%d %H:%M:%S.%f"
+
+
+@pytest.fixture(
+    params=[
+        ((2220, 322665), 712215465.0, "2022-07-27 17:37:45.000"),
+        (("2220", "322665"), 712215465, "2022-07-27 17:37:45.000"),
+        (("2220", 322665.0), "712215465.0", "2022-07-27 17:37:45.000"),
+        ((2220.0, 322665.0), 712215465, "2022-07-27 17:37:45.000"),
+        (("sometext", 322665.0), "2022-07-27 17:37:45.000", None),
+    ]
+)
+def time_samples(request):
+    return request.param
 
 
 def test_unix_j2000_time_format():
@@ -53,19 +67,19 @@ def test_unix_j2000_time_format():
     )
 
 
-@pytest.mark.parametrize(
-    "unix_j2000, expected_iso",
-    [
-        (712215465.0, "2022-07-27 17:37:45.000"),
-        (712215465, "2022-07-27 17:37:45.000"),
-        ("712215465.0", "2022-07-27 17:37:45.000"),
-        (712215465, "2022-07-27 17:37:45.000"),
-        ("2022-07-27 17:37:45.000", None),
-    ],
-)
-def test_unix_j2000_convert_to_iso(unix_j2000, expected_iso):
+def test_unix_j2000_convert_to_iso(time_samples):
+    _, unix_j2000, expected_iso = time_samples
     if unix_j2000 == "2022-07-27 17:37:45.000":
         with pytest.raises(ValueError):
             AstroTime(unix_j2000, format="unix_j2000").iso
     else:
         assert AstroTime(unix_j2000, format="unix_j2000").iso == expected_iso
+
+
+def test_gpsws_to_time(time_samples):
+    (gps_week, gps_seconds), unix_j2000, expected_iso = time_samples
+    if unix_j2000 == "2022-07-27 17:37:45.000":
+        with pytest.raises(ValueError):
+            gpsws_to_time(gps_week, gps_seconds)
+    else:
+        assert gpsws_to_time(gps_week, gps_seconds).iso == expected_iso
