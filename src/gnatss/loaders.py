@@ -67,6 +67,9 @@ def load_travel_times(
     is_j2k: bool = False,
     time_scale: str = "tt",
 ) -> pd.DataFrame:
+    import typer
+
+    typer.echo(f"{files=} {transponder_ids=} {is_j2k=} {time_scale=}")
     """
     Loads travel times data into a pandas dataframe from a list of files.
 
