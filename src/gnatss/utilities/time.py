@@ -2,6 +2,8 @@
 
 Time utilities module utilizing astropy
 """
+import numpy as np
+
 from typing import Union
 
 from astropy import units as u
@@ -9,7 +11,7 @@ from astropy.time import Time as AstroTime  # noqa
 from astropy.time import TimeDelta
 from astropy.time.formats import TimeFromEpoch, erfa
 
-__all__ = ["AstroTime", "erfa", "gpsws_to_time"]
+__all__ = ["AstroTime", "erfa", "gpsws_to_time", "week_to_timestamp"]
 
 
 class TimeUnixJ2000(TimeFromEpoch):
@@ -61,3 +63,20 @@ def gpsws_to_time(week: int, seconds: Union[int, float]) -> AstroTime:
     # Add seconds to beginning of week
     final_time = week_start + TimeDelta(seconds, format="sec")
     return final_time
+
+
+def week_to_timestamp(week: np.ndarray, seconds: np.ndarray):
+    unique, unique_index = np.unique(week, return_inverse=True)
+    gps_epoch = AstroTime(0, format="gps", scale="tai")
+    # Convert week to days
+    num_days = (unique * u.wk).to(u.d)
+    # Add days to time 0, includes leap seconds
+    week_time = gps_epoch + TimeDelta(num_days, format="jd", scale="tai")
+    # Get the week start time exactly at midnight, doesn't include leap seconds, TT scale
+    week_start = AstroTime(week_time.strftime("%Y-%m-%d"), format="iso", scale="tt")
+    # Add seconds to beginning of week
+    final_time = week_start[unique_index] + TimeDelta(seconds, format="sec")
+    final_time_j2000 = final_time.unix_j2000
+
+    return final_time_j2000
+

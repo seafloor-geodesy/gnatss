@@ -108,3 +108,58 @@ ANTENNA_EASTWARD = "ant_e"
 ANTENNA_NORTHWARD = "ant_n"
 ANTENNA_UPWARD = "ant_u"
 ANTENNA_DIRECTIONS = [ANTENNA_EASTWARD, ANTENNA_NORTHWARD, ANTENNA_UPWARD]
+
+# L1 rph data
+L1_DATA_HEADER = (
+    "Message",
+    "Port",
+    "Sequence #",
+    "% Idle Time",
+    "Time Status",
+    "Week",
+    "Seconds",
+    "Receiver Status",
+    "Reserved",
+    "Receiver S/W Version",
+)
+L1_DATA_CONFIG = {
+    "INSPVAA": {
+        "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,.*?,.*?,.*?,.*?;(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?)\*+.*\n",
+        "data_header": L1_DATA_HEADER,
+        "data_fields": (
+            "Week",
+            "Seconds",
+            "Latitude",
+            "Longitude #",
+            "Height",
+            "North Velocity",
+            "East Velocity",
+            "Up Velocity",
+            RPH_ROLL,
+            RPH_PITCH,
+            RPH_HEADING,
+            "Status",
+        ),
+        "data_fields_dtypes": ('int', 'float', 'float', 'float', 'float', 'float', 'float','float', 'float', 'float', 'float', 'object'),
+    },
+    "INSSTDEVA": {
+        "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,.*?,.*?,.*?,.*?;(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),(.*?)\*+.*\n",
+        "data_header": L1_DATA_HEADER,
+        "data_fields": (
+            "Week",
+            "Seconds",
+            "Latitude",
+            "Longitude #",
+            "Height",
+            "North Velocity",
+            "East Velocity",
+            "Up Velocity",
+            "Roll",
+            "Pitch",
+            "Azimuth",
+            "Status",
+        ),
+        "data_fields_dtypes": (
+        'int', 'float', 'float', 'float', 'float', 'float', 'float', 'float', 'float', 'float', 'float', 'object'),
+    },
+}
