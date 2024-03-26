@@ -1,7 +1,7 @@
 import warnings
 from pathlib import Path
-from typing import List, Optional, Union, Literal
 from re import compile
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -177,7 +177,9 @@ def load_travel_times(
     return all_travel_times
 
 
-def load_roll_pitch_heading(files: List[str], from_raw_data_file: bool = False) -> pd.DataFrame:
+def load_roll_pitch_heading(
+    files: List[str], from_raw_data_file: bool = False
+) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.
 
@@ -447,27 +449,38 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
     return qc_df
 
 
-def read_raw_data_files(data_files: list[str], data_file_type: str = "INSPVAA") -> pd.DataFrame:
+def read_raw_data_files(
+    data_files: list[str], data_file_type: str = "INSPVAA"
+) -> pd.DataFrame:
     if data_file_type not in constants.L1_DATA_CONFIG.keys():
-        raise Exception(f"read_raw_data_files Exception")
+        raise Exception("read_raw_data_files Exception")
     l1_data_config = constants.L1_DATA_CONFIG.get(data_file_type)
-
     np_arrays = []
     re_pattern = compile(l1_data_config.get("regex_pattern"))
 
     for data_file in data_files:
         data_file_text = Path(data_file).read_text()
         all_groups = re_pattern.findall(data_file_text)
-        data_fields_dtypes = list(zip(l1_data_config.get("data_fields"), l1_data_config.get("data_fields_dtypes")))
-        np_arrays.append(np.array(all_groups, dtype=data_fields_dtypes))
+        data_fields_dtypes = list(
+            zip(
+                l1_data_config.get("data_fields"),
+                l1_data_config.get("data_fields_dtypes"),
+            )
+        )
+
+        array = np.array(all_groups, dtype=data_fields_dtypes)
+        np_arrays.append(array)
 
     np_array = np.concatenate(np_arrays, axis=0, casting="no")
     df = pd.DataFrame(np_array)
 
     if data_file_type == "INSPVAA":
         df = df.loc[df["Status"] == "INS_SOLUTION_GOOD"]
-        df[constants.RPH_TIME] = pd.Series(week_to_timestamp(np_array["Week"], np_array["Seconds"]))
+        df[constants.RPH_TIME] = pd.Series(
+            week_to_timestamp(np_array["Week"], np_array["Seconds"])
+        )
         df = df[[constants.RPH_TIME, *constants.RPH_LOCAL_TANGENTS]]
-    elif data_file_type == "INSPVAA":
-        pass
+    # elif data_file_type == "INSSTDEVA":
+    #     df = df[["Roll std", "Pitch std", "Heading std"]]
+    #     pass
     return df
