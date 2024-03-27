@@ -111,10 +111,10 @@ ANTENNA_DIRECTIONS = [ANTENNA_EASTWARD, ANTENNA_NORTHWARD, ANTENNA_UPWARD]
 
 L1_DATA_FORMAT = {
     "INSPVAA": {
-        "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,.*?,(.*?),(.*?),"
+        "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,FINESTEERING,(.*?),(.*?),"
         r".*?,.*?,.*?;.*?,.*?,(.*?),"
         r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
-        r"(.*?),(.*?),(.*?)\*+.*\n",
+        r"(.*?),(.*?),INS_SOLUTION_GOOD\*+.*\n",
         "data_fields": (
             "Week",
             "Seconds",
@@ -145,7 +145,7 @@ L1_DATA_FORMAT = {
         ),
     },
     "INSSTDEVA": {
-        "regex_pattern": r"#INSSTDEVA,.*?,.*?,.*?,.*?,(.*?),(.*?),.*?,.*?,.*?;(.*?),(.*?),"
+        "regex_pattern": r"#INSSTDEVA,.*?,.*?,.*?,FINESTEERING,(.*?),(.*?),.*?,.*?,.*?;(.*?),(.*?),"
         r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
         r"(.*?),(.*?),(.*?),.*?,.*?,.*?\*+.*?\n",
         "data_fields": (
