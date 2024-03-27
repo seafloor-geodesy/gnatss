@@ -8,7 +8,7 @@ import pandas as pd
 import yaml
 from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
-from pydantic import ValidationError
+from pydantic import ValidationError, validate_call
 
 from . import constants
 from .configs.io import CSVOutput
@@ -449,6 +449,7 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
     return qc_df
 
 
+@validate_call
 def read_raw_l1_data_files(
     data_files: list[str], data_format: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
 ) -> pd.DataFrame:
@@ -495,8 +496,8 @@ def read_raw_l1_data_files(
 
     if data_format == "INSPVAA":
         df = df.loc[df["Status"] == "INS_SOLUTION_GOOD"]
-        df = df[[constants.RPH_TIME, *constants.RPH_LOCAL_TANGENTS]]
-    elif data_format == "INSSTDEVA":
-        df = df[[constants.RPH_TIME, "roll std", "pitch std", "heading std"]]
+        # df = df[[constants.TIME_J2000, *constants.RPH_LOCAL_TANGENTS]]
+    # elif data_format == "INSSTDEVA":
+    #     df = df[[constants.RPH_TIME, "roll std", "pitch std", "heading std"]]
 
     return df
