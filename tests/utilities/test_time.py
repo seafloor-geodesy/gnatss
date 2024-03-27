@@ -1,9 +1,7 @@
-from typing import Any
-
 import numpy as np
 import pytest
 from astropy.units import isclose
-from nptyping import Float, NDArray
+from nptyping import Float, NDArray, Shape
 
 from gnatss.utilities.time import AstroTime, erfa, gps_ws_time_to_j2000_time
 
@@ -134,7 +132,7 @@ def test_gps_ws_time_to_j2000_time(gps_ws_time_to_j2000_time_unittests):
     elif result_type == "TypeError":
         with pytest.raises(TypeError):
             j2000_times = gps_ws_time_to_j2000_time(week_array, sec_array)
-            assert isinstance(j2000_times, NDArray[(Any,), Float])
+            assert isinstance(j2000_times, NDArray[Shape["*"], Float])
 
     elif result_type == "ValueError":
         with pytest.raises(ValueError):

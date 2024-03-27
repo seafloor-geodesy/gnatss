@@ -2,14 +2,12 @@
 
 Time utilities module utilizing astropy
 """
-from typing import Any
-
 import numpy as np
 from astropy import units as u
 from astropy.time import Time as AstroTime  # noqa
 from astropy.time import TimeDelta
 from astropy.time.formats import TimeFromEpoch, erfa
-from nptyping import Float, Int, NDArray
+from nptyping import Float, Int, NDArray, Shape
 
 __all__ = ["AstroTime", "erfa", "gps_ws_time_to_j2000_time"]
 
@@ -29,8 +27,8 @@ class TimeUnixJ2000(TimeFromEpoch):
 
 
 def gps_ws_time_to_j2000_time(
-    weeks: NDArray[(Any,), Int], seconds: NDArray[(Any,), Float]
-) -> NDArray[(Any,), Float]:
+    weeks: NDArray[Shape["*"], Int], seconds: NDArray[Shape["*"], Float]
+) -> NDArray[Shape["*"], Float]:
     """Converts GPS weeks and seconds to TimeUnixJ2000 seconds
     Parameters
     ----------
