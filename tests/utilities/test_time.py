@@ -1,9 +1,50 @@
+import numpy as np
 import pytest
 from astropy.units import isclose
 
-from gnatss.utilities.time import AstroTime, erfa, gpsws_to_time
+from gnatss.utilities.time import AstroTime, erfa, gps_ws_time_to_j2000_time
 
 DATETIME_FORMAT = "%Y-%b-%d %H:%M:%S.%f"
+
+
+@pytest.fixture(
+    params=[
+        (
+            np.array([0, 1042, 2307]),
+            np.array([0.0, 561600.0, 288327.0]),
+            "expected_result",
+            np.array([[-630763200.0, 0.0, 764798727.0]]),
+        ),
+        (
+            np.array([0.0, 1042.0, 2307.0]),
+            np.array([0, 561600, 288327]),
+            "expected_result",
+            np.array([[-630763200.0, 0.0, 764798727.0]]),
+        ),
+        (
+            np.array([0, float(0 + float(1 / 7))]),  # Adding 1 day = 0.14285... weeks
+            np.array([0.0, 0.0]),
+            "expected_result",
+            np.array(
+                [[-630763200.0, float(-630763200.0 + 86400)]]
+            ),  # Expect to see additional 86400 seconds
+        ),
+        (
+            np.array(["definitely not an int", 1042, 2307]),
+            np.array([0.0, 561600.0, 288327.0]),
+            "TypeError",
+            np.array([[-630763200.0, 0.0, 764798727.0]]),
+        ),
+        (
+            np.array([0, 1042, 2307]),
+            np.array(["definitely not a float", 561600.0, 288327.0]),
+            "ValueError",
+            np.array([[-630763200.0, 0.0, 764798727.0]]),
+        ),
+    ]
+)
+def gps_ws_time_to_j2000_time_unittests(request):
+    return request.param
 
 
 @pytest.fixture(
@@ -15,7 +56,7 @@ DATETIME_FORMAT = "%Y-%b-%d %H:%M:%S.%f"
         (("sometext", 322665.0), "2022-07-27 17:37:45.000", None),
     ]
 )
-def time_samples(request):
+def test_unix_j2000_convert_to_iso_unittests(request):
     return request.param
 
 
@@ -67,8 +108,8 @@ def test_unix_j2000_time_format():
     )
 
 
-def test_unix_j2000_convert_to_iso(time_samples):
-    _, unix_j2000, expected_iso = time_samples
+def test_unix_j2000_convert_to_iso(test_unix_j2000_convert_to_iso_unittests):
+    _, unix_j2000, expected_iso = test_unix_j2000_convert_to_iso_unittests
     if unix_j2000 == "2022-07-27 17:37:45.000":
         with pytest.raises(ValueError):
             AstroTime(unix_j2000, format="unix_j2000").iso
@@ -76,10 +117,22 @@ def test_unix_j2000_convert_to_iso(time_samples):
         assert AstroTime(unix_j2000, format="unix_j2000").iso == expected_iso
 
 
-def test_gpsws_to_time(time_samples):
-    (gps_week, gps_seconds), unix_j2000, expected_iso = time_samples
-    if unix_j2000 == "2022-07-27 17:37:45.000":
+def test_gps_ws_time_to_j2000_time(gps_ws_time_to_j2000_time_unittests):
+    (
+        week_array,
+        sec_array,
+        result_type,
+        expected_j2000_array,
+    ) = gps_ws_time_to_j2000_time_unittests
+    if result_type == "expected_result":
+        assert np.allclose(
+            expected_j2000_array, gps_ws_time_to_j2000_time(week_array, sec_array)
+        )
+    elif result_type == "TypeError":
+        with pytest.raises(TypeError):
+            gps_ws_time_to_j2000_time(week_array, sec_array)
+    elif result_type == "ValueError":
         with pytest.raises(ValueError):
-            gpsws_to_time(gps_week, gps_seconds)
+            gps_ws_time_to_j2000_time(week_array, sec_array)
     else:
-        assert gpsws_to_time(gps_week, gps_seconds).iso == expected_iso
+        assert False

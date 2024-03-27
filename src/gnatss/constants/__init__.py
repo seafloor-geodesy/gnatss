@@ -109,7 +109,7 @@ ANTENNA_NORTHWARD = "ant_n"
 ANTENNA_UPWARD = "ant_u"
 ANTENNA_DIRECTIONS = [ANTENNA_EASTWARD, ANTENNA_NORTHWARD, ANTENNA_UPWARD]
 
-L1_DATA_CONFIG = {
+L1_DATA_FORMAT = {
     "INSPVAA": {
         "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,.*?,(.*?),(.*?),"
         r".*?,.*?,.*?;.*?,.*?,(.*?),"

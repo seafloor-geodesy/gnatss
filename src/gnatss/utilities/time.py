@@ -3,15 +3,13 @@
 Time utilities module utilizing astropy
 """
 import numpy as np
-
-from typing import Union
-
 from astropy import units as u
 from astropy.time import Time as AstroTime  # noqa
 from astropy.time import TimeDelta
 from astropy.time.formats import TimeFromEpoch, erfa
+from nptyping import NDArray
 
-__all__ = ["AstroTime", "erfa", "gpsws_to_time", "week_to_timestamp"]
+__all__ = ["AstroTime", "erfa", "gps_ws_time_to_j2000_time"]
 
 
 class TimeUnixJ2000(TimeFromEpoch):
@@ -28,55 +26,39 @@ class TimeUnixJ2000(TimeFromEpoch):
     epoch_format = "iso"  # Format for epoch_val class attribute
 
 
-def gpsws_to_time(week: int, seconds: Union[int, float]) -> AstroTime:
-    """Converts GPS week and seconds to Astropy Time
+def gps_ws_time_to_j2000_time(
+    weeks: NDArray[(int,)], seconds: NDArray[(float,)]
+) -> NDArray[(float,)]:
+    """Converts GPS weeks and seconds to TimeUnixJ2000 seconds
 
     Parameters
     ----------
-    week : int
+    weeks : NDArray[(int,)]
         The GPS reference week number
-    seconds : Union[int, float]
-        Seconds from midnight terrestrial time (TT) of
-        GPS reference week day;
+    seconds : NDArray[(float,)]
+        Seconds from midnight terrestrial time (TT) of GPS reference week day;
         accurate to the millisecond level
     Returns
     -------
-    AstroTime
-        The time in Astropy Time format
+    NDArray[(float,)]
+        Float Numpy Array representing seconds from J2000 epoch
     """
-    # Cast week to int if it's a string
-    if isinstance(week, str):
-        week = int(week)
+    # Find unique week values, and their indexes
+    unique, unique_index = np.unique(weeks, return_inverse=True)
 
-    # Cast seconds to float if it's a string
-    if isinstance(seconds, str):
-        seconds = float(seconds)
+    gps_epoch = AstroTime(0, format="gps", scale="tt")
 
-    # Get the origin of GPS time
-    gps_epoch = AstroTime(0, format="gps", scale="tai")
-    # Convert week to days
-    num_weeks = week * u.wk
-    # Add days to time 0, includes leap seconds
-    week_time = gps_epoch + TimeDelta(num_weeks.to(u.d), format="jd", scale="tai")
-    # Get the week start time exactly at midnight, doesn't include leap seconds, TT scale
-    week_start = AstroTime(week_time.strftime("%Y-%m-%d"), format="iso", scale="tt")
-    # Add seconds to beginning of week
-    final_time = week_start + TimeDelta(seconds, format="sec")
-    return final_time
-
-
-def week_to_timestamp(week: np.ndarray, seconds: np.ndarray):
-    unique, unique_index = np.unique(week, return_inverse=True)
-    gps_epoch = AstroTime(0, format="gps", scale="tai")
     # Convert week to days
     num_days = (unique * u.wk).to(u.d)
+
     # Add days to time 0, includes leap seconds
     week_time = gps_epoch + TimeDelta(num_days, format="jd", scale="tai")
+
     # Get the week start time exactly at midnight, doesn't include leap seconds, TT scale
     week_start = AstroTime(week_time.strftime("%Y-%m-%d"), format="iso", scale="tt")
+
     # Add seconds to beginning of week
     final_time = week_start[unique_index] + TimeDelta(seconds, format="sec")
+
     final_time_j2000 = final_time.unix_j2000
-
     return final_time_j2000
-

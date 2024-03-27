@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from . import constants
 from .configs.io import CSVOutput
 from .configs.main import Configuration
-from .utilities.time import week_to_timestamp
+from .utilities.time import gps_ws_time_to_j2000_time
 
 
 def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
@@ -449,15 +449,33 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
     return qc_df
 
 
-def read_raw_data_files(
-    data_files: list[str], data_file_type: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
+def read_raw_l1_data_files(
+    data_files: list[str], data_format: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
 ) -> pd.DataFrame:
-    if data_file_type not in constants.L1_DATA_CONFIG.keys():
-        raise Exception("read_raw_data_files Exception")
-    l1_data_config = constants.L1_DATA_CONFIG.get(data_file_type)
-    np_arrays = []
+    """
+    Read from L1 data files and return its dataframe representation
+
+    Parameters
+    ----------
+    data_files: list[str]
+        Paths to the L1 data files to be loaded
+
+    data_format: Literal["INSPVAA", "INSSTDEVA"]
+        Specify which format the data file is in.
+        Currently support INSPVAA and INSSTDEVA formats only.
+
+    Returns
+    -------
+    pd.DataFrame
+
+    """
+    if data_format not in constants.L1_DATA_FORMAT.keys():
+        raise Exception("Unsupported data_format value")
+
+    l1_data_config = constants.L1_DATA_FORMAT.get(data_format)
     re_pattern = compile(l1_data_config.get("regex_pattern"))
 
+    data_file_arrays = []
     for data_file in data_files:
         data_file_text = Path(data_file).read_text()
         all_groups = re_pattern.findall(data_file_text)
@@ -466,20 +484,19 @@ def read_raw_data_files(
             l1_data_config.get("data_fields_dtypes"),
         )
 
-        array = np.array(all_groups, dtype=list(data_fields_dtypes))
-        np_arrays.append(array)
+        data_file_array = np.array(all_groups, dtype=list(data_fields_dtypes))
+        data_file_arrays.append(data_file_array)
+    all_data_array = np.concatenate(data_file_arrays, axis=0, casting="no")
 
-    np_array = np.concatenate(np_arrays, axis=0, casting="no")
-    df = pd.DataFrame(np_array)
-
+    df = pd.DataFrame(all_data_array)
     df[constants.RPH_TIME] = pd.Series(
-        week_to_timestamp(np_array["Week"], np_array["Seconds"])
+        gps_ws_time_to_j2000_time(all_data_array["Week"], all_data_array["Seconds"])
     )
 
-    if data_file_type == "INSPVAA":
+    if data_format == "INSPVAA":
         df = df.loc[df["Status"] == "INS_SOLUTION_GOOD"]
         df = df[[constants.RPH_TIME, *constants.RPH_LOCAL_TANGENTS]]
-    elif data_file_type == "INSSTDEVA":
+    elif data_format == "INSSTDEVA":
         df = df[[constants.RPH_TIME, "roll std", "pitch std", "heading std"]]
 
     return df
