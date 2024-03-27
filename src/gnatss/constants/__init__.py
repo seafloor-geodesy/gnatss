@@ -109,25 +109,12 @@ ANTENNA_NORTHWARD = "ant_n"
 ANTENNA_UPWARD = "ant_u"
 ANTENNA_DIRECTIONS = [ANTENNA_EASTWARD, ANTENNA_NORTHWARD, ANTENNA_UPWARD]
 
-# L1 rph data
-L1_DATA_HEADER = (
-    "Message",
-    "Port",
-    "Sequence #",
-    "% Idle Time",
-    "Time Status",
-    "Week",
-    "Seconds",
-    "Receiver Status",
-    "Reserved",
-    "Receiver S/W Version",
-)
 L1_DATA_CONFIG = {
     "INSPVAA": {
-        "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,.*?,.*?,.*?,.*?;(.*?),(.*?),(.*?),"
+        "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,.*?,(.*?),(.*?),"
+        r".*?,.*?,.*?;.*?,.*?,(.*?),"
         r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
         r"(.*?),(.*?),(.*?)\*+.*\n",
-        "data_header": L1_DATA_HEADER,
         "data_fields": (
             "Week",
             "Seconds",
@@ -158,11 +145,12 @@ L1_DATA_CONFIG = {
         ),
     },
     "INSSTDEVA": {
-        "regex_pattern": r"#INSSTDEVA,.*?,.*?,.*?,.*?,.*?,.*?,.*?;(.*?),(.*?),"
+        "regex_pattern": r"#INSSTDEVA,.*?,.*?,.*?,.*?,(.*?),(.*?),.*?,.*?,.*?;(.*?),(.*?),"
         r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
-        r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?)(\*+)(.*?)\n",
-        "data_header": L1_DATA_HEADER,
+        r"(.*?),(.*?),(.*?),.*?,.*?,.*?\*+.*?\n",
         "data_fields": (
+            "Week",
+            "Seconds",
             "Latitude std",
             "Longitude std",
             "Height std",
@@ -174,13 +162,9 @@ L1_DATA_CONFIG = {
             f"{RPH_HEADING} std",
             "Ext sol stat",
             "Time Since Update",
-            "Reserved1",
-            "Reserved2",
-            "Reserved3",
-            "crc",
-            "Sentence terminator",
         ),
         "data_fields_dtypes": (
+            "int",
             "float",
             "float",
             "float",
@@ -190,11 +174,7 @@ L1_DATA_CONFIG = {
             "float",
             "float",
             "float",
-            "object",
-            "object",
-            "object",
-            "object",
-            "object",
+            "float",
             "object",
             "object",
         ),

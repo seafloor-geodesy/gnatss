@@ -1,7 +1,7 @@
 import warnings
 from pathlib import Path
 from re import compile
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -450,7 +450,7 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
 
 
 def read_raw_data_files(
-    data_files: list[str], data_file_type: str = "INSPVAA"
+    data_files: list[str], data_file_type: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
 ) -> pd.DataFrame:
     if data_file_type not in constants.L1_DATA_CONFIG.keys():
         raise Exception("read_raw_data_files Exception")
@@ -461,26 +461,25 @@ def read_raw_data_files(
     for data_file in data_files:
         data_file_text = Path(data_file).read_text()
         all_groups = re_pattern.findall(data_file_text)
-        data_fields_dtypes = list(
-            zip(
-                l1_data_config.get("data_fields"),
-                l1_data_config.get("data_fields_dtypes"),
-            )
+        data_fields_dtypes = zip(
+            l1_data_config.get("data_fields"),
+            l1_data_config.get("data_fields_dtypes"),
         )
 
-        array = np.array(all_groups, dtype=data_fields_dtypes)
+        array = np.array(all_groups, dtype=list(data_fields_dtypes))
         np_arrays.append(array)
 
     np_array = np.concatenate(np_arrays, axis=0, casting="no")
     df = pd.DataFrame(np_array)
 
+    df[constants.RPH_TIME] = pd.Series(
+        week_to_timestamp(np_array["Week"], np_array["Seconds"])
+    )
+
     if data_file_type == "INSPVAA":
         df = df.loc[df["Status"] == "INS_SOLUTION_GOOD"]
-        df[constants.RPH_TIME] = pd.Series(
-            week_to_timestamp(np_array["Week"], np_array["Seconds"])
-        )
         df = df[[constants.RPH_TIME, *constants.RPH_LOCAL_TANGENTS]]
-    # elif data_file_type == "INSSTDEVA":
-    #     df = df[["Roll std", "Pitch std", "Heading std"]]
-    #     pass
+    elif data_file_type == "INSSTDEVA":
+        df = df[[constants.RPH_TIME, "roll std", "pitch std", "heading std"]]
+
     return df
