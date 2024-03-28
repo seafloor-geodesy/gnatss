@@ -108,3 +108,73 @@ ANTENNA_EASTWARD = "ant_e"
 ANTENNA_NORTHWARD = "ant_n"
 ANTENNA_UPWARD = "ant_u"
 ANTENNA_DIRECTIONS = [ANTENNA_EASTWARD, ANTENNA_NORTHWARD, ANTENNA_UPWARD]
+
+L1_DATA_FORMAT = {
+    "INSPVAA": {
+        "regex_pattern": r"#INSPVAA,.*?,.*?,.*?,FINESTEERING,(.*?),(.*?),"
+        r".*?,.*?,.*?;.*?,.*?,(.*?),"
+        r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
+        r"(.*?),(.*?),INS_SOLUTION_GOOD\*+.*\n",
+        "data_fields": (
+            "Week",
+            "Seconds",
+            GPS_LAT,
+            GPS_LON,
+            GPS_ALT,
+            ANTENNA_NORTHWARD,
+            ANTENNA_EASTWARD,
+            ANTENNA_UPWARD,
+            RPH_ROLL,
+            RPH_PITCH,
+            RPH_HEADING,
+        ),
+        "data_fields_dtypes": (
+            "int",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+        ),
+    },
+    "INSSTDEVA": {
+        "regex_pattern": r"#INSSTDEVA,.*?,.*?,.*?,FINESTEERING,(.*?),(.*?),.*?,.*?,.*?;(.*?),(.*?),"
+        r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
+        r"(.*?),(.*?),(.*?),.*?,.*?,.*?\*+.*?\n",
+        "data_fields": (
+            "Week",
+            "Seconds",
+            f"{GPS_LAT} std",
+            f"{GPS_LON} std",
+            f"{GPS_ALT} std",
+            f"{ANTENNA_NORTHWARD} std",
+            f"{ANTENNA_EASTWARD} std",
+            f"{ANTENNA_UPWARD} std",
+            RPH_COV_RR,
+            RPH_COV_PP,
+            RPH_COV_HH,
+            "Ext sol stat",
+            "Time Since Update",
+        ),
+        "data_fields_dtypes": (
+            "int",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "float",
+            "object",
+            "object",
+        ),
+    },
+}
