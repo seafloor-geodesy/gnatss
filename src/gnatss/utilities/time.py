@@ -9,7 +9,7 @@ from astropy.time import TimeDelta
 from astropy.time.formats import TimeFromEpoch, erfa
 from nptyping import Float, Int, NDArray, Shape
 
-__all__ = ["AstroTime", "erfa", "gps_ws_time_to_j2000_time"]
+__all__ = ["AstroTime", "erfa", "gps_ws_time_to_astrotime"]
 
 
 class TimeUnixJ2000(TimeFromEpoch):
@@ -26,10 +26,10 @@ class TimeUnixJ2000(TimeFromEpoch):
     epoch_format = "iso"  # Format for epoch_val class attribute
 
 
-def gps_ws_time_to_j2000_time(
+def gps_ws_time_to_astrotime(
     weeks: NDArray[Shape["*"], Int], seconds: NDArray[Shape["*"], Float]
-) -> NDArray[Shape["*"], Float]:
-    """Converts GPS weeks and seconds to TimeUnixJ2000 seconds
+) -> AstroTime:
+    """Converts GPS weeks and seconds to AstroTime representation
     Parameters
     ----------
     weeks : NDArray[(Any,), Int]
@@ -39,8 +39,8 @@ def gps_ws_time_to_j2000_time(
         accurate to the millisecond level
     Returns
     -------
-    NDArray[(Any,), Float]
-        Float Numpy Array representing seconds from J2000 epoch
+    AstroTime
+        AstroTime representation of GPS time
     """
     # Find unique week values, and their indexes
     unique, unique_index = np.unique(weeks, return_inverse=True)
@@ -59,5 +59,4 @@ def gps_ws_time_to_j2000_time(
     # Add seconds to beginning of week
     final_time = week_start[unique_index] + TimeDelta(seconds, format="sec")
 
-    final_time_j2000 = final_time.unix_j2000
-    return final_time_j2000
+    return final_time

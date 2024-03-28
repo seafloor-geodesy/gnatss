@@ -13,7 +13,7 @@ from pydantic import ValidationError, validate_call
 from . import constants
 from .configs.io import CSVOutput
 from .configs.main import Configuration
-from .utilities.time import gps_ws_time_to_j2000_time
+from .utilities.time import gps_ws_time_to_astrotime
 
 
 def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
@@ -69,9 +69,6 @@ def load_travel_times(
     is_j2k: bool = False,
     time_scale: str = "tt",
 ) -> pd.DataFrame:
-    import typer
-
-    typer.echo(f"{files=} {transponder_ids=} {is_j2k=} {time_scale=}")
     """
     Loads travel times data into a pandas dataframe from a list of files.
 
@@ -450,20 +447,23 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
 
 
 @validate_call
-def read_raw_l1_data_files(
+def read_novatel_L1_data_files(
     data_files: list[str], data_format: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
 ) -> pd.DataFrame:
     """
-    Read from L1 data files and return its dataframe representation
+    Read from Novatel L1 data files and return its dataframe representation.
+    Link to data format specifications:
+    INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
+    INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
 
     Parameters
     ----------
-    data_files: list[str]
-        Paths to the L1 data files to be loaded
+    data_files: list pf str
+        Paths to the Novatel L1 data files to be loaded
 
-    data_format: Literal["INSPVAA", "INSSTDEVA"]
+    data_format: {"INSPVAA", "INSSTDEVA"}
         Specify which format the data file is in.
-        Currently support INSPVAA and INSSTDEVA formats only.
+        Currently support INSPVAA and INSSTDEVA formats.
 
     Returns
     -------
@@ -473,12 +473,17 @@ def read_raw_l1_data_files(
     if data_format not in constants.L1_DATA_FORMAT.keys():
         raise Exception("Unsupported data_format value")
 
+    # Read Novatel's INSPVAA/INSSTDEVA L1 data format including regex, fields, and dtypes
     l1_data_config = constants.L1_DATA_FORMAT.get(data_format)
     re_pattern = compile(l1_data_config.get("regex_pattern"))
 
+    # List of numpy arrays, on for each of the data_files
     data_file_arrays = []
     for data_file in data_files:
         data_file_text = Path(data_file).read_text()
+        # all_groups is a list of tuples, where each tuple represents a row entry in
+        # the numpy array. Each tuple element represents a data field in that row,
+        # as defined in the regex's named capture groups.
         all_groups = re_pattern.findall(data_file_text)
         data_fields_dtypes = zip(
             l1_data_config.get("data_fields"),
@@ -490,14 +495,10 @@ def read_raw_l1_data_files(
     all_data_array = np.concatenate(data_file_arrays, axis=0, casting="no")
 
     df = pd.DataFrame(all_data_array)
-    df[constants.RPH_TIME] = pd.Series(
-        gps_ws_time_to_j2000_time(all_data_array["Week"], all_data_array["Seconds"])
+    # New pd column to convert GNSS Week and Seconds to J2000 Seconds
+    df[constants.TIME_J2000] = pd.Series(
+        gps_ws_time_to_astrotime(
+            all_data_array["Week"], all_data_array["Seconds"]
+        ).unix_j2000
     )
-
-    if data_format == "INSPVAA":
-        df = df.loc[df["Status"] == "INS_SOLUTION_GOOD"]
-        # df = df[[constants.TIME_J2000, *constants.RPH_LOCAL_TANGENTS]]
-    # elif data_format == "INSSTDEVA":
-    #     df = df[[constants.RPH_TIME, "roll std", "pitch std", "heading std"]]
-
     return df

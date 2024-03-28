@@ -1,9 +1,8 @@
 import numpy as np
 import pytest
 from astropy.units import isclose
-from nptyping import Float, NDArray, Shape
 
-from gnatss.utilities.time import AstroTime, erfa, gps_ws_time_to_j2000_time
+from gnatss.utilities.time import AstroTime, erfa, gps_ws_time_to_astrotime
 
 DATETIME_FORMAT = "%Y-%b-%d %H:%M:%S.%f"
 
@@ -44,7 +43,7 @@ DATETIME_FORMAT = "%Y-%b-%d %H:%M:%S.%f"
         ),
     ]
 )
-def gps_ws_time_to_j2000_time_unittests(request):
+def gps_ws_time_to_astrotime_unittests(request):
     return request.param
 
 
@@ -118,24 +117,24 @@ def test_unix_j2000_convert_to_iso(test_unix_j2000_convert_to_iso_unittests):
         assert AstroTime(unix_j2000, format="unix_j2000").iso == expected_iso
 
 
-def test_gps_ws_time_to_j2000_time(gps_ws_time_to_j2000_time_unittests):
+def test_gps_ws_time_to_astrotime(gps_ws_time_to_astrotime_unittests):
     (
         week_array,
         sec_array,
         result_type,
         expected_j2000_array,
-    ) = gps_ws_time_to_j2000_time_unittests
+    ) = gps_ws_time_to_astrotime_unittests
     if result_type == "expected_result":
-        assert np.allclose(
-            expected_j2000_array, gps_ws_time_to_j2000_time(week_array, sec_array)
-        )
+        returned_astrotime = gps_ws_time_to_astrotime(week_array, sec_array)
+        assert isinstance(returned_astrotime, AstroTime)
+        returned_j2000 = returned_astrotime.unix_j2000
+        assert np.allclose(expected_j2000_array, returned_j2000)
     elif result_type == "TypeError":
         with pytest.raises(TypeError):
-            j2000_times = gps_ws_time_to_j2000_time(week_array, sec_array)
-            assert isinstance(j2000_times, NDArray[Shape["*"], Float])
+            returned_astrotime = gps_ws_time_to_astrotime(week_array, sec_array)
 
     elif result_type == "ValueError":
         with pytest.raises(ValueError):
-            gps_ws_time_to_j2000_time(week_array, sec_array)
+            returned_astrotime = gps_ws_time_to_astrotime(week_array, sec_array)
     else:
         assert False
