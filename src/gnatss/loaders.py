@@ -1,17 +1,19 @@
 import warnings
 from pathlib import Path
-from typing import List, Optional, Union
+from re import compile
+from typing import List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
 import yaml
 from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
-from pydantic import ValidationError
+from pydantic import ValidationError, validate_call
 
 from . import constants
 from .configs.io import CSVOutput
 from .configs.main import Configuration
+from .utilities.time import gps_ws_time_to_astrotime
 
 
 def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
@@ -172,7 +174,9 @@ def load_travel_times(
     return all_travel_times
 
 
-def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
+def load_roll_pitch_heading(
+    files: List[str], from_raw_data_file: bool = False
+) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.
 
@@ -440,3 +444,61 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
         qc_df = pd.DataFrame(columns=[constants.QC_STARTTIME, constants.QC_ENDTIME])
 
     return qc_df
+
+
+@validate_call
+def read_novatel_L1_data_files(
+    data_files: list[str], data_format: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
+) -> pd.DataFrame:
+    """
+    Read from Novatel L1 data files and return its dataframe representation.
+    Link to data format specifications:
+    INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
+    INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
+
+    Parameters
+    ----------
+    data_files: list pf str
+        Paths to the Novatel L1 data files to be loaded
+
+    data_format: {"INSPVAA", "INSSTDEVA"}
+        Specify which format the data file is in.
+        Currently support INSPVAA and INSSTDEVA formats.
+
+    Returns
+    -------
+    pd.DataFrame
+
+    """
+    if data_format not in constants.L1_DATA_FORMAT.keys():
+        raise Exception("Unsupported data_format value")
+
+    # Read Novatel's INSPVAA/INSSTDEVA L1 data format including regex, fields, and dtypes
+    l1_data_config = constants.L1_DATA_FORMAT.get(data_format)
+    re_pattern = compile(l1_data_config.get("regex_pattern"))
+
+    # List of numpy arrays, on for each of the data_files
+    data_file_arrays = []
+    for data_file in data_files:
+        data_file_text = Path(data_file).read_text()
+        # all_groups is a list of tuples, where each tuple represents a row entry in
+        # the numpy array. Each tuple element represents a data field in that row,
+        # as defined in the regex's named capture groups.
+        all_groups = re_pattern.findall(data_file_text)
+        data_fields_dtypes = zip(
+            l1_data_config.get("data_fields"),
+            l1_data_config.get("data_fields_dtypes"),
+        )
+
+        data_file_array = np.array(all_groups, dtype=list(data_fields_dtypes))
+        data_file_arrays.append(data_file_array)
+    all_data_array = np.concatenate(data_file_arrays, axis=0, casting="no")
+
+    df = pd.DataFrame(all_data_array)
+    # New pd column to convert GNSS Week and Seconds to J2000 Seconds
+    df[constants.TIME_J2000] = pd.Series(
+        gps_ws_time_to_astrotime(
+            all_data_array["Week"], all_data_array["Seconds"]
+        ).unix_j2000
+    )
+    return df
