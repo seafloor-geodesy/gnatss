@@ -247,7 +247,7 @@ def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], 
 
 
 def load_gps_solutions(
-    files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
+    files: List[str], columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV], time_round: int = constants.DELAY_TIME_PRECISION
 ) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.
@@ -281,7 +281,6 @@ def load_gps_solutions(
 
     These files are often called `POS_FREED_TRANS_TWTT`.
     """
-    columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
     # Real all gps solutions
     gps_solutions = [
         pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
