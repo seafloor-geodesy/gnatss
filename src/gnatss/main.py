@@ -21,7 +21,7 @@ from .loaders import (
     load_sound_speed,
     load_travel_times,
 )
-from .ops.data import get_data_inputs
+from .ops.data import clean_tt, filter_tt, get_data_inputs
 from .ops.posfilter import rotation
 from .ops.solve import perform_solve
 from .ops.utils import _prep_col_names
@@ -88,80 +88,6 @@ def gather_files_all_procs(config: Configuration) -> Dict[str, List[str]]:
         if getattr(config, proc):
             all_files_dict.update(gather_files(config, proc))
     return all_files_dict
-
-
-def clean_tt(
-    all_travel_times: pd.DataFrame,
-    cut_df: pd.DataFrame,
-    transponder_ids: List[str],
-    travel_times_correction: float,
-    transducer_delay_time: float,
-) -> pd.DataFrame:
-    """
-    Clean travel times using deletions data
-
-    Parameters
-    ----------
-    all_travel_times : pd.DataFrame
-        The original travel times data
-    cut_df : pd.DataFrame
-        The deletions data to be removed
-    transponder_ids : List[str]
-        A list of the transponder ids that matches the order
-        with all_travel_times data
-    travel_times_correction : float
-        Correction to times in travel times (secs.)
-    transducer_delay_time : float
-        Transducer Delay Time - delay at surface transducer (secs).
-
-    Returns
-    -------
-    pd.DataFrame
-        The cleaned travel times data
-
-    Notes
-    -----
-    Original implementation by @SquirrelKnight
-    """
-
-    if len(cut_df.index) > 0:
-        # Only cut the data with deletions file if there are data
-        cut_ids_all = []
-        for _, cut in cut_df.iterrows():
-            cut_ids = all_travel_times[
-                (all_travel_times[constants.TT_TIME] >= cut.starttime)
-                & (all_travel_times[constants.TT_TIME] <= cut.endtime)
-            ].index.values
-            cut_ids_all = cut_ids_all + cut_ids.tolist()
-        cut_ids_all = list(set(cut_ids_all))
-        all_travel_times = all_travel_times.loc[
-            ~all_travel_times.index.isin(cut_ids_all)
-        ]
-
-    # TODO: Store junk travel times? These are travel times with 0 values
-    # _ = all_travel_times.loc[
-    #     all_travel_times.where(all_travel_times[transponder_ids] == 0)
-    #     .dropna(how="all")
-    #     .index
-    # ]
-
-    # Get cleaned travel times
-    # This is anything that has 0 reply time
-    cleaned_travel_times = all_travel_times.loc[
-        all_travel_times[transponder_ids]
-        .where(all_travel_times[transponder_ids] != 0)
-        .dropna()
-        .index
-    ]
-
-    # Apply travel time correction
-    cleaned_travel_times.loc[:, constants.TT_TIME] = (
-        cleaned_travel_times[constants.TT_TIME]
-        + travel_times_correction
-        + transducer_delay_time
-    )
-
-    return cleaned_travel_times
 
 
 def get_transmit_times(
@@ -636,9 +562,9 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
 
     # Cleaning travel times
     typer.echo("Cleaning travel times data...")
+    filtered_travel_times = filter_tt(all_travel_times, cut_df)
     cleaned_travel_times = clean_tt(
-        all_travel_times,
-        cut_df,
+        filtered_travel_times,
         transponder_ids,
         config.solver.travel_times_correction,
         config.solver.transducer_delay_time,

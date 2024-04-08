@@ -1,21 +1,67 @@
 from typing import List
 
+import pandas as pd
 from nptyping import Float, NDArray, Shape
-from pandas import DataFrame
 from pymap3d import ecef2enu
 from scipy.spatial.transform import Rotation
 
-from gnatss.configs.solver import ArrayCenter
+from .. import constants
+from ..configs.solver import ArrayCenter
+
+
+def spline_interpolate(travel_times, ins_rph, cov_rph):
+    """
+    Interpolate the INS RPH data and the covariance data to the travel times data
+
+    Parameters
+    ----------
+    travel_times : pd.DataFrame
+        The travel times data
+    ins_rph : pd.DataFrame
+        The INS RPH data
+    cov_rph : pd.DataFrame
+        The covariance data
+
+    Returns
+    -------
+    pd.DataFrame
+        The interpolated data
+    """
+    # Merge the two dataframes of ins_rph and cov_rph
+    # since they're at the same sampling rate
+    merged_rph = pd.merge(ins_rph, cov_rph, on="dts")
+
+    # Merge the travel times data with the merged_rph data
+    # with an 'outer' join, this will result in missing values
+    # at points of travel times data that doesn't have corresponding
+    # INS RPH data
+    initial_df = pd.merge(
+        travel_times[[constants.TT_TIME]],
+        merged_rph,
+        left_on="time",
+        right_on="dts",
+        how="outer",
+    )
+
+    # Interpolate the missing values using cubic spline interpolation
+    result_df = (
+        initial_df.interpolate(method="spline", order=3, s=0)
+        .drop("dts", axis=1)
+        .dropna()
+        .reset_index(drop=True)
+    )
+
+    return result_df
 
 
 def rotation(
-    df: DataFrame,
+    df: pd.DataFrame,
     atd_offsets: NDArray[Shape["3"], Float],
     array_center: ArrayCenter,
     input_rph_columns: List[str],
     input_ecef_columns: List[str],
     output_antenna_enu_columns: List[str],
-) -> DataFrame:
+) -> pd.DataFrame:
     """
     Calculate GNSS antenna eastward, northward, and upward position
     columns,and add to input dataframe.
