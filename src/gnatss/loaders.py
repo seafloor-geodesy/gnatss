@@ -54,7 +54,7 @@ def load_sound_speed(sv_files: List[str]) -> pd.DataFrame:
     columns = [constants.SP_DEPTH, constants.SP_SOUND_SPEED]
 
     sv_dfs = [
-        pd.read_csv(sv_file, delim_whitespace=True, header=None, names=columns)
+        pd.read_csv(sv_file, sep=r"\s+", header=None, names=columns)
         .drop_duplicates(constants.SP_DEPTH)
         .reset_index(drop=True)
         for sv_file in sv_files
@@ -133,7 +133,7 @@ def load_travel_times(
         # If it's already j2k then pop off date column, idx 0
         columns.pop(0)
     # Read all travel times
-    travel_times = [pd.read_csv(i, delim_whitespace=True, header=None) for i in files]
+    travel_times = [pd.read_csv(i, sep=r"\s+", header=None) for i in files]
     all_travel_times = pd.concat(travel_times).reset_index(drop=True)
 
     # Remove any columns that are not being used
@@ -204,7 +204,7 @@ def load_roll_pitch_heading(
         rph_dfs = [
             pd.read_csv(
                 i,
-                delim_whitespace=True,
+                sep=r"\s+",
                 header=None,
                 names=[*required_columns, *optional_columns],
             )
@@ -284,7 +284,7 @@ def load_gps_solutions(
     columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
     # Real all gps solutions
     gps_solutions = [
-        pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
+        pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
     ]
     all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
 
@@ -469,7 +469,7 @@ def read_novatel_L1_data_files(
     -------
     pd.DataFrame
 
-    """
+    """  # noqa
     if data_format not in constants.L1_DATA_FORMAT.keys():
         raise Exception("Unsupported data_format value")
 
