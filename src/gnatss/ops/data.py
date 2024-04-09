@@ -166,3 +166,121 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
     ):
         data_inputs.append(data)
     return data_inputs
+
+
+def clean_tt(
+    travel_times: pd.DataFrame,
+    transponder_ids: List[str],
+    travel_times_correction: float,
+    transducer_delay_time: float,
+) -> pd.DataFrame:
+    """
+    Clean travel times by doing the following steps:
+    1. remove any travel times that have 0 reply time
+    2. apply travel time correction and transducer delay time.
+
+    Parameters
+    ----------
+    travel_times : pd.DataFrame
+        The original travel times data
+    transponder_ids : List[str]
+        A list of the transponder ids that matches the order
+        with travel_times data
+    travel_times_correction : float
+        Correction to times in travel times (secs.)
+    transducer_delay_time : float
+        Transducer Delay Time - delay at surface transducer (secs).
+
+    Returns
+    -------
+    pd.DataFrame
+        The cleaned travel times data
+    """
+    # Get cleaned travel times
+    # This is anything that has 0 reply time
+    cleaned_travel_times = travel_times.loc[
+        travel_times[transponder_ids]
+        .where(travel_times[transponder_ids] != 0)
+        .dropna()
+        .index
+    ]
+
+    # Apply travel time correction
+    cleaned_travel_times.loc[:, constants.TT_TIME] = (
+        cleaned_travel_times[constants.TT_TIME]
+        + travel_times_correction
+        + transducer_delay_time
+    )
+
+    # TODO: Store junk travel times? These are travel times with 0 values
+    # _ = all_travel_times.loc[
+    #     all_travel_times.where(all_travel_times[transponder_ids] == 0)
+    #     .dropna(how="all")
+    #     .index
+    # ]
+
+    return cleaned_travel_times
+
+
+def filter_tt(travel_times: pd.DataFrame, cut_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Filter travel times data by removing the data that falls within
+    the time range specified in the deletions file.
+
+    Parameters
+    ----------
+    travel_times : pd.DataFrame
+        The original travel times data
+    cut_df : pd.DataFrame
+        The deletions data to be removed
+
+    Returns
+    -------
+    pd.DataFrame
+        The filtered travel times data
+    """
+
+    if len(cut_df.index) > 0:
+        # Only cut the data with deletions file if there are data
+        cut_ids_all = []
+        for _, cut in cut_df.iterrows():
+            cut_ids = travel_times[
+                (travel_times[constants.TT_TIME] >= cut.starttime)
+                & (travel_times[constants.TT_TIME] <= cut.endtime)
+            ].index.values
+            cut_ids_all = cut_ids_all + cut_ids.tolist()
+        cut_ids_all = list(set(cut_ids_all))
+        all_travel_times = travel_times.loc[~travel_times.index.isin(cut_ids_all)]
+    return all_travel_times
+
+
+def preprocess_tt(travel_times: pd.DataFrame) -> pd.DataFrame:
+    """
+    Preprocess travel times data by creating a dataframe that
+    contains the travel times and the reply times contiguously.
+
+    Parameters
+    ----------
+    travel_times : pd.DataFrame
+        The travel times data
+
+    Returns
+    -------
+    pd.DataFrame
+        The preprocessed travel times data
+    """
+    data = []
+    for tx, tds in travel_times.set_index(constants.TT_TIME).iterrows():
+        data.append((tx, constants.garpos.ST, 0, np.nan))
+        for k, td in tds.to_dict().items():
+            data.append((tx + td, k, td, tx))
+
+    return pd.DataFrame(
+        data,
+        columns=[
+            constants.TT_TIME,
+            constants.garpos.MT,
+            constants.garpos.TT,
+            constants.garpos.ST,
+        ],
+    )
