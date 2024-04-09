@@ -247,7 +247,9 @@ def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], 
 
 
 def load_gps_solutions(
-    files: List[str], columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV], time_round: int = constants.DELAY_TIME_PRECISION
+    files: List[str],
+    time_round: int = constants.DELAY_TIME_PRECISION,
+    is_novatel_l1_data: bool = False,
 ) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.
@@ -258,6 +260,8 @@ def load_gps_solutions(
         The list of path string to files to load
     time_round : int
         The precision value to round the time values
+    is_novatel_l1_data : bool
+        Read according to Novatel L1 data format
 
     Returns
     -------
@@ -270,18 +274,29 @@ def load_gps_solutions(
     Notes
     -----
     The input gps solutions data is assumed to follow the structure below:
+    1) Novatel L1 data format files. Usually named `GPS_POS_FREED`
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Geocentric x in meters
+        3: Geocentric y in meters
+        4: Geocentric z in meters
+        5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
 
-    The numbers are column number.
+    2) Already Kalman filtered data files. Usually named `POS_FREED_TRANS_TWTT`.
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Geocentric x in meters
+        3: Geocentric y in meters
+        4: Geocentric z in meters
+        5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
 
-    1: Time unit seconds in J2000 epoch
-    2: Geocentric x in meters
-    3: Geocentric y in meters
-    4: Geocentric z in meters
-    5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
-
-    These files are often called `POS_FREED_TRANS_TWTT`.
     """
-    # Real all gps solutions
+    if is_novatel_l1_data:
+        columns = ["time", "dtype", "x", "y", "z", "sdx", "sdy", "sdz"]
+    else:
+        columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
+
+    # Read all gps solutions
     gps_solutions = [
         pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
     ]
@@ -293,6 +308,10 @@ def load_gps_solutions(
         all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
             constants.GPS_TIME
         ].round(time_round)
+
+    if is_novatel_l1_data:
+        print(f"{all_gps_solutions.columns=}")
+        all_gps_solutions = all_gps_solutions.drop(columns="dtype")
 
     return all_gps_solutions
 
