@@ -261,7 +261,7 @@ def load_gps_solutions(
     time_round : int
         The precision value to round the time values
     is_novatel_l1_data : bool
-        Read according to Novatel L1 data format
+        If True, read according to Novatel L1 data format. Else read from already Kalman Filtered data format.
 
     Returns
     -------
@@ -292,26 +292,36 @@ def load_gps_solutions(
 
     """
     if is_novatel_l1_data:
-        columns = ["time", "dtype", "x", "y", "z", "sdx", "sdy", "sdz"]
+        columns = [
+            constants.GPS_TIME,
+            "dtype",
+            *constants.GPS_GEOCENTRIC,
+            "sdx",
+            "sdy",
+            "sdz",
+        ]  # Are sdx same as GPS_COV?
+        gps_solutions = [
+            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+            for i in files
+        ]
+        all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
+        all_gps_solutions = all_gps_solutions.drop(columns="dtype")
+
     else:
         columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
-
-    # Read all gps solutions
-    gps_solutions = [
-        pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
-    ]
-    all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
-
-    # Round to match the delays precision
-    # TODO: Find a way to determine this precision dynamically?
-    if isinstance(time_round, int) and time_round > 0:
-        all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
-            constants.GPS_TIME
-        ].round(time_round)
-
-    if is_novatel_l1_data:
-        print(f"{all_gps_solutions.columns=}")
-        all_gps_solutions = all_gps_solutions.drop(columns="dtype")
+        gps_solutions = [
+            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+            for i in files
+        ]
+        all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
+        # Round to match the delays precision
+        # TODO: Find a way to determine this precision dynamically?
+        if (
+            isinstance(time_round, int) and time_round > 0
+        ):  # We should skip this step for novatel data right?
+            all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
+                constants.GPS_TIME
+            ].round(time_round)
 
     return all_gps_solutions
 
