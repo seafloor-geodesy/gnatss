@@ -261,51 +261,43 @@ def load_gps_solutions(
     time_round : int
         The precision value to round the time values
     is_novatel_l1_data : bool
-        If True, read according to Novatel L1 data format. Else read from already Kalman Filtered data format.
+        If True, read according to Novatel L1 data format (Usually named `GPS_POS_FREED`).
+        Else read from already Kalman Filtered data format. (Usually named `POS_FREED_TRANS_TWTT`) # TODO What's the proper namef or already filtered Kalman format??
 
     Returns
     -------
     pd.DataFrame
         Pandas DataFrame containing all of the gps solutions data.
-        Expected columns will have 'time',
-        the geocentric 'x,y,z',
-        and covariance matrix 'xx' to 'zz'
+        1) if is_novatel_l1_data is True
+            The numbers are column number.
+            1: Time unit seconds in J2000 epoch
+            2: Geocentric x in meters
+            3: Geocentric y in meters
+            4: Geocentric z in meters
+            5 - 7: Covariance matrix (3x3) Diagonals xx, yy, zz
 
-    Notes
-    -----
-    The input gps solutions data is assumed to follow the structure below:
-    1) Novatel L1 data format files. Usually named `GPS_POS_FREED`
-        The numbers are column number.
-        1: Time unit seconds in J2000 epoch
-        2: Geocentric x in meters
-        3: Geocentric y in meters
-        4: Geocentric z in meters
-        5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
-
-    2) Already Kalman filtered data files. Usually named `POS_FREED_TRANS_TWTT`.
-        The numbers are column number.
-        1: Time unit seconds in J2000 epoch
-        2: Geocentric x in meters
-        3: Geocentric y in meters
-        4: Geocentric z in meters
-        5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
-
+        2) if is_novatel_l1_data is False
+            The numbers are column number.
+            1: Time unit seconds in J2000 epoch
+            2: Geocentric x in meters
+            3: Geocentric y in meters
+            4: Geocentric z in meters
+            5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
     """
     if is_novatel_l1_data:
         columns = [
             constants.GPS_TIME,
             "dtype",
             *constants.GPS_GEOCENTRIC,
-            "sdx",
-            "sdy",
-            "sdz",
-        ]  # Are sdx same as GPS_COV?
+            *constants.GPS_COV_DIAG,  # TODO Are sdx same as GPS_COV_DIAG?
+        ]
         gps_solutions = [
             pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
             for i in files
         ]
         all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
         all_gps_solutions = all_gps_solutions.drop(columns="dtype")
+        # Do we need to sort the gps solutions?
 
     else:
         columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
@@ -318,7 +310,7 @@ def load_gps_solutions(
         # TODO: Find a way to determine this precision dynamically?
         if (
             isinstance(time_round, int) and time_round > 0
-        ):  # We should skip this step for novatel data right?
+        ):  # TODO Should skip this step for novatel l1 data?
             all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
                 constants.GPS_TIME
             ].round(time_round)

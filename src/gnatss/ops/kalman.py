@@ -2,6 +2,7 @@ from math import pi
 
 import numba
 import numpy as np
+from nptyping import NDArray, Shape
 from numpy import arctan as atan
 from numpy import arctan2 as atan2
 from numpy import asarray, cos, degrees, empty_like, finfo, hypot, sin, sqrt, tan, where
@@ -276,7 +277,20 @@ def kalman_init(row):
 
 
 @numba.njit()
-def run_filter_simulation(records):
+def run_filter_simulation(records: NDArray) -> NDArray:
+    """
+    Performs Kalman filtering of the GPS_GEOCENTRIC and GPS_COV_DIAG fields
+
+    Parameters
+    ----------
+    records : Numpy Array
+        Numpy Array containing the fields: # TODO -> Fill field names after verification of algorithm
+
+    Returns
+    -------
+    DataFrame
+        Pandas Dataframe containing Time and Kalman filtered GPS_GEOCENTRIC and GPS_COV_DIAG columns
+    """
     last_time = np.nan
     records_len = records.shape[0]
     Xs = np.zeros((records_len, 6, 1))

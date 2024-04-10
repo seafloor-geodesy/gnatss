@@ -85,21 +85,27 @@ def kalman_filtering(
     inspvaa_df: DataFrame,
     insstdeva_df: DataFrame,
     gps_df: DataFrame,
-):
-    # gps_df = gps_df.rename(
-    #     columns={
-    #         "time": "dts",
-    #     },
-    #     errors="raise",
-    # )
+) -> DataFrame:
+    """
+    Performs Kalman filtering of the GPS_GEOCENTRIC and GPS_COV_DIAG fields
 
-    gps_df = gps_df[
-        [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, "sdx", "sdy", "sdz"]
-    ]
+    Parameters
+    ----------
+    inspvaa_df :  DataFrame
+        Pandas Dataframe containing Antenna enu directions Novatel L1 data
+    insstdeva_df :  DataFrame
+        Pandas Dataframe containing Antenna enu directions std deviation Novatel L1 data
+    gps_df :  DataFrame
+        Pandas Dataframe containing GPS solutions Novatel L1 data
 
+    Returns
+    -------
+    DataFrame
+        Pandas Dataframe containing Time and Kalman filtered GPS_GEOCENTRIC and GPS_COV_DIAG columns
+    """
     inspvaa_df = inspvaa_df.rename(
         columns={
-            constants.TIME_J2000: constants.GPS_TIME,  # For merging convenience (So extra cols dont pop up during merge)
+            constants.TIME_J2000: constants.GPS_TIME,  # TODO For merging convenience (So extra cols dont pop up during merge)
         },
         errors="raise",
     )
@@ -111,9 +117,6 @@ def kalman_filtering(
     ]
     insstdeva_df = insstdeva_df.rename(
         columns={
-            # f"{constants.ANTENNA_EASTWARD} std": "v_sde",
-            # f"{constants.ANTENNA_NORTHWARD} std": "v_sdn",
-            # f"{constants.ANTENNA_UPWARD} std": "v_sdu",
             constants.TIME_J2000: constants.GPS_TIME,
         },
         errors="raise",
@@ -127,13 +130,19 @@ def kalman_filtering(
         ]
     ]
 
-    insstdeva_df["v_sden"] = 0.0
+    insstdeva_df["v_sden"] = 0.0  # TODO Should I create a constant for these columns?
     insstdeva_df["v_sdeu"] = 0.0
     insstdeva_df["v_sdnu"] = 0.0
 
-    gps_df["sdxy"] = np.sqrt(gps_df.sdx * gps_df.sdy)
-    gps_df["sdxz"] = np.sqrt(gps_df.sdx * gps_df.sdz)
-    gps_df["sdyz"] = np.sqrt(gps_df.sdy * gps_df.sdz)
+    gps_df["sdxy"] = np.sqrt(
+        gps_df[constants.GPS_COV_XX] * gps_df[constants.GPS_COV_YY]
+    )
+    gps_df["sdxz"] = np.sqrt(
+        gps_df[constants.GPS_COV_XX] * gps_df[constants.GPS_COV_ZZ]
+    )
+    gps_df["sdyz"] = np.sqrt(
+        gps_df[constants.GPS_COV_YY] * gps_df[constants.GPS_COV_ZZ]
+    )
 
     merged_df = inspvaa_df.merge(gps_df, on=constants.GPS_TIME, how="left")
     merged_df = merged_df.merge(insstdeva_df, on=constants.GPS_TIME, how="left")
@@ -142,15 +151,14 @@ def kalman_filtering(
     first_pos = merged_df[~merged_df.x.isnull()].iloc[0].name
     merged_df = merged_df.loc[first_pos:].reset_index(drop=True)
 
-    records = merged_df.to_numpy()
-    x, P, K, Pp = run_filter_simulation(records)
+    merged_np_array = merged_df.to_numpy()
+    x, P, K, Pp = run_filter_simulation(merged_np_array)
 
     smoothed_results = DataFrame(
         x.reshape(x.shape[0], -1),
-        columns=[*constants.GPS_GEOCENTRIC, "sdx", "sdy", "sdz"],
+        columns=[*constants.GPS_GEOCENTRIC, *constants.GPS_COV_DIAG],
     )
     smoothed_results[constants.GPS_TIME] = merged_df[constants.GPS_TIME]
-    # smoothed_results = smoothed_results[["dts", "x", "y", "z"]]
-    # How are the GPS_COV values calculated???
+    # TODO How are the GPS_COV values calculated???
 
     return smoothed_results
