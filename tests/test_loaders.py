@@ -98,7 +98,7 @@ def _load_travel_times_pass_testcase_helper(
 
     # raw_travel_times contains the expected df
     raw_travel_times = concat(
-        [read_csv(i, delim_whitespace=True, header=None) for i in travel_times]
+        [read_csv(i, sep=r"\s+", header=None) for i in travel_times]
     ).reset_index(drop=True)
 
     column_num_diff = len(expected_columns) - len(raw_travel_times.columns)
@@ -199,7 +199,7 @@ def test_load_gps_solutions(all_files_dict, time_round):
 
     raw_gps_solutions = pd.concat(
         [
-            read_csv(i, delim_whitespace=True, header=None, names=expected_columns)
+            read_csv(i, sep=r"\s+", header=None, names=expected_columns)
             for i in all_files_dict["gps_solution"]
         ]
     ).reset_index(drop=True)
@@ -227,7 +227,7 @@ def test_load_roll_pitch_heading(all_files_dict):
 
     raw_rph_solutions = pd.concat(
         [
-            read_csv(i, delim_whitespace=True, header=None, names=expected_columns)
+            read_csv(i, sep=r"\s+", header=None, names=expected_columns)
             for i in all_files_dict["roll_pitch_heading"]
         ]
     ).reset_index(drop=True)
