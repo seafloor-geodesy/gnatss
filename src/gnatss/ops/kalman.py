@@ -10,6 +10,7 @@ from numpy import asarray, cos, degrees, empty_like, finfo, hypot, sin, sqrt, ta
 # Process noise matrix
 gnss_pos_psd = 3.125e-5
 vel_psd = 0.0025
+cov_err = 0.25
 
 WGS84_ELL = {"name": "WGS-84 (1984)", "a": 6378137.0, "b": 6356752.31424518}
 semimajor_axis = WGS84_ELL["a"]
@@ -92,7 +93,7 @@ def predict(dt, X, P, Q, F):
 
 
 @numba.njit
-def updateQ(dt, Q):
+def updateQ(dt, Q, gnss_pos_psd=gnss_pos_psd, vel_psd=vel_psd):
     # Position estimation noise
     # Initial Q values from Chadwell code 3.125d-5 3.125d-5 3.125d-5 0.0025 0.0025 0.0025, assumes white noise of 2.5 cm over a second
     Q[0:3, 0:3] = np.identity(3) * gnss_pos_psd * dt
@@ -229,7 +230,7 @@ def rts_smoother(Xs, Ps, F, Q):
 
 
 @numba.njit
-def kalman_init(row):
+def kalman_init(row, cov_err=cov_err):
     dt = 5e-2
     Nx = 6
     Nu = 3  # noqa
@@ -251,8 +252,7 @@ def kalman_init(row):
     F = np.identity(Nx)
     F[0:3, 3:6] = np.identity(3) * dt
 
-    # Set initial values to 0.25?
-    P = np.identity(Nx)
+    P = np.identity(Nx) * cov_err
 
     # Process noise matrix
     Q = np.zeros((Nx, Nx))
@@ -277,14 +277,20 @@ def kalman_init(row):
 
 
 @numba.njit()
-def run_filter_simulation(records: NDArray) -> NDArray:
+def run_filter_simulation(records: NDArray, gnss_pos_psd=gnss_pos_psd, vel_psd=vel_psd, cov_err=cov_err) -> NDArray:
     """
-    Performs Kalman filtering of the GPS_GEOCENTRIC and GPS_COV_DIAG fields
+    Performs Kalman filtering of the GPS_GEOCENTRIC and sdx, sdy, sdz fields
 
     Parameters
     ----------
     records : Numpy Array
         Numpy Array containing the fields: # TODO -> Fill field names after verification of algorithm
+    gnss_pos_psd : float
+        Kalman config parameter 1
+    vel_psd : float
+        Kalman config parameter 2
+    cov_err : float
+        Kalman config parameter 3
 
     Returns
     -------
