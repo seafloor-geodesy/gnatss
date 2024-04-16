@@ -8,9 +8,9 @@ from numpy import arctan2 as atan2
 from numpy import asarray, cos, degrees, empty_like, finfo, hypot, sin, sqrt, tan, where
 
 # Process noise matrix
-gnss_pos_psd = 3.125e-5
-vel_psd = 0.0025
-cov_err = 0.25
+# gnss_pos_psd = 3.125e-5
+# vel_psd = 0.0025
+# cov_err = 0.25
 
 WGS84_ELL = {"name": "WGS-84 (1984)", "a": 6378137.0, "b": 6356752.31424518}
 semimajor_axis = WGS84_ELL["a"]
@@ -83,9 +83,9 @@ def ecef2geodetic(
 
 
 @numba.njit
-def predict(dt, X, P, Q, F):
+def predict(dt, X, P, Q, F, gnss_pos_psd, vel_psd):
     F[0:3, 3:6] = np.identity(3) * dt
-    Q = updateQ(dt, Q)
+    Q = updateQ(Q, gnss_pos_psd, vel_psd)
     X = F @ X
     P = F @ P @ F.T + Q
 
@@ -93,10 +93,10 @@ def predict(dt, X, P, Q, F):
 
 
 @numba.njit
-def updateQ(dt, Q, gnss_pos_psd=gnss_pos_psd, vel_psd=vel_psd):
+def updateQ(Q, gnss_pos_psd, vel_psd):
     # Position estimation noise
     # Initial Q values from Chadwell code 3.125d-5 3.125d-5 3.125d-5 0.0025 0.0025 0.0025, assumes white noise of 2.5 cm over a second
-    Q[0:3, 0:3] = np.identity(3) * gnss_pos_psd * dt
+    Q[0:3, 0:3] = np.identity(3) * gnss_pos_psd
 
     # Velocity estimation noise (acc psd)
     Q[3:6, 3:6] = np.identity(3) * vel_psd
@@ -230,7 +230,7 @@ def rts_smoother(Xs, Ps, F, Q):
 
 
 @numba.njit
-def kalman_init(row, cov_err=cov_err):
+def kalman_init(row, cov_err, gnss_pos_psd, vel_psd):
     dt = 5e-2
     Nx = 6
     Nu = 3  # noqa
@@ -256,7 +256,7 @@ def kalman_init(row, cov_err=cov_err):
 
     # Process noise matrix
     Q = np.zeros((Nx, Nx))
-    Q = updateQ(dt, Q)
+    Q = updateQ(Q, gnss_pos_psd, vel_psd)
 
     # Position measurement noise
     R_position = np.identity(3)
@@ -277,7 +277,7 @@ def kalman_init(row, cov_err=cov_err):
 
 
 @numba.njit()
-def run_filter_simulation(records: NDArray, gnss_pos_psd=gnss_pos_psd, vel_psd=vel_psd, cov_err=cov_err) -> NDArray:
+def run_filter_simulation(records: NDArray, gnss_pos_psd, vel_psd, cov_err) -> NDArray:
     """
     Performs Kalman filtering of the GPS_GEOCENTRIC and sdx, sdy, sdz fields
 
@@ -306,13 +306,13 @@ def run_filter_simulation(records: NDArray, gnss_pos_psd=gnss_pos_psd, vel_psd=v
         row = records[i]
         dts = row[0]
         if i == 0:
-            Nx, X, P, Q, F, R_position, R_velocity = kalman_init(row)
+            Nx, X, P, Q, F, R_position, R_velocity = kalman_init(row, cov_err, gnss_pos_psd, vel_psd)
             last_time = dts
         else:
             dt = np.abs(
                 dts - last_time
             )  # This helps to stabilize the solution, abs ensures reverse filtering works.
-            X, P, Q, F = predict(dt, X, P, Q, F)
+            X, P, Q, F = predict(dt, X, P, Q, F, gnss_pos_psd, vel_psd)
 
             last_time = dts
 

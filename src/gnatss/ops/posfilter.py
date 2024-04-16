@@ -1,5 +1,6 @@
 from typing import List
 
+import typer
 import numpy as np
 import pandas as pd
 from nptyping import Float, NDArray, Shape
@@ -130,6 +131,9 @@ def kalman_filtering(
     inspvaa_df: pd.DataFrame,
     insstdeva_df: pd.DataFrame,
     gps_df: pd.DataFrame,
+    gnss_pos_psd=constants.gnss_pos_psd,
+    vel_psd=constants.vel_psd,
+    cov_err=constants.cov_err,
 ) -> pd.DataFrame:
     """
     Performs Kalman filtering of the GPS_GEOCENTRIC and GPS_COV_DIAG fields
@@ -232,15 +236,16 @@ def kalman_filtering(
     merged_df = merged_df.loc[first_pos:].reset_index(drop=True)
 
     merged_np_array = merged_df.to_numpy()
-    x, P, K, Pp = run_filter_simulation(merged_np_array)
+    typer.echo(f"run_filter_simulation with parameters: {gnss_pos_psd=}, {vel_psd=}, {cov_err=}")
+    x, P, K, Pp = run_filter_simulation(merged_np_array, gnss_pos_psd=gnss_pos_psd, vel_psd=vel_psd, cov_err=cov_err)
 
     gps_geocentric = x.reshape(x.shape[0], -1)[:, 0:3]
-    gps_cov_diag = P.diagonal(axis1=1, axis2=2)[:, 0:3]
+    gps_covs = P[:, 0:3, 0:3].reshape(P.shape[0], -1)
 
     smoothed_results = pd.DataFrame(
-        np.concatenate([gps_geocentric, gps_cov_diag], axis=1),
-        columns=[*constants.GPS_GEOCENTRIC, *constants.GPS_COV_DIAG],
+        np.concatenate([gps_geocentric, gps_covs], axis=1),
+        columns=[*constants.GPS_GEOCENTRIC, *constants.GPS_COV],
     )
     smoothed_results[constants.GPS_TIME] = merged_df[constants.GPS_TIME]
 
-    return smoothed_results, x, P
+    return smoothed_results, x, P, K, Pp

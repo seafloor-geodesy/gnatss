@@ -178,3 +178,9 @@ L1_DATA_FORMAT = {
         ),
     },
 }
+
+
+# Kalman filter configs. # TODO move to config file
+gnss_pos_psd = 3.125e-5
+vel_psd = 0.0025
+cov_err = 0.25
