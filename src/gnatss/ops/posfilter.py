@@ -1,7 +1,7 @@
 from typing import List
 
+import numpy as np
 import pandas as pd
-import typer
 from nptyping import Float, NDArray, Shape
 from pymap3d import ecef2enu
 from scipy.spatial.transform import Rotation
@@ -141,17 +141,31 @@ def kalman_filtering(
 
     Parameters
     ----------
-    inspvaa_df :  DataFrame
+    inspvaa_df :  pd.DataFrame
         Pandas Dataframe containing Antenna enu directions Novatel L1 data
-    insstdeva_df :  DataFrame
+    insstdeva_df :  pd.DataFrame
         Pandas Dataframe containing Antenna enu directions std deviation Novatel L1 data
-    gps_df :  DataFrame
+    gps_df :  pd.DataFrame
         Pandas Dataframe containing GPS solutions Novatel L1 data
+    twtt_df :  pd.DataFrame
+        Pandas Dataframe containing two way travel time data
+    gnss_pos_psd : float
+        GNSS Position Estimation Noise for creating Q Matrix
+    vel_psd : float
+        Velocity Estimation Noise for creating Q Matrix
+    cov_err : float
+        Initial state error covariance values for creating P Matrix
+    start_dt : float
+        Initial time step for creating F Matrix
+    full_result : bool
+        If True, returns the full result of the Kalman filter simulation
+        rather than just data from the two way travel time timestamps
 
     Returns
     -------
     pos_twtt : pd.DataFrame
-        Pandas Dataframe containing Time and Kalman filtered GPS_GEOCENTRIC and GPS_COV_DIAG columns
+        Pandas Dataframe containing the resulting
+        antenna positions, covariance, and standard deviation
     """
     # Instrument velocity data
     inspvaa_df = inspvaa_df.rename(
@@ -207,18 +221,18 @@ def kalman_filtering(
     # P: covariance matrix of the predicted state
     # K: Kalman gain
     # Pp: predicted covariance from the RTS smoother
-    typer.echo(
-        f"run_filter_simulation with parameters: {gnss_pos_psd=}, {vel_psd=}, {cov_err=}"
-    )
-    x, P, K, Pp = run_filter_simulation(
+    x, P, _, _ = run_filter_simulation(
         merged_np_array, start_dt, gnss_pos_psd, vel_psd, cov_err
-    )  # noqa
+    )
 
     # Positions covariance
     ant_cov = P[:, :3, :3]
     ant_cov_df = pd.DataFrame(
         ant_cov.reshape(ant_cov.shape[0], -1), columns=constants.ANT_GPS_COV
     )
+    ant_cov_df[[*constants.ANT_GPS_GEOCENTRIC_STD]] = ant_cov_df[
+        [*constants.ANT_GPS_COV_DIAG]
+    ].apply(np.sqrt)
     ant_cov_df[constants.GPS_TIME] = merged_df[constants.GPS_TIME]
 
     # Smoothed positions
@@ -234,4 +248,4 @@ def kalman_filtering(
     if full_result:
         return smoothed_results
 
-    return pd.merge(twtt_df, smoothed_results, how="left"), x, P, K, Pp
+    return pd.merge(twtt_df, smoothed_results, how="left")

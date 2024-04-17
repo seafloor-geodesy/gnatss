@@ -46,7 +46,13 @@ GPS_Y = "y"  # Geocentric y
 GPS_Z = "z"  # Geocentric z
 GPS_GEOCENTRIC = [GPS_X, GPS_Y, GPS_Z]  # Geocentric x,y,z
 GPS_GEOCENTRIC_STD = [f"sd{d}" for d in GPS_GEOCENTRIC]  # Geocentric std x,y,z
-ANT_GPS_GEOCENTRIC = [f"ant_{d}" for d in GPS_GEOCENTRIC]  # Geocentric ant x,y,z
+ANT_GPS_GEOCENTRIC = [
+    f"ant_{d.upper()}" for d in GPS_GEOCENTRIC
+]  # Geocentric ant x,y,z
+ANT_GPS_GEOCENTRIC_STD = [
+    f"ant_sig{d.upper()}" for d in GPS_GEOCENTRIC
+]  # Geocentric ant x,y,z std
+
 GPS_LON = "lon"  # Geodetic longitude
 GPS_LAT = "lat"  # Geodetic latitude
 GPS_ALT = "alt"  # Geodetic altitude
@@ -76,7 +82,10 @@ GPS_COV = [
     GPS_COV_ZY,
     GPS_COV_ZZ,
 ]  # Covariance matrix columns
-ANT_GPS_COV = [f"ant_{c}" for c in GPS_COV]  # Antenna covariance columns
+ANT_GPS_COV_DIAG = [
+    f"ant_cov_{c.upper()}" for c in GPS_COV_DIAG
+]  # Antenna covariance diagonal
+ANT_GPS_COV = [f"ant_cov_{c.upper()}" for c in GPS_COV]  # Antenna covariance columns
 
 # Roll Pitch Heading columns
 RPH_TIME = TIME_J2000
