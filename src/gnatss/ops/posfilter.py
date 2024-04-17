@@ -70,7 +70,7 @@ def rotation(
 
     Parameters
     ----------
-    df :  DataFrame
+    df :  pd.DataFrame
         Pandas Dataframe to add antenna position columns to
     atd_offsets : NDArray[Shape["3"], Float]
         Forward, Rightward, and Downward antenna transducer offset values
@@ -86,7 +86,7 @@ def rotation(
 
     Returns
     -------
-    DataFrame
+    pd.DataFrame
         Modified Pandas Dataframe containing 3 new antenna position
         (eastward, northward, and upward) columns.
     """
