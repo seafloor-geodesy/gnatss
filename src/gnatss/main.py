@@ -562,12 +562,18 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
 
     # Cleaning travel times
     typer.echo("Cleaning travel times data...")
+    typer.echo(f"{all_travel_times=}")
     filtered_travel_times = filter_tt(all_travel_times, cut_df)
     cleaned_travel_times = clean_tt(
         filtered_travel_times,
         transponder_ids,
         config.solver.travel_times_correction,
         config.solver.transducer_delay_time,
+    )
+    typer.echo(
+        f"clean_tt:\n{filtered_travel_times}\n{all_files_dict['travel_times']}\n"
+        f"{transponder_ids}\n{config.solver.travel_times_correction}\n"
+        f"{config.solver.transducer_delay_time}"
     )
 
     # Load gps solutions data

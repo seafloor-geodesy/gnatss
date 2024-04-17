@@ -250,8 +250,8 @@ def filter_tt(travel_times: pd.DataFrame, cut_df: pd.DataFrame) -> pd.DataFrame:
             ].index.values
             cut_ids_all = cut_ids_all + cut_ids.tolist()
         cut_ids_all = list(set(cut_ids_all))
-        all_travel_times = travel_times.loc[~travel_times.index.isin(cut_ids_all)]
-    return all_travel_times
+        return travel_times.loc[~travel_times.index.isin(cut_ids_all)]
+    return travel_times
 
 
 def preprocess_tt(travel_times: pd.DataFrame) -> pd.DataFrame:

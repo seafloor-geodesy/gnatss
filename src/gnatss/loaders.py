@@ -247,7 +247,9 @@ def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], 
 
 
 def load_gps_solutions(
-    files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
+    files: List[str],
+    time_round: int = constants.DELAY_TIME_PRECISION,
+    is_l1_data: bool = False,
 ) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.
@@ -258,39 +260,59 @@ def load_gps_solutions(
         The list of path string to files to load
     time_round : int
         The precision value to round the time values
+    is_l1_data : bool
+        If True, read according to L1 data format (Usually named `GPS_POS_FREED`).
 
     Returns
     -------
     pd.DataFrame
         Pandas DataFrame containing all of the gps solutions data.
-        Expected columns will have 'time',
-        the geocentric 'x,y,z',
-        and covariance matrix 'xx' to 'zz'
+        1) if is_novatel_l1_data is True
+            The numbers are column number.
+            1: Time unit seconds in J2000 epoch
+            2: Geocentric x in meters
+            3: Geocentric y in meters
+            4: Geocentric z in meters
+            5 - 7: Covariance matrix (3x3) Diagonals xx, yy, zz
 
-    Notes
-    -----
-    The input gps solutions data is assumed to follow the structure below:
-
-    The numbers are column number.
-
-    1: Time unit seconds in J2000 epoch
-    2: Geocentric x in meters
-    3: Geocentric y in meters
-    4: Geocentric z in meters
-    5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
-
-    These files are often called `POS_FREED_TRANS_TWTT`.
+        2) if is_novatel_l1_data is False
+            The numbers are column number.
+            1: Time unit seconds in J2000 epoch
+            2: Geocentric x in meters
+            3: Geocentric y in meters
+            4: Geocentric z in meters
+            5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
     """
-    columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
-    # Real all gps solutions
-    gps_solutions = [
-        pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
-    ]
-    all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
+    if is_l1_data:
+        columns = [
+            constants.GPS_TIME,
+            "dtype",
+            *constants.GPS_GEOCENTRIC,
+            "sdx",
+            "sdy",
+            "sdz",
+        ]
+        gps_solutions = [
+            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+            for i in files
+        ]
+        all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
+        all_gps_solutions = all_gps_solutions.drop(columns="dtype")
+        # Do we need to sort the gps solutions?
+
+    else:
+        columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
+        gps_solutions = [
+            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
+            for i in files
+        ]
+        all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
 
     # Round to match the delays precision
     # TODO: Find a way to determine this precision dynamically?
-    if isinstance(time_round, int) and time_round > 0:
+    if (
+        isinstance(time_round, int) and time_round > 0
+    ):  # TODO Should skip this step for novatel l1 data?
         all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
             constants.GPS_TIME
         ].round(time_round)
