@@ -7,10 +7,13 @@ from numpy import arctan as atan
 from numpy import arctan2 as atan2
 from numpy import asarray, cos, degrees, empty_like, finfo, hypot, sin, sqrt, tan, where
 
+from .. import constants
+
 # Process noise matrix
-# gnss_pos_psd = 3.125e-5
-# vel_psd = 0.0025
-# cov_err = 0.25
+DEFAULT_GNSS_POS_PSD = constants.gnss_pos_psd
+DEFAULT_VEL_PSD = constants.vel_psd
+DEFAULT_COV_ERR = constants.cov_err
+DEFAULT_START_DT = constants.start_dt
 
 WGS84_ELL = {"name": "WGS-84 (1984)", "a": 6378137.0, "b": 6356752.31424518}
 semimajor_axis = WGS84_ELL["a"]
@@ -57,7 +60,7 @@ def ecef2geodetic(
     )
 
     # eqn. 4c
-    # %% final output
+    # final output
     lat = atan(semimajor_axis / semiminor_axis * tan(Beta))
 
     # # patch latitude for float32 precision loss
@@ -83,7 +86,7 @@ def ecef2geodetic(
 
 
 @numba.njit
-def predict(dt, X, P, Q, F, gnss_pos_psd, vel_psd):
+def predict(dt, X, P, Q, F, gnss_pos_psd=DEFAULT_GNSS_POS_PSD, vel_psd=DEFAULT_VEL_PSD):
     F[0:3, 3:6] = np.identity(3) * dt
     Q = updateQ(Q, gnss_pos_psd, vel_psd)
     X = F @ X
@@ -93,7 +96,7 @@ def predict(dt, X, P, Q, F, gnss_pos_psd, vel_psd):
 
 
 @numba.njit
-def updateQ(Q, gnss_pos_psd, vel_psd):
+def updateQ(Q, gnss_pos_psd=DEFAULT_GNSS_POS_PSD, vel_psd=DEFAULT_VEL_PSD):
     # Position estimation noise
     # Initial Q values from Chadwell code 3.125d-5 3.125d-5 3.125d-5 0.0025 0.0025 0.0025, assumes white noise of 2.5 cm over a second
     Q[0:3, 0:3] = np.identity(3) * gnss_pos_psd
@@ -160,13 +163,13 @@ def update_vel_cov(row, R_velocity, rot):
 
 @numba.njit
 def update_rpos(row, R_position):
-    R_position[0, 0] = row[7] ** 2
-    R_position[1, 1] = row[8] ** 2
-    R_position[2, 2] = row[9] ** 2
+    R_position[0, 0] = row[7] ** 2  # sx^2
+    R_position[1, 1] = row[8] ** 2  # sy^2
+    R_position[2, 2] = row[9] ** 2  # sz^2
 
-    R_position[0, 1] = np.sign(row[10]) * row[10] ** 2
-    R_position[0, 2] = np.sign(row[11]) * row[11] ** 2
-    R_position[1, 2] = np.sign(row[12]) * row[12] ** 2
+    R_position[0, 1] = row[10] * row[7] * row[8]  # rho_xy * sx * sy
+    R_position[0, 2] = row[11] * row[7] * row[9]  # rho_xz * sx * sz
+    R_position[1, 2] = row[12] * row[8] * row[9]  # rho_yz * sy * sz
 
     R_position[1, 0] = R_position[0, 1]
     R_position[2, 0] = R_position[0, 2]
@@ -208,30 +211,41 @@ def update_velocity(Nx, X, P, R_velocity, v_xyz):
 
 
 @numba.njit()
-def rts_smoother(Xs, Ps, F, Q):
+def rts_smoother(Ts, Xs, Ps, F, Q, start_dt=DEFAULT_START_DT):
     # Rauch, Tongue, and Striebel smoother
-
+    dt = start_dt
+    last_time = np.nan
     n, dim_x, _ = Xs.shape
 
     # smoother gain
-    K = np.zeros((n, dim_x, dim_x))
-    x, P, Pp = Xs.copy(), Ps.copy(), Ps.copy()
+    A = np.zeros((n, dim_x, dim_x))
+    x, Xp, P, Pp = Xs.copy(), Xs.copy(), Ps.copy(), Ps.copy()
 
     i = 0
     for k in range(n - 2, -1, -1):
-        Pp[k] = F @ P[k] @ F.T + Q  # predicted covariance
+        if i > 0:
+            dt = np.abs(Ts[k] - last_time)
+        last_time = Ts[k]
 
-        K[k] = P[k] @ F.T @ np.linalg.inv(Pp[k])
-        x[k] += K[k] @ (x[k + 1] - (F @ x[k]))
-        P[k] += K[k] @ (P[k + 1] - Pp[k]) @ K[k].T
+        Xp[k], Pp[k], Q, F = predict(dt, Xp[k], Pp[k], Q, F)
+
+        A[k] = P[k] @ F.T @ np.linalg.inv(Pp[k])
+        x[k] += A[k] @ (x[k + 1] - Xp[k])
+        P[k] += A[k] @ (P[k + 1] - Pp[k]) @ A[k].T
         i += 1
 
-    return x, P, K, Pp
+    return x, P, A, Pp
 
 
 @numba.njit
-def kalman_init(row, cov_err, gnss_pos_psd, vel_psd):
-    dt = 5e-2
+def kalman_init(
+    row,
+    cov_err=DEFAULT_COV_ERR,
+    gnss_pos_psd=DEFAULT_GNSS_POS_PSD,
+    vel_psd=DEFAULT_VEL_PSD,
+    start_dt=DEFAULT_START_DT,
+):
+    dt = start_dt
     Nx = 6
     Nu = 3  # noqa
 
@@ -252,6 +266,7 @@ def kalman_init(row, cov_err, gnss_pos_psd, vel_psd):
     F = np.identity(Nx)
     F[0:3, 3:6] = np.identity(3) * dt
 
+    # Set initial values to 0.25?
     P = np.identity(Nx) * cov_err
 
     # Process noise matrix
@@ -277,20 +292,14 @@ def kalman_init(row, cov_err, gnss_pos_psd, vel_psd):
 
 
 @numba.njit()
-def run_filter_simulation(records: NDArray, gnss_pos_psd, vel_psd, cov_err) -> NDArray:
+def run_filter_simulation(records: NDArray, start_dt=DEFAULT_START_DT, gnss_pos_psd=DEFAULT_GNSS_POS_PSD, vel_psd=DEFAULT_VEL_PSD, cov_err=DEFAULT_COV_ERR) -> NDArray:
     """
-    Performs Kalman filtering of the GPS_GEOCENTRIC and sdx, sdy, sdz fields
+    Performs Kalman filtering of the GPS_GEOCENTRIC and GPS_COV_DIAG fields
 
     Parameters
     ----------
     records : Numpy Array
         Numpy Array containing the fields: # TODO -> Fill field names after verification of algorithm
-    gnss_pos_psd : float
-        Kalman config parameter 1
-    vel_psd : float
-        Kalman config parameter 2
-    cov_err : float
-        Kalman config parameter 3
 
     Returns
     -------
@@ -299,22 +308,23 @@ def run_filter_simulation(records: NDArray, gnss_pos_psd, vel_psd, cov_err) -> N
     """
     last_time = np.nan
     records_len = records.shape[0]
+    Ts = np.zeros((records_len,))
     Xs = np.zeros((records_len, 6, 1))
     Ps = np.zeros((records_len, 6, 6))
     n_records = len(records)
     for i in range(n_records):
         row = records[i]
-        dts = row[0]
+        Ts[i] = row[0]
         if i == 0:
-            Nx, X, P, Q, F, R_position, R_velocity = kalman_init(row, cov_err, gnss_pos_psd, vel_psd)
-            last_time = dts
+            Nx, X, P, Q, F, R_position, R_velocity = kalman_init(row, cov_err, gnss_pos_psd, vel_psd, start_dt)
+            last_time = Ts[i]
         else:
             dt = np.abs(
-                dts - last_time
+                Ts[i] - last_time
             )  # This helps to stabilize the solution, abs ensures reverse filtering works.
             X, P, Q, F = predict(dt, X, P, Q, F, gnss_pos_psd, vel_psd)
 
-            last_time = dts
+            last_time = Ts[i]
 
             lat, lon, _ = ecef2geodetic(X[0], X[1], X[2])
             rot, v_xyz = rot_vel(row, lat[0], lon[0])
@@ -334,6 +344,4 @@ def run_filter_simulation(records: NDArray, gnss_pos_psd, vel_psd, cov_err) -> N
         Xs[i] = X
         Ps[i] = P
 
-    x, P, K, Pp = rts_smoother(Xs, Ps, F, Q)
-
-    return x, P, K, Pp
+    return rts_smoother(Ts, Xs, Ps, F, Q, start_dt)

@@ -45,6 +45,8 @@ GPS_X = "x"  # Geocentric x
 GPS_Y = "y"  # Geocentric y
 GPS_Z = "z"  # Geocentric z
 GPS_GEOCENTRIC = [GPS_X, GPS_Y, GPS_Z]  # Geocentric x,y,z
+GPS_GEOCENTRIC_STD = [f"sd{d}" for d in GPS_GEOCENTRIC]  # Geocentric std x,y,z
+ANT_GPS_GEOCENTRIC = [f"ant_{d}" for d in GPS_GEOCENTRIC]  # Geocentric ant x,y,z
 GPS_LON = "lon"  # Geodetic longitude
 GPS_LAT = "lat"  # Geodetic latitude
 GPS_ALT = "alt"  # Geodetic altitude
@@ -74,6 +76,7 @@ GPS_COV = [
     GPS_COV_ZY,
     GPS_COV_ZZ,
 ]  # Covariance matrix columns
+ANT_GPS_COV = [f"ant_{c}" for c in GPS_COV]  # Antenna covariance columns
 
 # Roll Pitch Heading columns
 RPH_TIME = TIME_J2000
@@ -184,3 +187,4 @@ L1_DATA_FORMAT = {
 gnss_pos_psd = 3.125e-5
 vel_psd = 0.0025
 cov_err = 0.25
+start_dt = 5e-2
