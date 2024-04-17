@@ -288,9 +288,9 @@ def load_gps_solutions(
             constants.GPS_TIME,
             "dtype",
             *constants.GPS_GEOCENTRIC,
-            'sdx',
-            'sdy',
-            'sdz',
+            "sdx",
+            "sdy",
+            "sdz",
         ]
         gps_solutions = [
             pd.read_csv(i, delim_whitespace=True, header=None, names=columns)

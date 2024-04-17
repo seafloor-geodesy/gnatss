@@ -1,8 +1,7 @@
 from typing import List
 
-import typer
-import numpy as np
 import pandas as pd
+import typer
 from nptyping import Float, NDArray, Shape
 from pymap3d import ecef2enu
 from scipy.spatial.transform import Rotation
@@ -131,10 +130,10 @@ def kalman_filtering(
     insstdeva_df: pd.DataFrame,
     gps_df: pd.DataFrame,
     twtt_df: pd.DataFrame,
-    gnss_pos_psd = constants.gnss_pos_psd,
-    vel_psd = constants.vel_psd,
-    cov_err = constants.cov_err,
-    start_dt = constants.start_dt,
+    gnss_pos_psd=constants.gnss_pos_psd,
+    vel_psd=constants.vel_psd,
+    cov_err=constants.cov_err,
+    start_dt=constants.start_dt,
     full_result: bool = False,
 ) -> pd.DataFrame:
     """
@@ -192,39 +191,46 @@ def kalman_filtering(
     gps_df["rho_xz"] = 0.0
     gps_df["rho_yz"] = 0.0
 
-    merged_df = inspvaa_df.merge(twtt_df[[constants.GPS_TIME]], on=constants.GPS_TIME, how="outer")
+    merged_df = inspvaa_df.merge(
+        twtt_df[[constants.GPS_TIME]], on=constants.GPS_TIME, how="outer"
+    )
     merged_df = merged_df.merge(gps_df, on=constants.GPS_TIME, how="left")
     merged_df = merged_df.merge(insstdeva_df, on=constants.GPS_TIME, how="left")
     merged_df = merged_df.sort_values(constants.GPS_TIME).reset_index(drop=True)
-    
+
     first_pos = merged_df[~merged_df.x.isnull()].iloc[0].name
     merged_df = merged_df.loc[first_pos:].reset_index(drop=True)
-    
+
     merged_np_array = merged_df.to_numpy()
-    
+
     # x: state matrix
     # P: covariance matrix of the predicted state
     # K: Kalman gain
     # Pp: predicted covariance from the RTS smoother
-    typer.echo(f"run_filter_simulation with parameters: {gnss_pos_psd=}, {vel_psd=}, {cov_err=}")
-    x, P, K, Pp = run_filter_simulation(merged_np_array, start_dt, gnss_pos_psd, vel_psd, cov_err)  # noqa
-    
+    typer.echo(
+        f"run_filter_simulation with parameters: {gnss_pos_psd=}, {vel_psd=}, {cov_err=}"
+    )
+    x, P, K, Pp = run_filter_simulation(
+        merged_np_array, start_dt, gnss_pos_psd, vel_psd, cov_err
+    )  # noqa
+
     # Positions covariance
     ant_cov = P[:, :3, :3]
     ant_cov_df = pd.DataFrame(
-        ant_cov.reshape(ant_cov.shape[0], -1),
-        columns=constants.ANT_GPS_COV
+        ant_cov.reshape(ant_cov.shape[0], -1), columns=constants.ANT_GPS_COV
     )
     ant_cov_df[constants.GPS_TIME] = merged_df[constants.GPS_TIME]
-    
+
     # Smoothed positions
     smoothed_results = pd.DataFrame(
         x.reshape(x.shape[0], -1)[:, :3],
         columns=constants.ANT_GPS_GEOCENTRIC,
     )
     smoothed_results[constants.GPS_TIME] = merged_df[constants.GPS_TIME]
-    smoothed_results = smoothed_results.merge(ant_cov_df, on=constants.GPS_TIME, how="left")
-    
+    smoothed_results = smoothed_results.merge(
+        ant_cov_df, on=constants.GPS_TIME, how="left"
+    )
+
     if full_result:
         return smoothed_results
 

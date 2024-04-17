@@ -2,7 +2,7 @@ from math import pi
 
 import numba
 import numpy as np
-from nptyping import NDArray, Shape
+from nptyping import NDArray
 from numpy import arctan as atan
 from numpy import arctan2 as atan2
 from numpy import asarray, cos, degrees, empty_like, finfo, hypot, sin, sqrt, tan, where
@@ -98,7 +98,9 @@ def predict(dt, X, P, Q, F, gnss_pos_psd=DEFAULT_GNSS_POS_PSD, vel_psd=DEFAULT_V
 @numba.njit
 def updateQ(Q, gnss_pos_psd=DEFAULT_GNSS_POS_PSD, vel_psd=DEFAULT_VEL_PSD):
     # Position estimation noise
-    # Initial Q values from Chadwell code 3.125d-5 3.125d-5 3.125d-5 0.0025 0.0025 0.0025, assumes white noise of 2.5 cm over a second
+    # Initial Q values from Chadwell code
+    # 3.125d-5 3.125d-5 3.125d-5 0.0025 0.0025 0.0025,
+    # assumes white noise of 2.5 cm over a second
     Q[0:3, 0:3] = np.identity(3) * gnss_pos_psd
 
     # Velocity estimation noise (acc psd)
@@ -292,14 +294,21 @@ def kalman_init(
 
 
 @numba.njit()
-def run_filter_simulation(records: NDArray, start_dt=DEFAULT_START_DT, gnss_pos_psd=DEFAULT_GNSS_POS_PSD, vel_psd=DEFAULT_VEL_PSD, cov_err=DEFAULT_COV_ERR) -> NDArray:
+def run_filter_simulation(
+    records: NDArray,
+    start_dt=DEFAULT_START_DT,
+    gnss_pos_psd=DEFAULT_GNSS_POS_PSD,
+    vel_psd=DEFAULT_VEL_PSD,
+    cov_err=DEFAULT_COV_ERR,
+) -> NDArray:
     """
     Performs Kalman filtering of the GPS_GEOCENTRIC and GPS_COV_DIAG fields
 
     Parameters
     ----------
     records : Numpy Array
-        Numpy Array containing the fields: # TODO -> Fill field names after verification of algorithm
+        Numpy Array containing the fields
+        # TODO -> Fill field names after verification of algorithm
 
     Returns
     -------
@@ -316,7 +325,9 @@ def run_filter_simulation(records: NDArray, start_dt=DEFAULT_START_DT, gnss_pos_
         row = records[i]
         Ts[i] = row[0]
         if i == 0:
-            Nx, X, P, Q, F, R_position, R_velocity = kalman_init(row, cov_err, gnss_pos_psd, vel_psd, start_dt)
+            Nx, X, P, Q, F, R_position, R_velocity = kalman_init(
+                row, cov_err, gnss_pos_psd, vel_psd, start_dt
+            )
             last_time = Ts[i]
         else:
             dt = np.abs(
