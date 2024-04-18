@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 
 import numba
 import numpy as np
@@ -40,6 +40,26 @@ def _split_cov(
     for i in range(n):
         cov[i] = cov_values[i * n : i * n + n]  # noqa
     return cov
+
+
+def _get_standard_columns(
+    columns: List[str], data_type: Literal["transmit", "receive"] = "receive"
+):
+    meta_columns = [constants.garpos.MT, constants.garpos.ST, constants.garpos.TT]
+
+    new_columns = []
+    suffix = f"_{data_type}"
+    for col in columns:
+        if col in meta_columns:
+            new_columns.append(col)
+        elif col == constants.TIME_J2000:
+            new_columns.append(col[0].upper() + suffix)
+        elif col in [c.upper() for c in constants.GPS_GEOCENTRIC]:
+            new_columns.append(col + suffix)
+        else:
+            num_suffix = 0 if data_type == "transmit" else 1
+            new_columns.append(col + str(num_suffix))
+    return new_columns
 
 
 def ecef_to_enu(
@@ -284,3 +304,20 @@ def preprocess_tt(travel_times: pd.DataFrame) -> pd.DataFrame:
             constants.garpos.ST,
         ],
     )
+
+
+def standardize_data(pos_freed_trans_twtt: pd.DataFrame) -> pd.DataFrame:
+    is_transmit = pos_freed_trans_twtt[constants.garpos.ST].isna()
+
+    # Standardize receive data
+    receive_df = pos_freed_trans_twtt[~is_transmit]
+    receive_df.columns = _get_standard_columns(receive_df.columns, "receive")
+
+    # Standardize transmit data
+    transmit_df = pos_freed_trans_twtt[is_transmit]
+    transmit_df = transmit_df.drop(
+        [constants.garpos.ST, constants.garpos.TT, constants.garpos.MT], axis=1
+    )
+    transmit_df.columns = _get_standard_columns(transmit_df.columns, "transmit")
+
+    return pd.merge(receive_df, transmit_df, on=constants.garpos.ST)

@@ -45,6 +45,7 @@ GPS_X = "x"  # Geocentric x
 GPS_Y = "y"  # Geocentric y
 GPS_Z = "z"  # Geocentric z
 GPS_GEOCENTRIC = [GPS_X, GPS_Y, GPS_Z]  # Geocentric x,y,z
+GPS_GEOCENTRIC_CAPS = [c.upper() for c in GPS_GEOCENTRIC]
 GPS_GEOCENTRIC_STD = [f"sd{d}" for d in GPS_GEOCENTRIC]  # Geocentric std x,y,z
 ANT_GPS_GEOCENTRIC = [
     f"ant_{d.upper()}" for d in GPS_GEOCENTRIC
