@@ -1,68 +1,80 @@
-from typing import List
+from typing import Union
 
 import numpy as np
 import pandas as pd
+import pymap3d
 from nptyping import Float, NDArray, Shape
-from pymap3d import ecef2enu
 from scipy.spatial.transform import Rotation
 
 from .. import constants
+from ..configs.posfilter import AtdOffset
 from ..configs.solver import ArrayCenter
 from .kalman import run_filter_simulation
 
 
-def spline_interpolate(travel_times, ins_rph, cov_rph):
+def spline_interpolate(
+    inspvaa_df: pd.DataFrame,
+    insstdeva_df: pd.DataFrame,
+    twtt_df: pd.DataFrame,
+    full_result: bool = False,
+) -> pd.DataFrame:
     """
     Interpolate the INS RPH data and the covariance data to the travel times data
 
     Parameters
     ----------
-    travel_times : pd.DataFrame
+    inspvaa_df :  DataFrame
+        Pandas Dataframe containing Antenna enu directions Novatel L1 data
+    insstdeva_df :  DataFrame
+        Pandas Dataframe containing Antenna enu directions std deviation Novatel L1 data
+    twtt_df : pd.DataFrame
         The travel times data
-    ins_rph : pd.DataFrame
-        The INS RPH data
-    cov_rph : pd.DataFrame
-        The covariance data
 
     Returns
     -------
-    pd.DataFrame
+    cov_rph_twtt : pd.DataFrame
         The interpolated data
     """
+    ins_rph = inspvaa_df[[constants.RPH_TIME, *constants.RPH_LOCAL_TANGENTS]]
+    cov_rph = insstdeva_df[[constants.RPH_TIME, *constants.PLATFORM_COV_RPH_DIAG]]
     # Merge the two dataframes of ins_rph and cov_rph
     # since they're at the same sampling rate
-    merged_rph = pd.merge(ins_rph, cov_rph, on="dts")
+    merged_rph = pd.merge(ins_rph, cov_rph, on=constants.RPH_TIME)
 
     # Merge the travel times data with the merged_rph data
     # with an 'outer' join, this will result in missing values
     # at points of travel times data that doesn't have corresponding
     # INS RPH data
     initial_df = pd.merge(
-        travel_times[[constants.TT_TIME]],
+        twtt_df[[constants.TT_TIME]],
         merged_rph,
-        left_on="time",
-        right_on="dts",
+        left_on=constants.GPS_TIME,
+        right_on=constants.RPH_TIME,
         how="outer",
     )
 
     # Interpolate the missing values using cubic spline interpolation
     result_df = (
         initial_df.interpolate(method="spline", order=3, s=0)
-        .drop("dts", axis=1)
         .dropna()
         .reset_index(drop=True)
     )
 
-    return result_df
+    for col in constants.PLATFORM_COV_RPH:
+        if col not in constants.PLATFORM_COV_RPH_DIAG:
+            result_df[col] = 0.0
+
+    if full_result:
+        return result_df
+
+    return pd.merge(twtt_df, result_df, on=constants.TT_TIME, how="left")
 
 
 def rotation(
-    df: pd.DataFrame,
-    atd_offsets: NDArray[Shape["3"], Float],
+    pos_twtt: pd.DataFrame,
+    cov_rph_twtt: pd.DataFrame,
+    atd_offsets: Union[AtdOffset, NDArray[Shape["3"], Float]],
     array_center: ArrayCenter,
-    input_rph_columns: List[str],
-    input_ecef_columns: List[str],
-    output_antenna_enu_columns: List[str],
 ) -> pd.DataFrame:
     """
     Calculate GNSS antenna eastward, northward, and upward position
@@ -70,57 +82,87 @@ def rotation(
 
     Parameters
     ----------
-    df :  pd.DataFrame
-        Pandas Dataframe to add antenna position columns to
+    pos_twtt :  pd.DataFrame
+        Pandas Dataframe containing positioning data as result from
+        the kalman filtering process
+    cov_rph_twtt : pd.DataFrame
+        Pandas Dataframe containing INS RPH data, including the covariance data
+        from the spline interpolation process
     atd_offsets : NDArray[Shape["3"], Float]
         Forward, Rightward, and Downward antenna transducer offset values
     array_center : ArrayCenter
         Array center base model containing Latitude, Longitude and Altitude
-    input_rph_columns : List[str]
-        List containing Roll, Pitch, and Heading column names in input dataframe
-    input_ecef_columns : List[str]
-        List containing Geocentric x, y, and z column names in input dataframe
-    output_antenna_enu_columns : List[str]
-        List containing Antenna position Eastward, Northward, and Upward
-        direction column names that are to be added to the dataframe
 
     Returns
     -------
-    pd.DataFrame
-        Modified Pandas Dataframe containing 3 new antenna position
-        (eastward, northward, and upward) columns.
+    pos_freed_trans_twtt : pd.DataFrame
+        Modified positioning data that includes rotation
     """
+    # Merge the pos_twtt and cov_rph_twtt dataframes
+    df = pd.merge(
+        pos_twtt,
+        cov_rph_twtt,
+        on=constants.TIME_J2000,
+        how="left",
+        suffixes=("", "_remove"),
+    )
+    # remove the duplicate columns
+    df = df.drop([i for i in df.columns if "remove" in i], axis=1)
+
+    # Extract atd_offsets values
+    if isinstance(atd_offsets, AtdOffset):
+        atd_offsets = np.array(
+            [atd_offsets.forward, atd_offsets.rightward, atd_offsets.downward]
+        )
+
     # d_enu_columns and td_enu_columns are temporary columns used to calculate antenna positions
     d_enu_columns = ["d_e", "d_n", "d_u"]
     td_enu_columns = ["td_e", "td_n", "td_u"]
 
     # Compute transducer offset from the antenna, and add to d_enu_columns columns
-    r = Rotation.from_euler("xyz", df[input_rph_columns], degrees=True)
+    r = Rotation.from_euler("xyz", df[constants.RPH_LOCAL_TANGENTS], degrees=True)
+
+    # Compute the final offsets
     offsets = r.as_matrix() @ atd_offsets
     df[d_enu_columns[0]] = offsets[:, 1]
     df[d_enu_columns[1]] = offsets[:, 0]
     df[d_enu_columns[2]] = -offsets[:, 2]
 
     # Calculate enu values from ecef values, and add to td_enu_columns columns
-    enu = df[input_ecef_columns].apply(
-        lambda row: ecef2enu(
+    df[td_enu_columns] = df[constants.ANT_GPS_GEOCENTRIC].apply(
+        lambda row: pymap3d.ecef2enu(
             *row.values,
             lat0=array_center.lat,
             lon0=array_center.lon,
             h0=array_center.alt,
         ),
         axis=1,
+        result_type="expand",
     )
-    df = df.assign(**dict(zip(td_enu_columns, zip(*enu))))
 
+    transducer_columns = [c.upper() for c in constants.GPS_GEOCENTRIC]
     # antenna_enu is the sum of corresponding td_enu_columns and d_enu_columns values
-    for antenna_enu, td_enu, d_enu in zip(
-        output_antenna_enu_columns, td_enu_columns, d_enu_columns
+    for trans_enu, td_enu, d_enu in zip(
+        constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns
     ):
-        df[antenna_enu] = df.loc[:, [td_enu, d_enu]].sum(axis=1)
+        df[trans_enu] = df.loc[:, [td_enu, d_enu]].sum(axis=1)
 
-    # Drop temporary d_enu_columns and td_enu_columns columns
-    df.drop(columns=[*d_enu_columns, *td_enu_columns], inplace=True)
+    # convert to ecef coordinates
+    df[transducer_columns] = df[constants.GPS_LOCAL_TANGENT].apply(
+        lambda row: pymap3d.enu2ecef(
+            *row.values,
+            lat0=array_center.lat,
+            lon0=array_center.lon,
+            h0=array_center.alt,
+        ),
+        axis=1,
+        result_type="expand",
+    )
+
+    # Drop temporary columns
+    df = df.drop(
+        columns=[*d_enu_columns, *td_enu_columns, *constants.GPS_LOCAL_TANGENT]
+    )
 
     return df
 
@@ -216,7 +258,6 @@ def kalman_filtering(
     merged_df = merged_df.loc[first_pos:].reset_index(drop=True)
 
     merged_np_array = merged_df.to_numpy()
-
     # x: state matrix
     # P: covariance matrix of the predicted state
     # K: Kalman gain

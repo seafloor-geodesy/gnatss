@@ -10,6 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, computed_field
 
 from .io import InputData
+from .transponders import Transponder
 
 
 class ReferenceEllipsoid(BaseModel):
@@ -39,11 +40,11 @@ class SolverInputs(BaseModel):
         ..., description="Sound speed data path specification"
     )
     # NOTE: 3/3/2023 - These are required for now and will change in the future.
-    travel_times: InputData = Field(
-        ..., description="Travel times data path specification."
+    travel_times: Optional[InputData] = Field(
+        None, description="Travel times data path specification."
     )
-    gps_solution: InputData = Field(
-        ..., description="GPS solution data path specification."
+    gps_solution: Optional[InputData] = Field(
+        None, description="GPS solution data path specification."
     )
     deletions: Optional[InputData] = Field(
         None, description="Deletions file for unwanted data points."
@@ -113,8 +114,8 @@ class Solver(BaseModel):
     """
 
     defaults: SolverGlobal = SolverGlobal()
-    transponders: Optional[List[SolverTransponder]] = Field(
-        ..., description="A list of transponders configurations"
+    transponders: Optional[List[Transponder]] = Field(
+        None, description="A list of transponders configurations"
     )
     reference_ellipsoid: Optional[ReferenceEllipsoid] = Field(
         ..., description="Reference ellipsoid configurations"
@@ -139,8 +140,8 @@ class Solver(BaseModel):
     bisection_tolerance: float = Field(
         1e-10, description="Tolerance to stop bisection during ray trace"
     )
-    array_center: ArrayCenter = Field(
-        ..., description="Array center to use for calculation"
+    array_center: Optional[ArrayCenter] = Field(
+        None, description="Array center to use for calculation"
     )
     travel_times_variance: float = Field(
         1e-10, description="VARIANCE (s**2) PXP two-way travel time measurement"

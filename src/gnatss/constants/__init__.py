@@ -7,7 +7,7 @@ from . import garpos
 __all__ = ["garpos"]
 
 # Config constants
-DEFAULT_CONFIG_PROCS = ("solver", "posfilter")
+DEFAULT_CONFIG_PROCS = ("main", "solver", "posfilter")
 
 # General constants
 SIG_3D = "sig_3d"
@@ -93,15 +93,15 @@ RPH_ROLL = "roll"
 RPH_PITCH = "pitch"
 RPH_HEADING = "heading"
 RPH_LOCAL_TANGENTS = [RPH_ROLL, RPH_PITCH, RPH_HEADING]
-RPH_COV_RR = "roll_roll"
-RPH_COV_RP = "roll_pitch"
-RPH_COV_RH = "roll_heading"
-RPH_COV_PR = "pitch_roll"
-RPH_COV_PP = "pitch_pitch"
-RPH_COV_PH = "pitch_heading"
-RPH_COV_HR = "heading_roll"
-RPH_COV_HP = "heading_pitch"
-RPH_COV_HH = "heading_heading"
+RPH_COV_RR = "rr"
+RPH_COV_RP = "rp"
+RPH_COV_RH = "rh"
+RPH_COV_PR = "pr"
+RPH_COV_PP = "pp"
+RPH_COV_PH = "ph"
+RPH_COV_HR = "hr"
+RPH_COV_HP = "hp"
+RPH_COV_HH = "hh"
 RPH_COV_DIAG = [RPH_COV_RR, RPH_COV_PP, RPH_COV_HH]  # Covariance matrix diagonal values
 RPH_COV = [
     RPH_COV_RR,
@@ -114,6 +114,10 @@ RPH_COV = [
     RPH_COV_HP,
     RPH_COV_HH,
 ]  # Covariance matrix columns
+PLATFORM_COV_RPH_DIAG = [
+    f"cov_{c.upper()}" for c in RPH_COV_DIAG
+]  # Platform covariance diagonal
+PLATFORM_COV_RPH = [f"cov_{c.upper()}" for c in RPH_COV]  # Platform covariance columns
 
 # Antenna Position Direction columns
 ANTENNA_EASTWARD = "ant_e"
@@ -167,9 +171,7 @@ L1_DATA_FORMAT = {
             f"{ANTENNA_NORTHWARD} std",
             f"{ANTENNA_EASTWARD} std",
             f"{ANTENNA_UPWARD} std",
-            RPH_COV_RR,
-            RPH_COV_PP,
-            RPH_COV_HH,
+            *PLATFORM_COV_RPH_DIAG,
             "Ext sol stat",
             "Time Since Update",
         ),

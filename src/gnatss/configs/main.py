@@ -3,25 +3,27 @@
 The main configuration module containing base settings pydantic
 classes
 """
+import datetime
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, List, Literal, Optional, Type
 
 import numpy as np
+import pymap3d
 import yaml
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
-from pymap3d import geodetic2ecef
 
 from ..utilities.geo import ecef2ae
-from .io import OutputPath
+from .io import InputData, OutputPath
 from .posfilter import PositionFilter
 from .solver import Solver
+from .transponders import Transponder
 
 CONFIG_FILE = "config.yaml"
 
@@ -116,46 +118,103 @@ class BaseConfiguration(BaseSettings):
         )
 
 
+class ArrayCenter(BaseModel):
+    """Array center base model."""
+
+    lat: float = Field(..., description="Latitude")
+    lon: float = Field(..., description="Longitude")
+    alt: float = Field(0.0, description="Altitude")
+
+
+class MainInputs(BaseModel):
+    travel_times: Optional[InputData] = Field(
+        None, description="Input travel times data path specification"
+    )
+
+
 class Configuration(BaseConfiguration):
     """Configuration class to generate config object"""
 
-    site_id: str = Field(..., description="The site identification for processing")
-    # TODO: Separate settings out to core plugin
+    # General configurations
+    site_id: str = Field(..., description="GNSS-A site name or code")
+    campaign: Optional[str] = Field(None, description="Observation campaign name")
+    time_origin: Optional["str | datetime.datetime"] = Field(
+        None, description="Origin of time used in the file [UTC]"
+    )
+    ref_frame: Literal["wgs84"] = Field(
+        "wgs84", description="Reference frame used in the file"
+    )
+    array_center: ArrayCenter = Field(
+        ..., description="Array center to use for calculation"
+    )
+    transponders: List[Transponder] = Field(
+        ..., description="A list of transponders configurations"
+    )
+    travel_times_variance: float = Field(
+        1e-10, description="VARIANCE (s**2) PXP two-way travel time measurement"
+    )
+    travel_times_correction: float = Field(
+        0.0, description="Correction to times in travel times (secs.)"
+    )
+    transducer_delay_time: float = Field(
+        0.0,
+        description="Transducer Delay Time - delay at surface transducer (secs). ",
+    )
+
+    # Processing configurations
     solver: Optional[Solver] = Field(None, description="Solver configurations")
     posfilter: Optional[PositionFilter] = Field(
         None, description="Position filter configurations"
     )
+
+    # File related configurations
+    input_files: MainInputs = Field(
+        ..., description="Input files data path specifications."
+    )
     output: Optional[OutputPath] = Field(None, description="Output path configurations")
+
+    # Extra configurations
+    notes: Optional[str] = Field(None, description="Any other optional comments")
 
     def __init__(self, **data):
         super().__init__(**data)
 
+        self.setup_transponders()
+
+        # Set solver configurations
         if self.solver is not None:
-            # Set the transponders pxp id based on the site id
-            transponders = self.solver.transponders
+            self.solver.array_center = self.array_center
+            self.solver.transponders = self.transponders
+            self.solver.travel_times_variance = self.travel_times_variance
+            self.solver.transducer_delay_time = self.transducer_delay_time
+            self.solver.travel_times_correction = self.travel_times_correction
 
-            if self.solver.array_center is None:
-                raise ValueError("Array center is not set")
-            for idx in range(len(transponders)):
-                # Compute azimuth and elevation
-                tp = transponders[idx]
-                arr_center = self.solver.array_center
+    def setup_transponders(self):
+        # Set the transponders pxp id based on the site id
+        transponders = self.transponders
 
-                # Convert geodetic (deg) to ecef (meters)
-                x, y, z = geodetic2ecef(tp.lat, tp.lon, tp.height)
+        if self.array_center is None:
+            raise ValueError("Array center is not set")
 
-                # Compute azimuth and elevation w.r.t. array center
-                az, el = ecef2ae(
-                    x, y, z, arr_center.lat, arr_center.lon, arr_center.alt
-                )
+        for idx in range(len(transponders)):
+            # Compute azimuth and elevation
+            tp = transponders[idx]
+            arr_center = self.array_center
 
-                # Round the values to 2 decimal places and
-                # take absolute value of elevation
-                az, el = np.round([az, np.abs(el)], 2)
+            # Convert geodetic (deg) to ecef (meters)
+            x, y, z = pymap3d.geodetic2ecef(tp.lat, tp.lon, tp.alt)
 
-                # Set azimuth and elevation
-                transponders[idx].azimuth = az
-                transponders[idx].elevation = el
+            # Compute azimuth and elevation w.r.t. array center
+            az, el = ecef2ae(x, y, z, arr_center.lat, arr_center.lon, arr_center.alt)
 
-                # Set pxp id
+            # Round the values to 2 decimal places and
+            # take absolute value of elevation
+            az, el = np.round([az, np.abs(el)], 2)
+
+            # Set azimuth and elevation
+            transponders[idx].azimuth = az
+            transponders[idx].elevation = el
+
+            # Set pxp id, if not set
+            if transponders[idx].pxp_id is None:
                 transponders[idx].pxp_id = "-".join([self.site_id, str(idx + 1)])

@@ -32,7 +32,7 @@ from .utilities.time import AstroTime
 
 
 def gather_files(
-    config: Configuration, proc: Literal["solver", "posfilter"] = "solver"
+    config: Configuration, proc: Literal["main", "solver", "posfilter"] = "solver"
 ) -> Dict[str, List[str]]:
     """Gather file paths for the various dataset files defined in proc config.
 
@@ -49,11 +49,14 @@ def gather_files(
         A dictionary containing the various datasets file paths
     """
     all_files_dict = {}
-    # Check for process type first
-    if not hasattr(config, proc):
-        raise AttributeError(f"Unknown process type: {proc}")
+    if proc == "main":
+        proc_config = config
+    else:
+        # Check for process type first
+        if not hasattr(config, proc):
+            raise AttributeError(f"Unknown process type: {proc}")
+        proc_config = getattr(config, proc)
 
-    proc_config = getattr(config, proc)
     for k, v in proc_config.input_files.model_dump().items():
         if v:
             path = v.get("path", "")
@@ -85,7 +88,7 @@ def gather_files_all_procs(config: Configuration) -> Dict[str, List[str]]:
     """
     all_files_dict = dict()
     for proc in constants.DEFAULT_CONFIG_PROCS:
-        if getattr(config, proc):
+        if proc == "main" or hasattr(config, proc):
             all_files_dict.update(gather_files(config, proc))
     return all_files_dict
 

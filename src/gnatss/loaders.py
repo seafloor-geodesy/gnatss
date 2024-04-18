@@ -288,13 +288,10 @@ def load_gps_solutions(
             constants.GPS_TIME,
             "dtype",
             *constants.GPS_GEOCENTRIC,
-            "sdx",
-            "sdy",
-            "sdz",
+            *constants.GPS_GEOCENTRIC_STD,  # TODO Are sdx same as GPS_COV_DIAG?
         ]
         gps_solutions = [
-            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
-            for i in files
+            pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
         ]
         all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
         all_gps_solutions = all_gps_solutions.drop(columns="dtype")
@@ -303,8 +300,7 @@ def load_gps_solutions(
     else:
         columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
         gps_solutions = [
-            pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
-            for i in files
+            pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
         ]
         all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
 
