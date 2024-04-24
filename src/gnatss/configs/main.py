@@ -4,92 +4,18 @@ The main configuration module containing base settings pydantic
 classes
 """
 import datetime
-import warnings
-from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Type
+from typing import List, Literal, Optional
 
 import numpy as np
 import pymap3d
-import yaml
 from pydantic import BaseModel, Field
-from pydantic.fields import FieldInfo
-from pydantic_settings import (
-    BaseSettings,
-    PydanticBaseSettingsSource,
-    SettingsConfigDict,
-)
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ..utilities.geo import ecef2ae
 from .io import InputData, OutputPath
 from .posfilter import PositionFilter
 from .solver import Solver
 from .transponders import Transponder
-
-CONFIG_FILE = "config.yaml"
-
-
-class YamlConfigSettingsSource(PydanticBaseSettingsSource):
-    """
-    A simple settings source that reads from a yaml file.
-
-    Read config settings form a local yaml file where the software runs
-    """
-
-    def get_field_value(
-        self, field: FieldInfo, field_name: str
-    ) -> tuple[Any, str, bool]:
-        """
-        Gets the value,
-        the key for model creation,
-        and a flag to determine whether value is complex.
-
-        *This is an override for the pydantic abstract method.*
-        """
-        encoding = self.config.get("env_file_encoding")
-        config_path = Path(CONFIG_FILE)
-        file_content_yaml = {}
-        if config_path.exists():
-            # Only load config.yaml when it exists
-            file_content_yaml = yaml.safe_load(config_path.read_text(encoding))
-        else:
-            # Warn user when config.yaml is not found
-            warnings.warn(
-                (
-                    f"Configuration file `{CONFIG_FILE}` not found. "
-                    "Will attempt to retrieve configuration from environment variables."
-                )
-            )
-
-        field_value = file_content_yaml.get(field_name)
-        return field_value, field_name, False
-
-    def prepare_field_value(
-        self, field_name: str, field: FieldInfo, value: Any, value_is_complex: bool
-    ) -> Any:
-        """
-        Prepares the value of a field.
-
-        *This is an override for the pydantic abstract method.*
-        """
-        return value
-
-    def __call__(self) -> Dict[str, Any]:
-        """
-        Allows the class to be called as a function.
-        """
-        d: Dict[str, Any] = {}
-
-        for field_name, field in self.settings_cls.model_fields.items():
-            field_value, field_key, value_is_complex = self.get_field_value(
-                field, field_name
-            )
-            field_value = self.prepare_field_value(
-                field_name, field, field_value, value_is_complex
-            )
-            if field_value is not None:
-                d[field_key] = field_value
-
-        return d
 
 
 class BaseConfiguration(BaseSettings):
@@ -100,22 +26,6 @@ class BaseConfiguration(BaseSettings):
         env_nested_delimiter="__",
         env_prefix="gnatss_",
     )
-
-    @classmethod
-    def settings_customise_sources(
-        cls,
-        settings_cls: Type[BaseSettings],
-        init_settings: PydanticBaseSettingsSource,
-        env_settings: PydanticBaseSettingsSource,
-        dotenv_settings: PydanticBaseSettingsSource,  # noqa
-        file_secret_settings: PydanticBaseSettingsSource,
-    ):
-        return (
-            init_settings,
-            YamlConfigSettingsSource(settings_cls),
-            env_settings,
-            file_secret_settings,
-        )
 
 
 class ArrayCenter(BaseModel):

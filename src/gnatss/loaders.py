@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 from re import compile
 from typing import List, Literal, Optional, Union
@@ -8,7 +7,7 @@ import pandas as pd
 import yaml
 from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
-from pydantic import ValidationError, validate_call
+from pydantic import validate_call
 
 from . import constants
 from .configs.io import CSVOutput
@@ -21,19 +20,13 @@ def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
     Loads configuration yaml file into a Config object
     to be used throughout the pre-processing
     """
-    try:
-        config = Configuration()
-    except ValidationError:
-        warnings.warn(
-            "Loading attempt failed, trying to load configuration from file path given."
+    if config_yaml is None or not Path(config_yaml).exists():
+        raise FileNotFoundError(
+            "Configuration file not found. Unable to create configuration"
         )
-        if config_yaml is None or not Path(config_yaml).exists():
-            raise FileNotFoundError(
-                "Configuration file not found. Unable to create configuration"
-            )
 
-        yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
-        config = Configuration(**yaml_dict)
+    yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
+    config = Configuration(**yaml_dict)
     return config
 
 
@@ -249,7 +242,7 @@ def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], 
 def load_gps_solutions(
     files: List[str],
     time_round: int = constants.DELAY_TIME_PRECISION,
-    is_l1_data: bool = False,
+    is_gnss_data: bool = False,
 ) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.
@@ -260,14 +253,14 @@ def load_gps_solutions(
         The list of path string to files to load
     time_round : int
         The precision value to round the time values
-    is_l1_data : bool
-        If True, read according to L1 data format (Usually named `GPS_POS_FREED`).
+    is_gnss_data : bool
+        If True, read according to L1 gnss data (Usually named `GPS_POS_FREED`).
 
     Returns
     -------
     pd.DataFrame
         Pandas DataFrame containing all of the gps solutions data.
-        1) if is_novatel_l1_data is True
+        1) if is_gnss_data is True
             The numbers are column number.
             1: Time unit seconds in J2000 epoch
             2: Geocentric x in meters
@@ -283,12 +276,12 @@ def load_gps_solutions(
             4: Geocentric z in meters
             5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
     """
-    if is_l1_data:
+    if is_gnss_data:
         columns = [
             constants.GPS_TIME,
             "dtype",
-            *constants.GPS_GEOCENTRIC,
-            *constants.GPS_GEOCENTRIC_STD,  # TODO Are sdx same as GPS_COV_DIAG?
+            *constants.ANT_GPS_GEOCENTRIC,
+            *constants.ANT_GPS_GEOCENTRIC_STD,
         ]
         gps_solutions = [
             pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
@@ -516,7 +509,7 @@ def read_novatel_L1_data_files(
     # New pd column to convert GNSS Week and Seconds to J2000 Seconds
     df[constants.TIME_J2000] = pd.Series(
         gps_ws_time_to_astrotime(
-            all_data_array["Week"], all_data_array["Seconds"]
+            all_data_array["week"], all_data_array["seconds"]
         ).unix_j2000
     )
     return df

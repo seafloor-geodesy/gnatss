@@ -11,8 +11,15 @@ from .. import constants
 from ..configs.solver import ArrayCenter
 from .utils import _prep_col_names
 
-TRANSMIT_LOC_COLS = _prep_col_names(constants.GPS_GEOCENTRIC)
-REPLY_LOC_COLS = _prep_col_names(constants.GPS_GEOCENTRIC, transmit=False)
+META_COLUMNS = [
+    constants.DATA_SPEC.transponder_id,
+    constants.DATA_SPEC.tx_time,
+    constants.DATA_SPEC.travel_time,
+]
+
+TRANSMIT_LOC_COLS = list(constants.DATA_SPEC.transducer_tx_fields.keys())
+REPLY_LOC_COLS = list(constants.DATA_SPEC.transducer_rx_fields.keys())
+TRANSMIT_COV_LOC_COLS = list(constants.DATA_SPEC.gnss_tx_cov_fields.keys())
 
 
 @numba.njit(cache=True)
@@ -44,21 +51,56 @@ def _split_cov(
 
 def _get_standard_columns(
     columns: List[str], data_type: Literal["transmit", "receive"] = "receive"
-):
-    meta_columns = [constants.garpos.MT, constants.garpos.ST, constants.garpos.TT]
+) -> List[str]:
+    """
+    Get the standard columns based on the data type
 
+    Parameters
+    ----------
+    columns : list of str
+        The columns to be standardized
+    data_type : {'transmit', 'receive'}, optional
+        The data type which can either be 'transmit' or 'receive', by default "receive"
+
+    Returns
+    -------
+    list of str
+        The standard columns
+
+    Notes
+    -----
+    This function is used to standardize the columns of the data
+    based on the data type. It is used to ensure that the columns
+    are in the correct order and format for the solver algorithm.
+    However, this function is very specific to the v1 data spec
+    and will need to be updated for future versions.
+    """
+    # Very specific to v1 atm... will need to be updated for v2 and beyond
     new_columns = []
+    fields = {
+        "transmit": constants.DATA_SPEC.tx_fields,
+        "receive": constants.DATA_SPEC.rx_fields,
+    }
+    standard_cols = {k.lower(): k for k, v in fields[data_type].items()}
     suffix = f"_{data_type}"
+
     for col in columns:
-        if col in meta_columns:
+        if col in META_COLUMNS:
             new_columns.append(col)
         elif col == constants.TIME_J2000:
             new_columns.append(col[0].upper() + suffix)
-        elif col in [c.upper() for c in constants.GPS_GEOCENTRIC]:
-            new_columns.append(col + suffix)
+        elif col in constants.GPS_GEOCENTRIC:
+            new_columns.append(col.upper() + suffix)
         else:
-            num_suffix = 0 if data_type == "transmit" else 1
-            new_columns.append(col + str(num_suffix))
+            num_suffix = (
+                constants.DATA_SPEC.tx_code
+                if data_type == "transmit"
+                else constants.DATA_SPEC.rx_code
+            )
+            new_column_name = col + str(num_suffix)
+            match_col = standard_cols.get(new_column_name.lower())
+            if match_col:
+                new_columns.append(match_col)
     return new_columns
 
 
@@ -157,7 +199,7 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
     data_inputs = NumbaList()
 
     # Group obs by the transmit time
-    grouped_obs = all_observations.groupby(constants.garpos.ST)
+    grouped_obs = all_observations.groupby(constants.DATA_SPEC.tx_time)
 
     # Get transmit xyz
     transmit_xyz = grouped_obs[TRANSMIT_LOC_COLS].first().to_numpy()
@@ -170,12 +212,12 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
 
     # Get observed delays
     observed_delay_list = []
-    grouped_obs[constants.garpos.TT].apply(
+    grouped_obs[constants.DATA_SPEC.travel_time].apply(
         lambda group: observed_delay_list.append(group.to_numpy())
     )
 
     # Get transmit cov matrices
-    cov_vals_df = grouped_obs[_prep_col_names(constants.GPS_COV, True)].first()
+    cov_vals_df = grouped_obs[TRANSMIT_COV_LOC_COLS].first()
     gps_covariance_matrices = [
         _split_cov(row.to_numpy()) for _, row in cov_vals_df.iterrows()
     ]
@@ -242,7 +284,11 @@ def clean_tt(
     return cleaned_travel_times
 
 
-def filter_tt(travel_times: pd.DataFrame, cut_df: pd.DataFrame) -> pd.DataFrame:
+def filter_tt(
+    travel_times: pd.DataFrame,
+    cut_df: pd.DataFrame,
+    time_column: str = constants.TT_TIME,
+) -> pd.DataFrame:
     """
     Filter travel times data by removing the data that falls within
     the time range specified in the deletions file.
@@ -265,8 +311,8 @@ def filter_tt(travel_times: pd.DataFrame, cut_df: pd.DataFrame) -> pd.DataFrame:
         cut_ids_all = []
         for _, cut in cut_df.iterrows():
             cut_ids = travel_times[
-                (travel_times[constants.TT_TIME] >= cut.starttime)
-                & (travel_times[constants.TT_TIME] <= cut.endtime)
+                (travel_times[time_column] >= cut.starttime)
+                & (travel_times[time_column] <= cut.endtime)
             ].index.values
             cut_ids_all = cut_ids_all + cut_ids.tolist()
         cut_ids_all = list(set(cut_ids_all))
@@ -291,7 +337,7 @@ def preprocess_tt(travel_times: pd.DataFrame) -> pd.DataFrame:
     """
     data = []
     for tx, tds in travel_times.set_index(constants.TT_TIME).iterrows():
-        data.append((tx, constants.garpos.ST, 0, np.nan))
+        data.append((tx, constants.DATA_SPEC.tx_time, 0, np.nan))
         for k, td in tds.to_dict().items():
             data.append((tx + td, k, td, tx))
 
@@ -299,14 +345,16 @@ def preprocess_tt(travel_times: pd.DataFrame) -> pd.DataFrame:
         data,
         columns=[
             constants.TT_TIME,
-            constants.garpos.MT,
-            constants.garpos.TT,
-            constants.garpos.ST,
+            constants.DATA_SPEC.transponder_id,
+            constants.DATA_SPEC.travel_time,
+            constants.DATA_SPEC.tx_time,
         ],
     )
 
 
-def standardize_data(pos_freed_trans_twtt: pd.DataFrame) -> pd.DataFrame:
+def standardize_data(
+    pos_freed_trans_twtt: pd.DataFrame, data_precision: int = 8
+) -> pd.DataFrame:
     is_transmit = pos_freed_trans_twtt[constants.garpos.ST].isna()
 
     # Standardize receive data
@@ -320,4 +368,6 @@ def standardize_data(pos_freed_trans_twtt: pd.DataFrame) -> pd.DataFrame:
     )
     transmit_df.columns = _get_standard_columns(transmit_df.columns, "transmit")
 
-    return pd.merge(receive_df, transmit_df, on=constants.garpos.ST)
+    return pd.merge(receive_df, transmit_df, on=constants.garpos.ST).round(
+        data_precision
+    )

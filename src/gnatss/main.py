@@ -24,7 +24,6 @@ from .loaders import (
 from .ops.data import clean_tt, filter_tt, get_data_inputs
 from .ops.posfilter import rotation
 from .ops.solve import perform_solve
-from .ops.utils import _prep_col_names
 from .ops.validate import check_sig3d, check_solutions
 from .utilities.geo import _get_rotation_matrix
 from .utilities.io import _get_filesystem
@@ -162,7 +161,7 @@ def get_transmit_times(
 
     # Adds a 0 to column names for transmit values
     transmit_times.columns = [
-        f"{col}0" if col != constants.TT_TIME else constants.garpos.ST
+        f"{col}0" if col != constants.TT_TIME else constants.DATA_SPEC.tx_time
         for col in transmit_times.columns
     ]
 
@@ -208,25 +207,27 @@ def get_reply_times(
         The reply times data with gps solutions included
     """
     reply_times = cleaned_travel_times[transponder_ids]
-    reply_times[constants.garpos.ST] = cleaned_travel_times[constants.TT_TIME]
+    reply_times[constants.DATA_SPEC.tx_time] = cleaned_travel_times[constants.TT_TIME]
 
     # Pivot the table by stacking
-    reply_times = reply_times.set_index(constants.garpos.ST).stack()
-    reply_times = reply_times.rename(constants.garpos.TT)
+    reply_times = reply_times.set_index(constants.DATA_SPEC.tx_time).stack()
+    reply_times = reply_times.rename(constants.DATA_SPEC.travel_time)
     reply_times.index = reply_times.index.rename(
-        [constants.garpos.ST, constants.garpos.MT]
+        [constants.DATA_SPEC.tx_time, constants.DATA_SPEC.transponder_id]
     )
     reply_times = reply_times.to_frame().reset_index()
     # Set RT
-    reply_times[constants.garpos.RT] = reply_times.apply(
-        lambda row: row[constants.garpos.ST] + row[constants.garpos.TT], axis=1
+    reply_times[constants.DATA_SPEC.rx_time] = reply_times.apply(
+        lambda row: row[constants.DATA_SPEC.tx_time]
+        + row[constants.DATA_SPEC.travel_time],
+        axis=1,
     )
 
     # Merge with gps solutions
     reply_times = pd.merge(
         reply_times,
         all_gps_solutions,
-        left_on=constants.garpos.RT,
+        left_on=constants.DATA_SPEC.rx_time,
         right_on=constants.GPS_TIME,
     )
     reply_times = reply_times.drop(constants.GPS_TIME, axis="columns")
@@ -237,11 +238,11 @@ def get_reply_times(
         reply_times = pd.merge(
             reply_times,
             rph_data,
-            left_on=constants.garpos.RT,
+            left_on=constants.DATA_SPEC.rx_time,
             right_on=constants.RPH_TIME,
         )
         # Remove RPH_TIME column from reply_times df after merge
-        if constants.garpos.RT != constants.RPH_TIME:
+        if constants.DATA_SPEC.rx_time != constants.RPH_TIME:
             reply_times.drop(constants.RPH_TIME, axis="columns", inplace=True)
 
         # Calculate GNSS antenna positions
@@ -258,9 +259,9 @@ def get_reply_times(
     reply_times = check_sig3d(data=reply_times, gps_sigma_limit=gps_sigma_limit)
 
     # Currently looks for even value counts... check fortran code what to do here?
-    time_counts = reply_times[constants.garpos.ST].value_counts()
+    time_counts = reply_times[constants.DATA_SPEC.tx_time].value_counts()
     reply_times = reply_times[
-        reply_times[constants.garpos.ST].isin(
+        reply_times[constants.DATA_SPEC.tx_time].isin(
             time_counts[time_counts == len(transponder_ids)].index
         )
     ]
@@ -270,10 +271,10 @@ def get_reply_times(
         f"{col}1"
         if col
         not in [
-            constants.garpos.ST,
-            constants.garpos.MT,
-            constants.garpos.RT,
-            constants.garpos.TT,
+            constants.DATA_SPEC.tx_time,
+            constants.DATA_SPEC.transponder_id,
+            constants.DATA_SPEC.rx_time,
+            constants.DATA_SPEC.travel_time,
         ]
         else col
         for col in reply_times.columns
@@ -353,7 +354,7 @@ def prepare_and_solve(
         The process dictionary that contains stats and data results,
         for all of the iterations
     """
-    transponders = config.solver.transponders
+    transponders = config.transponders
     # convert orthonomal heights of PXPs into ellipsoidal heights and convert to x,y,z
     transponders_xyz = None
     if transponders_xyz is None:
@@ -367,7 +368,7 @@ def prepare_and_solve(
     transponders_delay = np.array([t.internal_delay for t in transponders])
 
     # Get travel times variance
-    travel_times_variance = config.solver.travel_times_variance
+    travel_times_variance = config.travel_times_variance
 
     # Store original xyz
     original_positions = transponders_xyz.copy()
@@ -502,7 +503,11 @@ def prepare_and_solve(
     return process_dict, is_converged
 
 
-def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataFrame:
+def load_data(
+    all_files_dict: Dict[str, Any],
+    config: Configuration,
+    all_observations: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
     """
     Loads all of the necessary datasets for processing into a singular
     pandas dataframe object.
@@ -551,70 +556,76 @@ def load_data(all_files_dict: Dict[str, Any], config: Configuration) -> pd.DataF
     if not qc_df.empty:
         cut_df = pd.concat([cut_df, qc_df]).reset_index(drop=True)
 
-    # Load travel times data
-    typer.echo("Load travel times...")
-    transponder_ids = [t.pxp_id for t in transponders]
-    all_travel_times = load_travel_times(
-        files=all_files_dict["travel_times"], transponder_ids=transponder_ids
-    )
+    if all_observations is None:
+        # Load travel times data
+        typer.echo("Load travel times...")
+        transponder_ids = [t.pxp_id for t in transponders]
+        all_travel_times = load_travel_times(
+            files=all_files_dict["travel_times"], transponder_ids=transponder_ids
+        )
 
-    if all_files_dict.get("roll_pitch_heading"):
-        # Load roll-pitch-heading data
-        typer.echo("Load roll-pitch-heading data...")
-        rph_data = load_roll_pitch_heading(files=all_files_dict["roll_pitch_heading"])
+        if all_files_dict.get("roll_pitch_heading"):
+            # Load roll-pitch-heading data
+            typer.echo("Load roll-pitch-heading data...")
+            rph_data = load_roll_pitch_heading(
+                files=all_files_dict["roll_pitch_heading"]
+            )
 
-    # Cleaning travel times
-    typer.echo("Cleaning travel times data...")
-    typer.echo(f"{all_travel_times=}")
-    filtered_travel_times = filter_tt(all_travel_times, cut_df)
-    cleaned_travel_times = clean_tt(
-        filtered_travel_times,
-        transponder_ids,
-        config.solver.travel_times_correction,
-        config.solver.transducer_delay_time,
-    )
-    typer.echo(
-        f"clean_tt:\n{filtered_travel_times}\n{all_files_dict['travel_times']}\n"
-        f"{transponder_ids}\n{config.solver.travel_times_correction}\n"
-        f"{config.solver.transducer_delay_time}"
-    )
+        # Cleaning travel times
+        typer.echo("Cleaning travel times data...")
+        typer.echo(f"{all_travel_times=}")
+        filtered_travel_times = filter_tt(all_travel_times, cut_df)
+        cleaned_travel_times = clean_tt(
+            filtered_travel_times,
+            transponder_ids,
+            config.solver.travel_times_correction,
+            config.solver.transducer_delay_time,
+        )
+        typer.echo(
+            f"clean_tt:\n{filtered_travel_times}\n{all_files_dict['travel_times']}\n"
+            f"{transponder_ids}\n{config.solver.travel_times_correction}\n"
+            f"{config.solver.transducer_delay_time}"
+        )
 
-    # Load gps solutions data
-    typer.echo("Load GPS data...")
-    all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
+        # Load gps solutions data
+        typer.echo("Load GPS data...")
+        all_gps_solutions = load_gps_solutions(all_files_dict["gps_solution"])
 
-    typer.echo("Cross referencing transmit, reply, and gps solutions...")
+        typer.echo("Cross referencing transmit, reply, and gps solutions...")
 
-    atd_offsets = get_atd_offsets(config)
+        atd_offsets = get_atd_offsets(config)
 
-    # Parse transmit times
-    transmit_times = get_transmit_times(
-        cleaned_travel_times,
-        all_gps_solutions,
-        rph_data,
-        config.solver.gps_sigma_limit,
-        atd_offsets,
-        config.solver.array_center,
-    )
+        # Parse transmit times
+        transmit_times = get_transmit_times(
+            cleaned_travel_times,
+            all_gps_solutions,
+            rph_data,
+            config.solver.gps_sigma_limit,
+            atd_offsets,
+            config.solver.array_center,
+        )
 
-    # Parse reply times
-    reply_times = get_reply_times(
-        cleaned_travel_times,
-        all_gps_solutions,
-        rph_data,
-        config.solver.gps_sigma_limit,
-        transponder_ids,
-        atd_offsets,
-        config.solver.array_center,
-    )
+        # Parse reply times
+        reply_times = get_reply_times(
+            cleaned_travel_times,
+            all_gps_solutions,
+            rph_data,
+            config.solver.gps_sigma_limit,
+            transponder_ids,
+            atd_offsets,
+            config.solver.array_center,
+        )
 
-    # Merge times
-    all_observations = pd.merge(
-        transmit_times, reply_times, on=constants.garpos.ST
-    ).reset_index(
-        drop=True
-    )  # Reset index ensures that it is sequential
-
+        # Merge times
+        all_observations = pd.merge(
+            transmit_times, reply_times, on=constants.DATA_SPEC.tx_time
+        ).reset_index(
+            drop=True
+        )  # Reset index ensures that it is sequential
+    else:
+        all_observations = filter_tt(
+            all_observations, cut_df, constants.DATA_SPEC.tx_time
+        )
     return all_observations
 
 
@@ -642,20 +653,20 @@ def extract_distance_from_center(
         )
 
     # Set up transmit columns
-    transmit_cols = _prep_col_names(constants.GPS_GEOCENTRIC, True)
+    transmit_cols = constants.DATA_SPEC.transducer_tx_fields.keys()
 
     # Since we're only working with transmit,
     # we can just group by transmit time to avoid repetition.
     # This extracts transmit data coords only
     transmit_obs = (
-        all_observations[[constants.garpos.ST] + transmit_cols]
-        .groupby(constants.garpos.ST)
+        all_observations[[constants.DATA_SPEC.tx_time, *transmit_cols]]
+        .groupby(constants.DATA_SPEC.tx_time)
         .first()
         .reset_index()
     )
 
     # Get geocentric x,y,z for array center
-    array_center = config.solver.array_center
+    array_center = config.array_center
 
     # Extract coordinates only
     transmit_coords = transmit_obs[transmit_cols]
@@ -680,7 +691,10 @@ def extract_distance_from_center(
 
     # Merge with equivalent index
     return pd.merge(
-        transmit_obs[constants.garpos.ST], enu_df, left_index=True, right_index=True
+        transmit_obs[constants.DATA_SPEC.tx_time],
+        enu_df,
+        left_index=True,
+        right_index=True,
     )
 
 
@@ -830,6 +844,7 @@ def _create_process_dataset(
 def main(
     config: Configuration,
     all_files_dict: Dict[str, Any],
+    all_observations: Optional[pd.DataFrame] = None,
     extract_process_dataset: bool = False,
     outlier_threshold: float = constants.DATA_OUTLIER_THRESHOLD,
 ) -> Tuple[
@@ -867,7 +882,7 @@ def main(
     outliers_df : Union[pd.DataFrame, None]
         Extracted residual outliers as dataframe, by default None
     """
-    all_observations = load_data(all_files_dict, config)
+    all_observations = load_data(all_files_dict, config, all_observations)
 
     # Extracts distance from center
     dist_center_df = extract_distance_from_center(all_observations, config)
@@ -878,14 +893,14 @@ def main(
     # Extract the rows of observations with distances beyond the limit
     filtered_rows = dist_center_df[
         dist_center_df[constants.GPS_DISTANCE] > distance_limit
-    ][constants.garpos.ST]
+    ][constants.DATA_SPEC.tx_time]
 
     # Filter out data based on the filtered rows and reset index
     all_observations = all_observations[
-        ~all_observations[constants.garpos.ST].isin(filtered_rows)
+        ~all_observations[constants.DATA_SPEC.tx_time].isin(filtered_rows)
     ].reset_index(drop=True)
 
-    all_epochs = all_observations[constants.garpos.ST].unique()
+    all_epochs = all_observations[constants.DATA_SPEC.tx_time].unique()
     process_data, is_converged = prepare_and_solve(all_observations, config)
 
     if is_converged:

@@ -140,7 +140,7 @@ def rotation(
         result_type="expand",
     )
 
-    transducer_columns = [c.upper() for c in constants.GPS_GEOCENTRIC]
+    transducer_columns = constants.GPS_GEOCENTRIC
     # antenna_enu is the sum of corresponding td_enu_columns and d_enu_columns values
     for trans_enu, td_enu, d_enu in zip(
         constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns
@@ -220,7 +220,7 @@ def kalman_filtering(
     inspvaa_df = inspvaa_df[
         [
             constants.GPS_TIME,
-            *constants.ANTENNA_DIRECTIONS,
+            *constants.GPS_LOCAL_TANGENT,
         ]
     ]
     insstdeva_df = insstdeva_df.rename(
@@ -230,12 +230,7 @@ def kalman_filtering(
         errors="raise",
     )
     insstdeva_df = insstdeva_df[
-        [
-            constants.GPS_TIME,
-            f"{constants.ANTENNA_EASTWARD} std",
-            f"{constants.ANTENNA_NORTHWARD} std",
-            f"{constants.ANTENNA_UPWARD} std",
-        ]
+        [constants.GPS_TIME] + [f"{d}_sig" for d in constants.GPS_LOCAL_TANGENT]
     ]
 
     insstdeva_df["v_sden"] = 0.0  # TODO Should I create a constant for these columns?
@@ -254,7 +249,9 @@ def kalman_filtering(
     merged_df = merged_df.merge(insstdeva_df, on=constants.GPS_TIME, how="left")
     merged_df = merged_df.sort_values(constants.GPS_TIME).reset_index(drop=True)
 
-    first_pos = merged_df[~merged_df.x.isnull()].iloc[0].name
+    first_pos = (
+        merged_df[~merged_df[constants.ANT_GPS_GEOCENTRIC[0]].isnull()].iloc[0].name
+    )
     merged_df = merged_df.loc[first_pos:].reset_index(drop=True)
 
     merged_np_array = merged_df.to_numpy()

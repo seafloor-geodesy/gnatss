@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Callable, Tuple
 
 import numba
 import numpy as np
@@ -247,13 +247,13 @@ def __get_diagonal(array: NDArray[Shape["*, *"], Float64]) -> NDArray:
 
 
 @numba.njit(cache=True)
-def calc_twtt_model(
+def simple_twtt(
     transmit_vectors: NDArray[Shape["*, 3"], Float64],
     reply_vectors: NDArray[Shape["*, 3"], Float64],
     transponders_mean_sv: NDArray[Shape["*"], Float64],
 ) -> NDArray[Shape["*"], Float64]:
     """
-    Calculate the Modeled TWTT (Two way travel time) in seconds
+    Calculate the Simple Modeled TWTT (Two way travel time) in seconds
 
     .. math::
         \\frac{\\hat{D_s} + \\hat{D_r}}{c}
@@ -280,6 +280,32 @@ def calc_twtt_model(
     reply_distance = np.array([np.linalg.norm(vector) for vector in reply_vectors])
 
     return (transmit_distance + reply_distance) / transponders_mean_sv
+
+
+@numba.njit(cache=True)
+def calc_twtt_model(fx: Callable, *args, **kwargs) -> NDArray[Shape["*"], Float64]:
+    """
+    Calculate the Modeled TWTT (Two way travel time) in seconds
+
+    .. math::
+        \\frac{\\hat{D_s} + \\hat{D_r}}{c}
+
+    Parameters
+    ----------
+    fx : Callable
+        Simple modeling function
+    *args : Any
+        The arguments to pass to the modeling function
+    **kwargs : Any
+        The keyword arguments to pass to the modeling function
+
+    Returns
+    -------
+    (N,) ndarray
+        The modeled two way travel times in seconds
+
+    """
+    return fx(*args, **kwargs)
 
 
 @numba.njit(cache=True)
@@ -362,7 +388,7 @@ def solve_transponder_locations(
     )
 
     # Calculate Modeled TWTT (Two way travel time) in seconds
-    twtt_model = calc_twtt_model(transmit_vectors, reply_vectors, transponders_mean_sv)
+    twtt_model = simple_twtt(transmit_vectors, reply_vectors, transponders_mean_sv)
 
     # Calculate the travel time residual
     tt_residual = calc_tt_residual(observed_delays, transponders_delay, twtt_model)
