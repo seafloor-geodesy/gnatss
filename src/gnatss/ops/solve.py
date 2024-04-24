@@ -253,7 +253,7 @@ def calc_twtt_model(
     transponders_mean_sv: NDArray[Shape["*"], Float64],
 ) -> NDArray[Shape["*"], Float64]:
     """
-    Calculate the Modeled TWTT (Two way travel time) in seconds
+    Calculate the Simple Modeled TWTT (Two way travel time) in seconds
 
     .. math::
         \\frac{\\hat{D_s} + \\hat{D_r}}{c}

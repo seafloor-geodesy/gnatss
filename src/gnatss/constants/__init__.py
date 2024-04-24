@@ -2,12 +2,15 @@
 
 Module for storing constants used in package
 """
+from ..dataspec import DataSpec
 from . import garpos
 
 __all__ = ["garpos"]
 
 # Config constants
-DEFAULT_CONFIG_PROCS = ("solver", "posfilter")
+DEFAULT_CONFIG_PROCS = ("main", "solver", "posfilter")
+
+DATA_SPEC = DataSpec(version="v1")
 
 # General constants
 SIG_3D = "sig_3d"
@@ -28,10 +31,11 @@ QC_ENDTIME = "endtime"
 QC_NOTES = "notes"
 
 # Data columns for time
-TIME_ASTRO = "astro_time"  # astropy time obj
-TIME_TAI = "tai_time"  # unix tai (includes leap seconds)
+TIME = "time"
+TIME_ASTRO = f"astro_{TIME}"  # astropy time obj
+TIME_TAI = f"tai_{TIME}"  # unix tai (includes leap seconds)
 TIME_ISO = "iso_string"  # ISO 8601 string (YYYY-MM-DD HH:mm:ss.f)
-TIME_J2000 = "time"  # Default J2000 time (sec since 2000-01-01 12:00:00)
+TIME_J2000 = TIME  # Default J2000 time (sec since 2000-01-01 12:00:00)
 
 # Travel times columns
 TT_TIME = TIME_J2000  # Time string that will become J2000
@@ -45,22 +49,23 @@ GPS_X = "x"  # Geocentric x
 GPS_Y = "y"  # Geocentric y
 GPS_Z = "z"  # Geocentric z
 GPS_GEOCENTRIC = [GPS_X, GPS_Y, GPS_Z]  # Geocentric x,y,z
-GPS_GEOCENTRIC_STD = [f"sd{d}" for d in GPS_GEOCENTRIC]  # Geocentric std x,y,z
-ANT_GPS_GEOCENTRIC = [
-    f"ant_{d.upper()}" for d in GPS_GEOCENTRIC
-]  # Geocentric ant x,y,z
+ANT_GPS_GEOCENTRIC = [f"ant_{d}" for d in GPS_GEOCENTRIC]  # Geocentric ant x,y,z
 ANT_GPS_GEOCENTRIC_STD = [
-    f"ant_sig{d.upper()}" for d in GPS_GEOCENTRIC
+    f"ant_sig{d}" for d in GPS_GEOCENTRIC
 ]  # Geocentric ant x,y,z std
 
 GPS_LON = "lon"  # Geodetic longitude
 GPS_LAT = "lat"  # Geodetic latitude
 GPS_ALT = "alt"  # Geodetic altitude
 GPS_GEODETIC = [GPS_LON, GPS_LAT, GPS_ALT]  # Geodetic lon,lat,alt
+ANT_GPS_GEODETIC = [f"ant_{d}" for d in GPS_GEODETIC]  # Geodetic ant lon,lat,alt
 GPS_EAST = "east"  # Local tangent East
 GPS_NORTH = "north"  # Local tangent North
 GPS_UP = "up"  # Local tangent Up
 GPS_LOCAL_TANGENT = [GPS_EAST, GPS_NORTH, GPS_UP]  # Local tangent e,n,u
+ANT_GPS_LOCAL_TANGENT = [
+    f"ant_{d}" for d in GPS_LOCAL_TANGENT
+]  # Local tangent ant e,n,u
 GPS_COV_XX = "xx"
 GPS_COV_XY = "xy"
 GPS_COV_XZ = "xz"
@@ -82,10 +87,8 @@ GPS_COV = [
     GPS_COV_ZY,
     GPS_COV_ZZ,
 ]  # Covariance matrix columns
-ANT_GPS_COV_DIAG = [
-    f"ant_cov_{c.upper()}" for c in GPS_COV_DIAG
-]  # Antenna covariance diagonal
-ANT_GPS_COV = [f"ant_cov_{c.upper()}" for c in GPS_COV]  # Antenna covariance columns
+ANT_GPS_COV_DIAG = [f"ant_cov_{c}" for c in GPS_COV_DIAG]  # Antenna covariance diagonal
+ANT_GPS_COV = [f"ant_cov_{c}" for c in GPS_COV]  # Antenna covariance columns
 
 # Roll Pitch Heading columns
 RPH_TIME = TIME_J2000
@@ -93,15 +96,15 @@ RPH_ROLL = "roll"
 RPH_PITCH = "pitch"
 RPH_HEADING = "heading"
 RPH_LOCAL_TANGENTS = [RPH_ROLL, RPH_PITCH, RPH_HEADING]
-RPH_COV_RR = "roll_roll"
-RPH_COV_RP = "roll_pitch"
-RPH_COV_RH = "roll_heading"
-RPH_COV_PR = "pitch_roll"
-RPH_COV_PP = "pitch_pitch"
-RPH_COV_PH = "pitch_heading"
-RPH_COV_HR = "heading_roll"
-RPH_COV_HP = "heading_pitch"
-RPH_COV_HH = "heading_heading"
+RPH_COV_RR = "rr"
+RPH_COV_RP = "rp"
+RPH_COV_RH = "rh"
+RPH_COV_PR = "pr"
+RPH_COV_PP = "pp"
+RPH_COV_PH = "ph"
+RPH_COV_HR = "hr"
+RPH_COV_HP = "hp"
+RPH_COV_HH = "hh"
 RPH_COV_DIAG = [RPH_COV_RR, RPH_COV_PP, RPH_COV_HH]  # Covariance matrix diagonal values
 RPH_COV = [
     RPH_COV_RR,
@@ -114,6 +117,10 @@ RPH_COV = [
     RPH_COV_HP,
     RPH_COV_HH,
 ]  # Covariance matrix columns
+PLATFORM_COV_RPH_DIAG = [
+    f"cov_{c}" for c in RPH_COV_DIAG
+]  # Platform covariance diagonal
+PLATFORM_COV_RPH = [f"cov_{c}" for c in RPH_COV]  # Platform covariance columns
 
 # Antenna Position Direction columns
 ANTENNA_EASTWARD = "ant_e"
@@ -128,14 +135,14 @@ L1_DATA_FORMAT = {
         r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
         r"(.*?),(.*?),INS_SOLUTION_GOOD\*+.*\n",
         "data_fields": (
-            "Week",
-            "Seconds",
+            "week",
+            "seconds",
             GPS_LAT,
             GPS_LON,
             GPS_ALT,
-            ANTENNA_NORTHWARD,
-            ANTENNA_EASTWARD,
-            ANTENNA_UPWARD,
+            GPS_NORTH,
+            GPS_EAST,
+            GPS_UP,
             RPH_ROLL,
             RPH_PITCH,
             RPH_HEADING,
@@ -159,19 +166,17 @@ L1_DATA_FORMAT = {
         r"(.*?),(.*?),(.*?),(.*?),(.*?),(.*?),"
         r"(.*?),(.*?),(.*?),.*?,.*?,.*?\*+.*?\n",
         "data_fields": (
-            "Week",
-            "Seconds",
-            f"{GPS_LAT} std",
-            f"{GPS_LON} std",
-            f"{GPS_ALT} std",
-            f"{ANTENNA_NORTHWARD} std",
-            f"{ANTENNA_EASTWARD} std",
-            f"{ANTENNA_UPWARD} std",
-            RPH_COV_RR,
-            RPH_COV_PP,
-            RPH_COV_HH,
-            "Ext sol stat",
-            "Time Since Update",
+            "week",
+            "seconds",
+            f"{GPS_LAT}_sig",
+            f"{GPS_LON}_sig",
+            f"{GPS_ALT}_sig",
+            f"{GPS_NORTH}_sig",
+            f"{GPS_EAST}_sig",
+            f"{GPS_UP}_sig",
+            *PLATFORM_COV_RPH_DIAG,
+            "ext_sol_stat",
+            "time_since_update",
         ),
         "data_fields_dtypes": (
             "int",
