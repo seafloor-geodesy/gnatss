@@ -4,7 +4,7 @@ The main configuration module containing base settings pydantic
 classes
 """
 import datetime
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 import numpy as np
 import pymap3d
@@ -48,7 +48,7 @@ class Configuration(BaseConfiguration):
     # General configurations
     site_id: str = Field(..., description="GNSS-A site name or code")
     campaign: Optional[str] = Field(None, description="Observation campaign name")
-    time_origin: Optional["str | datetime.datetime"] = Field(
+    time_origin: Optional[Union[str, datetime.datetime]] = Field(
         None, description="Origin of time used in the file [UTC]"
     )
     ref_frame: Literal["wgs84"] = Field(
