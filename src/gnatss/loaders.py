@@ -337,7 +337,10 @@ def load_gps_solutions(
 
 
 def load_deletions(
-    config: Configuration, file_paths: Optional[List[str]] = None, time_scale="tt"
+    config: Configuration,
+    file_paths: Optional[List[str]] = None,
+    time_scale="tt",
+    remove_outliers: bool = False,
 ) -> pd.DataFrame:
     """
     Loads the raw deletion text file into a pandas dataframe
@@ -397,7 +400,7 @@ def load_deletions(
     # Try to find outliers.csv file if there is one run already
     # this currently assumes that the file is in the output directory
     outliers_csv = output_path / CSVOutput.outliers.value
-    if outliers_csv.exists():
+    if outliers_csv.exists() and remove_outliers:
         import typer
 
         typer.echo(f"Found {str(outliers_csv.absolute())} file. Including into cuts...")

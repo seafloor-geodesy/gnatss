@@ -185,7 +185,9 @@ def load_config(
     return config
 
 
-def load_datasets(config: Configuration, from_cache: bool = False):
+def load_datasets(
+    config: Configuration, from_cache: bool = False, remove_outliers: bool = False
+):
     all_files_dict = gather_files_all_procs(
         config, mode="object", from_cache=from_cache
     )
@@ -211,12 +213,16 @@ def load_datasets(config: Configuration, from_cache: bool = False):
         all_files_dict.setdefault(deletions_key, None)
 
     for key, input_data in all_files_dict.items():
-        data_dict[key] = load_files_to_dataframe(key, input_data, config)
+        data_dict[key] = load_files_to_dataframe(
+            key, input_data, config, remove_outliers=remove_outliers
+        )
 
     return data_dict
 
 
-def load_files_to_dataframe(key, input_data, config: Configuration):
+def load_files_to_dataframe(
+    key, input_data, config: Configuration, remove_outliers: bool = False
+):
     if input_data is None:
         typer.echo(f"Loading {key} from {config.output.path}")
         file_paths = input_data
@@ -239,7 +245,9 @@ def load_files_to_dataframe(key, input_data, config: Configuration):
             **loader_kwargs,
         )
     elif key == "deletions":
-        return load_deletions(config=config, file_paths=file_paths)
+        return load_deletions(
+            config=config, file_paths=file_paths, remove_outliers=remove_outliers
+        )
     elif key == "gps_positions":
         # Posfilter input
         return load_gps_positions(file_paths)

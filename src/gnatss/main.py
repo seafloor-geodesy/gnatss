@@ -521,6 +521,7 @@ def run_gnatss(
     outlier_threshold: float = constants.DATA_OUTLIER_THRESHOLD,
     from_cache: bool = False,
     return_raw: bool = False,
+    remove_outliers: bool = False,
 ):
     typer.echo("Starting GNATSS ...")
     if from_cache:
@@ -533,6 +534,7 @@ def run_gnatss(
         residual_limit=residual_limit,
         outlier_threshold=outlier_threshold,
         from_cache=from_cache,
+        remove_outliers=remove_outliers,
     )
     config, data_dict = preprocess_data(config, data_dict)
 

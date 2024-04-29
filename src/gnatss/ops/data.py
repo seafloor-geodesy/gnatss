@@ -384,6 +384,7 @@ def data_loading(
     residual_limit: Optional[float] = None,
     outlier_threshold: Optional[float] = None,
     from_cache: bool = False,
+    remove_outliers: bool = False,
 ):
     config = load_config(
         config_yaml,
@@ -395,7 +396,7 @@ def data_loading(
     if from_cache and not gps_solution_exists(config):
         from_cache = False
 
-    return config, load_datasets(config, from_cache)
+    return config, load_datasets(config, from_cache, remove_outliers)
 
 
 def preprocess_data(config, data_dict):

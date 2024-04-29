@@ -1,4 +1,5 @@
 """The main command line interface for gnatss"""
+
 from typing import Optional
 
 import typer
@@ -62,6 +63,13 @@ def run(
     from_cache: Optional[bool] = typer.Option(
         False, help="Flag to load the GNSS-A L2 Data from cache."
     ),
+    remove_outliers: Optional[bool] = typer.Option(
+        False,
+        help=(
+            "Flag to execute removing outliers from the GNSS-A L2 Data "
+            "before running the solver process."
+        ),
+    ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
@@ -73,6 +81,7 @@ def run(
         residual_limit=residual_limit,
         outlier_threshold=outlier_threshold,
         from_cache=from_cache,
+        remove_outliers=remove_outliers,
     )
 
     # Write out distance from center to dist_center.csv file
