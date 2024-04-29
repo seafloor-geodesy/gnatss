@@ -17,6 +17,7 @@ from .. import TEST_DATA_FOLDER
 
 @pytest.fixture()
 def all_observations() -> pd.DataFrame:
+    # TODO: Understand the contents of test_obs.csv file and fix unittests
     obs_csv = TEST_DATA_FOLDER / "test_obs.csv"
     return pd.read_csv(obs_csv)
 
