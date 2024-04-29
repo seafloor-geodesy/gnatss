@@ -35,6 +35,12 @@ class ArrayCenter(BaseModel):
     alt: float = Field(0.0, description="Altitude")
 
 
+class GPSSolutionInput(InputData):
+    legacy: bool = Field(
+        False, description="Flag to indicate if the input file is in legacy format."
+    )
+
+
 class SolverInputs(BaseModel):
     sound_speed: InputData = Field(
         ..., description="Sound speed data path specification"
@@ -43,7 +49,7 @@ class SolverInputs(BaseModel):
     travel_times: Optional[InputData] = Field(
         None, description="Travel times data path specification."
     )
-    gps_solution: Optional[InputData] = Field(
+    gps_solution: Optional[GPSSolutionInput] = Field(
         None, description="GPS solution data path specification."
     )
     deletions: Optional[InputData] = Field(
@@ -171,6 +177,11 @@ class Solver(BaseModel):
             "Maximum residual in centimeters beyond "
             "which data points will be excluded from solution"
         ),
+    )
+    residual_outliers_threshold: float = Field(
+        25.0,
+        ge=0.0,
+        description="Residual outliers threshold acceptable before throwing an error in percent",
     )
     travel_times_correction: float = Field(
         0.0, description="Correction to times in travel times (secs.)"

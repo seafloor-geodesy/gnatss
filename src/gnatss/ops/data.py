@@ -1,14 +1,19 @@
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 import numba
 import numpy as np
 import pandas as pd
+import typer
 from nptyping import Float64, NDArray, Shape
 from numba.typed import List as NumbaList
 from pymap3d import ecef2enu, ecef2geodetic
 
 from .. import constants
+from ..configs.io import CSVOutput
+from ..configs.main import Configuration
 from ..configs.solver import ArrayCenter
+from .harmonic_mean import sv_harmonic_mean
+from .io import load_config, load_datasets
 from .utils import _prep_col_names
 
 META_COLUMNS = [
@@ -371,3 +376,71 @@ def standardize_data(
     return pd.merge(receive_df, transmit_df, on=constants.garpos.ST).round(
         data_precision
     )
+
+
+def data_loading(
+    config_yaml: str,
+    distance_limit: Optional[float] = None,
+    residual_limit: Optional[float] = None,
+    outlier_threshold: Optional[float] = None,
+    from_cache: bool = False,
+):
+    config = load_config(
+        config_yaml,
+        distance_limit=distance_limit,
+        residual_limit=residual_limit,
+        outlier_threshold=outlier_threshold,
+    )
+    # Switch off cache if gps solution does not exist
+    if from_cache and not gps_solution_exists(config):
+        from_cache = False
+
+    return config, load_datasets(config, from_cache)
+
+
+def preprocess_data(config, data_dict):
+    twtt_df = preprocess_travel_times(data_dict.get("travel_times"), config)
+    config = compute_harmonic_mean(config, svdf=data_dict.get("sound_speed", None))
+    data_dict.update({"travel_times": twtt_df})
+    return config, data_dict
+
+
+def gps_solution_exists(config) -> bool:
+    if config.output is None:
+        return False
+
+    file_path = config.output.path + CSVOutput.gps_solution
+    return config.output._fsmap.fs.exists(file_path)
+
+
+def preprocess_travel_times(pxp_df, config: Configuration):
+    typer.echo("Preprocessing Travel Times Data")
+    transponder_ids = [tp.pxp_id for tp in config.transponders]
+    pxp_df = clean_tt(
+        pxp_df,
+        transponder_ids=transponder_ids,
+        travel_times_correction=config.travel_times_correction,
+        transducer_delay_time=config.transducer_delay_time,
+    )
+    twtt_df = preprocess_tt(pxp_df)
+    typer.echo("Finished Preprocessing Travel Times Data")
+    return twtt_df
+
+
+def compute_harmonic_mean(
+    config: Configuration,
+    svdf: Optional[pd.DataFrame] = None,
+):
+    # Compute harmonic mean of each transponder
+    if svdf is not None and config.solver:
+        typer.echo("Computing harmonic mean...")
+        start_depth = config.solver.harmonic_mean_start_depth
+        for transponder in config.transponders:
+            # Compute the harmonic mean and round to 3 decimal places
+            harmonic_mean = round(
+                sv_harmonic_mean(svdf, start_depth, transponder.height), 3
+            )
+            transponder.sv_mean = harmonic_mean
+            typer.echo(transponder)
+        typer.echo("Finished computing harmonic mean")
+    return config

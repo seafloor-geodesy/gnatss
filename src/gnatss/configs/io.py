@@ -1,10 +1,10 @@
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import fsspec
 from pydantic import BaseModel, Field, PrivateAttr
 
-from ..utilities.io import check_file_exists, check_permission
+from ..utilities.io import _get_filesystem, check_file_exists
 
 
 class StrEnum(str, Enum):
@@ -20,6 +20,7 @@ class CSVOutput(StrEnum):
     residuals = "residuals.csv"
     dist_center = "dist_center.csv"
     deletions = "deletions.csv"
+    gps_solution = "gps_solution.csv"
 
 
 class InputData(BaseModel):
@@ -36,6 +37,12 @@ class InputData(BaseModel):
             "This is not needed for local paths"
         ),
     )
+    loader_kwargs: Dict[str, Any] = Field(
+        {},
+        description="Keyword arguments for the data loader.",
+    )
+
+    _files: List[str] = PrivateAttr()
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -43,6 +50,21 @@ class InputData(BaseModel):
         # Checks the file
         if not check_file_exists(self.path, self.storage_options):
             raise FileNotFoundError(f"{self.path} doesn't exist!")
+
+        self._files = self.get_files()
+
+    @property
+    def files(self) -> List[str]:
+        return self._files
+
+    def get_files(self) -> List[str]:
+        """Get the list of files in the directory"""
+        fs = _get_filesystem(self.path, self.storage_options)
+        if "**" in self.path:
+            all_files = fs.glob(self.path)
+        else:
+            all_files = [self.path]
+        return all_files
 
 
 class OutputPath(BaseModel):
@@ -66,8 +88,6 @@ class OutputPath(BaseModel):
         super().__init__(**data)
 
         self._fsmap = fsspec.get_mapper(self.path, **self.storage_options)
-        # Checks the file permission as the object is being created
-        check_permission(self._fsmap)
 
         # Check to ensure it's a directory
         if not self.path.endswith("/"):
@@ -75,3 +95,7 @@ class OutputPath(BaseModel):
 
         # Always try create the directory even if it exists
         self._fsmap.fs.makedirs(self.path, exist_ok=True)
+
+    @property
+    def fs(self):
+        return self._fsmap.fs

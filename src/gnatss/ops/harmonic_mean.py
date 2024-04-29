@@ -6,7 +6,7 @@ import pandas as pd
 import scipy.stats
 from nptyping import Float64, NDArray, Shape
 
-from .constants import SP_DEPTH, SP_SOUND_SPEED
+from ..constants import SP_DEPTH, SP_SOUND_SPEED
 
 
 def _compute_hm(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> float:

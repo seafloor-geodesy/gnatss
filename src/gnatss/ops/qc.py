@@ -10,6 +10,7 @@ from .. import constants
 from ..configs.main import Configuration
 from ..utilities.geo import calc_enu_comp
 from ..utilities.time import AstroTime
+from .io import _to_file_fs
 
 # The 8 Colorblind from Bang Wong’s
 # Nature Methods paper https://www.nature.com/articles/nmeth.1618.pdf
@@ -249,3 +250,24 @@ def plot_enu_comps(
 
     fig.tight_layout()
     return fig
+
+
+def export_qc_plots(config, result_dict):
+    from gnatss.ops.qc import plot_enu_comps, plot_residuals
+
+    output_path = config.output.path
+    resdf = result_dict.get("residuals")
+    outliers_df = result_dict.get("outliers")
+
+    res_png = output_path + "residuals.png"
+    enu_comp_png = output_path + "residuals_enu_components.png"
+
+    # Plot the figures
+    res_figure = plot_residuals(resdf, outliers_df)
+    enu_figure = plot_enu_comps(resdf, config)
+
+    # Save the figures
+    # export residuals qc plots
+    _to_file_fs(config.output._fsmap.fs, res_png, res_figure.savefig)
+    # export residuals enu components qc plots
+    _to_file_fs(config.output._fsmap.fs, enu_comp_png, enu_figure.savefig)

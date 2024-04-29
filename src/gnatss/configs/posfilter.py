@@ -33,11 +33,23 @@ class PositionFilterInputs(BaseModel):
     )
 
 
+class ExportObs(BaseModel):
+    """Export observation data after filtering."""
+
+    full: bool = Field(
+        False,
+        description="Only export the necessary data, including antenna covariance.",
+    )
+
+
 class PositionFilter(BaseModel):
     """
     Position filter base model for position filtering routine
     """
 
+    export: Optional[ExportObs] = Field(
+        None, description="Export observation data after filtering."
+    )
     input_files: Optional[PositionFilterInputs] = Field(
         None, description="Input files for position filtering routine."
     )

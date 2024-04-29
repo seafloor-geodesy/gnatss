@@ -1,11 +1,11 @@
-from typing import Tuple
+from typing import Any, Tuple
 
 import numba
 import numpy as np
 from nptyping import Float64, NDArray, Shape
 from numba.typed import List as NumbaList
 
-from .utils import calc_uv
+DEFAULT_VECTOR_NORM = np.array([2.0, 0.0, 0.0])
 
 
 @numba.njit(cache=True)
@@ -244,6 +244,43 @@ def __get_diagonal(array: NDArray[Shape["*, *"], Float64]) -> NDArray:
     for i in range(len_cm):
         diag[i] = array[i, i]
     return diag
+
+
+@numba.njit(cache=True)
+def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
+    """
+    Calculate unit vector for a 1-D input vector of size 3
+
+    Parameters
+    ----------
+    input_vector : (3,) ndarray
+        A 1-D input vector as numpy array
+
+    Returns
+    -------
+    (3,) ndarray
+        The resulting unit vector as numpy array
+
+    Raises
+    ------
+    ValueError
+        If the input vector is not a 1-D array
+    """
+    ashape = input_vector.shape
+
+    # Dimensionality check already done by numba
+    # so we just check for the shape
+    assert ashape == (3,), (
+        "Unit vector calculation must be 1-D array of shape 3! "
+        f"Instead got 1-D of shape {','.join([str(s) for s in ashape])}!"
+    )
+
+    vector_norm = np.linalg.norm(input_vector)
+
+    if vector_norm == 0:
+        return DEFAULT_VECTOR_NORM
+
+    return input_vector / vector_norm
 
 
 @numba.njit(cache=True)
