@@ -203,16 +203,29 @@ def load_datasets(config: Configuration, from_cache: bool = False):
         if gps_solution_key in all_files_dict:
             all_files_dict.pop(gps_solution_key)
 
+    deletions_key = "deletions"
+    if deletions_key not in all_files_dict:
+        # Add deletions key if not found
+        # this will grab the deletions file from the output path
+        # if program has been run before
+        all_files_dict.setdefault(deletions_key, None)
+
     for key, input_data in all_files_dict.items():
-        data_dict[key] = load_files_to_dataframe(key, input_data, config, from_cache)
+        data_dict[key] = load_files_to_dataframe(key, input_data, config)
 
     return data_dict
 
 
-def load_files_to_dataframe(
-    key, input_data, config: Configuration, from_cache: bool = False
-):
-    typer.echo(f"Loading {key} from {input_data.path}")
+def load_files_to_dataframe(key, input_data, config: Configuration):
+    if input_data is None:
+        typer.echo(f"Loading {key} from {config.output.path}")
+        file_paths = input_data
+        loader_kwargs = {}
+    else:
+        typer.echo(f"Loading {key} from {input_data.path}")
+        file_paths = input_data.files
+        loader_kwargs = input_data.loader_kwargs
+
     loaders_map = {
         "sound_speed": load_sound_speed,
         "quality_controls": load_quality_control,
@@ -221,21 +234,21 @@ def load_files_to_dataframe(
     }
     if key == "travel_times":
         return load_travel_times(
-            input_data.files,
+            file_paths,
             transponder_ids=[tp.pxp_id for tp in config.transponders],
-            **input_data.loader_kwargs,
+            **loader_kwargs,
         )
     elif key == "deletions":
-        return load_deletions(input_data.files, config=config)
+        return load_deletions(config=config, file_paths=file_paths)
     elif key == "gps_positions":
         # Posfilter input
-        return load_gps_positions(input_data.files)
+        return load_gps_positions(file_paths)
     elif key == "gps_solution":
         # Solver input
-        return load_gps_solutions(input_data.files, from_legacy=False)
+        return load_gps_solutions(file_paths, from_legacy=False)
     else:
         loader = loaders_map[key]
-        return loader(input_data.files)
+        return loader(file_paths)
 
 
 def _load_csv_data(config, file_path):

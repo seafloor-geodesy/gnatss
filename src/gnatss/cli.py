@@ -13,7 +13,7 @@ from .ops.qc import export_qc_plots
 # Global variables
 OVERRIDE_MESSAGE = "Note that this will override the value set as configuration."
 
-app = typer.Typer(name=package_name)
+app = typer.Typer(name=package_name, pretty_exceptions_show_locals=False)
 
 
 @app.callback()
@@ -25,8 +25,8 @@ def callback():
 
 @app.command()
 def run(
-    config_yaml: Optional[str] = typer.Option(
-        None,
+    config_yaml: str = typer.Argument(
+        ...,
         help="Custom path to configuration yaml file. **Currently only support local files!**",
     ),
     extract_dist_center: Optional[bool] = typer.Option(

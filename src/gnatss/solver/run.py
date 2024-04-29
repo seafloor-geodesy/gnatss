@@ -35,7 +35,9 @@ def run_solver(config, data_dict, return_raw: bool = False):
     outliers_df = get_residual_outliers(config, resdf)
     outlier_threshold = config.solver.residual_outliers_threshold
     # Print the outliers stats
-    _print_detected_outliers(outliers_df, outlier_threshold, all_epochs)
+    _print_detected_outliers(
+        outliers_df, outlier_threshold, all_epochs, config.solver.residual_limit
+    )
 
     # Capture the process results as an xarray dataset
     process_ds = generate_process_xr_dataset(process_data, resdf, config)

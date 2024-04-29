@@ -17,7 +17,9 @@ from ..utilities.time import AstroTime
 from .solve import perform_solve
 
 
-def _print_detected_outliers(outliers_df, outlier_threshold, all_epochs) -> None:
+def _print_detected_outliers(
+    outliers_df, outlier_threshold, all_epochs, residual_limit
+) -> None:
     # Print out the number of outliers detected
     n_outliers = len(outliers_df)
     percent_outliers = np.round((n_outliers / all_epochs.size) * 100.0, 2)
@@ -28,7 +30,7 @@ def _print_detected_outliers(outliers_df, outlier_threshold, all_epochs) -> None
         if percent_outliers > outlier_threshold:
             raise RuntimeError(
                 f"The number of outliers ({percent_outliers}%) is greater than the threshold of "
-                f"{outlier_threshold}%. Please check your residual limit"
+                f"{outlier_threshold}%. Please modify your current residual limit of {residual_limit}."  # noqa
             )
     typer.echo(message)
 
