@@ -1,17 +1,14 @@
-import warnings
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import typer
 import xarray as xr
 from nptyping import Float, NDArray, Shape
-from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 
 from . import constants
 from .configs.main import Configuration
 from .configs.solver import ArrayCenter, SolverTransponder
-from .harmonic_mean import sv_harmonic_mean
 from .loaders import (
     get_atd_offsets,
     load_deletions,
@@ -21,75 +18,20 @@ from .loaders import (
     load_sound_speed,
     load_travel_times,
 )
-from .ops.data import clean_tt, filter_tt, get_data_inputs
-from .ops.posfilter import rotation
-from .ops.solve import perform_solve
-from .ops.validate import check_sig3d, check_solutions
-from .utilities.geo import _get_rotation_matrix
-from .utilities.io import _get_filesystem
+from .ops.data import clean_tt, data_loading, filter_tt, preprocess_data
+from .ops.harmonic_mean import sv_harmonic_mean
+from .ops.validate import check_sig3d
+from .posfilter.posfilter import rotation
+from .posfilter.run import run_posfilter
+from .solver.run import run_solver
+from .solver.utilities import (
+    _create_process_dataset,
+    _get_latest_process,
+    extract_distance_from_center,
+    extract_latest_residuals,
+    prepare_and_solve,
+)
 from .utilities.time import AstroTime
-
-
-def gather_files(
-    config: Configuration, proc: Literal["main", "solver", "posfilter"] = "solver"
-) -> Dict[str, List[str]]:
-    """Gather file paths for the various dataset files defined in proc config.
-
-    Parameters
-    ----------
-    config : Configuration
-        A configuration object
-    proc: Literal["solver", "posfilter"]
-        Process name as defined in config
-
-    Returns
-    -------
-    Dict[str, Any]
-        A dictionary containing the various datasets file paths
-    """
-    all_files_dict = {}
-    if proc == "main":
-        proc_config = config
-    else:
-        # Check for process type first
-        if not hasattr(config, proc):
-            raise AttributeError(f"Unknown process type: {proc}")
-        proc_config = getattr(config, proc)
-
-    for k, v in proc_config.input_files.model_dump().items():
-        if v:
-            path = v.get("path", "")
-            typer.echo(f"Gathering {k} at {path}")
-            storage_options = v.get("storage_options", {})
-
-            fs = _get_filesystem(path, storage_options)
-            if "**" in path:
-                all_files = fs.glob(path)
-            else:
-                all_files = [path]
-
-            all_files_dict.setdefault(k, all_files)
-    return all_files_dict
-
-
-def gather_files_all_procs(config: Configuration) -> Dict[str, List[str]]:
-    """Gather file paths for the various dataset files from all procs in config.
-
-    Parameters
-    ----------
-    config : Configuration
-        A configuration object
-
-    Returns
-    -------
-    Dict[str, Any]
-        A dictionary containing the various datasets file paths
-    """
-    all_files_dict = dict()
-    for proc in constants.DEFAULT_CONFIG_PROCS:
-        if proc == "main" or hasattr(config, proc):
-            all_files_dict.update(gather_files(config, proc))
-    return all_files_dict
 
 
 def get_transmit_times(
@@ -268,15 +210,17 @@ def get_reply_times(
 
     # Adds a 1 to column names for reply values
     reply_times.columns = [
-        f"{col}1"
-        if col
-        not in [
-            constants.DATA_SPEC.tx_time,
-            constants.DATA_SPEC.transponder_id,
-            constants.DATA_SPEC.rx_time,
-            constants.DATA_SPEC.travel_time,
-        ]
-        else col
+        (
+            f"{col}1"
+            if col
+            not in [
+                constants.DATA_SPEC.tx_time,
+                constants.DATA_SPEC.transponder_id,
+                constants.DATA_SPEC.rx_time,
+                constants.DATA_SPEC.travel_time,
+            ]
+            else col
+        )
         for col in reply_times.columns
     ]
 
@@ -332,175 +276,6 @@ def _print_final_stats(
         typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
     typer.echo("------------------------")
     typer.echo()
-
-
-def prepare_and_solve(
-    all_observations: pd.DataFrame, config: Configuration, max_iter: int = 6
-) -> Tuple[Dict[int, Any], bool]:
-    """
-    Prepare data inputs and perform solving algorithm
-
-    Parameters
-    ----------
-    all_observations : pd.DataFrame
-        The whole dataset that includes,
-        transmit, reply, and gps solutions data
-    config : Configuration
-        The configuration object
-
-    Returns
-    -------
-    Dict[int, Any]
-        The process dictionary that contains stats and data results,
-        for all of the iterations
-    """
-    transponders = config.transponders
-    # convert orthonomal heights of PXPs into ellipsoidal heights and convert to x,y,z
-    transponders_xyz = None
-    if transponders_xyz is None:
-        transponders_xyz = np.array(
-            [
-                geodetic2ecef(t.lat, t.lon, t.height + config.solver.geoid_undulation)
-                for t in transponders
-            ]
-        )
-    transponders_mean_sv = np.array([t.sv_mean for t in transponders])
-    transponders_delay = np.array([t.internal_delay for t in transponders])
-
-    # Get travel times variance
-    travel_times_variance = config.travel_times_variance
-
-    # Store original xyz
-    original_positions = transponders_xyz.copy()
-
-    typer.echo("Preparing data inputs...")
-    data_inputs = get_data_inputs(all_observations)
-
-    typer.echo("Perform solve...")
-    is_converged = False
-    n_iter = 0
-    num_transponders = len(transponders)
-    process_dict = {}
-    num_data = len(all_observations)
-    typer.echo(f"--- {len(data_inputs)} epochs, {num_data} measurements ---")
-    while not is_converged:
-        # Max converge attempt failure
-        if n_iter > max_iter:
-            warnings.warn(
-                "Exceeds the allowed number of attempt, " "please adjust your data."
-            )
-            break
-
-        # Increase iter num
-        n_iter += 1
-
-        # Keep track of process
-        process_dict[n_iter] = {"transponders_xyz": transponders_xyz}
-
-        # Perform solving
-        all_results = perform_solve(
-            data_inputs,
-            transponders_mean_sv,
-            transponders_xyz,
-            transponders_delay,
-            travel_times_variance,
-        )
-
-        is_converged, transponders_xyz, data = check_solutions(
-            all_results, transponders_xyz
-        )
-
-        process_dict[n_iter]["data"] = data
-
-        # Compute one way travel time residual in centimeter
-        # This uses a constant assume sound speed of 1500 m/s
-        # since this is only used for quality control.
-        process_dict[n_iter]["rescm"] = (100 * 1500 * np.array(data["address"])) / 2
-
-        # Print out some stats below
-
-        # This assumes that all data is ADSIG > 0
-        RMSRES = np.sum(np.array(data["address"]) ** 2)
-        RMSRESCM = np.sum(
-            ((100 * transponders_mean_sv) * np.array(data["address"])) ** 2
-        )
-        ERRFAC = np.sum((np.array(data["address"]) / np.array(data["adsig"])) ** 2)
-
-        RMSRES = np.sqrt(RMSRES / num_data)
-        RMSRESCM = np.sqrt(RMSRESCM / num_data)
-        ERRFAC = np.sqrt(ERRFAC / (num_data - (3 * num_transponders)))
-
-        process_dict[n_iter]["rmsrescm"] = RMSRESCM
-        process_dict[n_iter]["errfac"] = ERRFAC
-        typer.echo(
-            (
-                f"After iteration: {n_iter}, "
-                f"rms residual = {np.round(RMSRESCM, 2)} cm, "
-                f"error factor = {np.round(ERRFAC, 3)}"
-            )
-        )
-
-        enu_arr = []
-        sig_enu = []
-        lat_lon = []
-        for idx, tp in enumerate(transponders):
-            pxp_id = tp.pxp_id
-            # Get xyz for a transponder
-            x, y, z = transponders_xyz[idx]
-
-            # Get lat lon alt
-            lat, lon, alt = ecef2geodetic(x, y, z)
-            lat_lon.append([lat, lon, alt - config.solver.geoid_undulation])
-
-            # Retrieve apriori xyz and lat lon alt
-            original_xyz = original_positions[idx]
-            original_lla = ecef2geodetic(*original_xyz)
-
-            # Compute enu w.r.t apriori lat lon alt
-            e, n, u = ecef2enu(x, y, z, *original_lla)
-            enu_arr.append([e, n, u])
-
-            # Find enu covariance
-            latr, lonr = np.radians([lat, lon])
-            R = _get_rotation_matrix(latr, lonr, False)
-            covpx = np.array(
-                [arr[:3] for arr in data["covpx"][idx * 3 : 3 * (idx + 1)]]  # noqa
-            )
-            covpe = R.T @ covpx @ R
-            # Retrieve diagonal and change negative values to 0
-            diag = covpe.diagonal().copy()
-            diag[diag < 0] = 0
-            sig_enu.append(np.sqrt(diag))
-
-            # Find location differences and its std dev
-            SIGPX = np.array_split(data["sigpx"], num_transponders)
-            DELP = np.array_split(data["delp"], num_transponders)
-            dX, dY, dZ = DELP[idx]
-            sigX, sigY, sigZ = SIGPX[idx]
-            typer.echo(pxp_id)
-            typer.echo(
-                (
-                    f"D_x = {np.format_float_scientific(dX, 6)} m, "
-                    f"Sigma(x) = {np.format_float_scientific(sigX, 6)} m"
-                )
-            )
-            typer.echo(
-                (
-                    f"D_y = {np.format_float_scientific(dY, 6)} m, "
-                    f"Sigma(y) = {np.format_float_scientific(sigY, 6)} m"
-                )
-            )
-            typer.echo(
-                (
-                    f"D_z = {np.format_float_scientific(dZ, 6)} m, "
-                    f"Sigma(z) = {np.format_float_scientific(sigZ, 6)} m"
-                )
-            )
-        process_dict[n_iter]["enu"] = np.array(enu_arr)
-        process_dict[n_iter]["sig_enu"] = np.array(sig_enu)
-        process_dict[n_iter]["transponders_lla"] = np.array(lat_lon)
-        typer.echo()
-    return process_dict, is_converged
 
 
 def load_data(
@@ -629,218 +404,6 @@ def load_data(
     return all_observations
 
 
-def extract_distance_from_center(
-    all_observations: pd.DataFrame, config: Configuration
-) -> pd.DataFrame:
-    """Extracts and calculates the distance from the array center
-
-    Parameters
-    ----------
-    all_observations : pd.DataFrame
-        The full dataset for computation
-    config : Configuration
-        The configuration object
-
-    Returns
-    -------
-    pd.DataFrame
-        The final dataframe for distance from center
-    """
-
-    def _compute_enu(coords, array_center):
-        return ecef2enu(
-            *coords, array_center.lat, array_center.lon, array_center.alt, deg=True
-        )
-
-    # Set up transmit columns
-    transmit_cols = constants.DATA_SPEC.transducer_tx_fields.keys()
-
-    # Since we're only working with transmit,
-    # we can just group by transmit time to avoid repetition.
-    # This extracts transmit data coords only
-    transmit_obs = (
-        all_observations[[constants.DATA_SPEC.tx_time, *transmit_cols]]
-        .groupby(constants.DATA_SPEC.tx_time)
-        .first()
-        .reset_index()
-    )
-
-    # Get geocentric x,y,z for array center
-    array_center = config.array_center
-
-    # Extract coordinates only
-    transmit_coords = transmit_obs[transmit_cols]
-    enu_arrays = np.apply_along_axis(
-        _compute_enu, axis=1, arr=transmit_coords, array_center=array_center
-    )
-    enu_df = pd.DataFrame.from_records(enu_arrays, columns=constants.GPS_LOCAL_TANGENT)
-    # Compute azimuth from north to east
-    enu_df.loc[:, constants.GPS_AZ] = enu_df.apply(
-        lambda row: np.degrees(
-            np.arctan2(row[constants.GPS_EAST], row[constants.GPS_NORTH])
-        ),
-        axis=1,
-    )
-    # Compute distance from center
-    enu_df.loc[:, constants.GPS_DISTANCE] = enu_df.apply(
-        lambda row: np.sqrt(
-            row[constants.GPS_NORTH] ** 2 + row[constants.GPS_EAST] ** 2
-        ),
-        axis=1,
-    )
-
-    # Merge with equivalent index
-    return pd.merge(
-        transmit_obs[constants.DATA_SPEC.tx_time],
-        enu_df,
-        left_index=True,
-        right_index=True,
-    )
-
-
-def _get_latest_process(process_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Get the latest process data"""
-    return process_data[max(process_data.keys())]
-
-
-def extract_latest_residuals(
-    config: Configuration, all_epochs: List[float], process_data: Dict[str, Any]
-) -> pd.DataFrame:
-    """
-    Extracts the latest residuals from process data,
-    and convert them into a pandas dataframe.
-
-    Parameters
-    ----------
-    config : Configuration
-        The configuration object
-    all_epochs : List[float]
-        A list of all the epoch values
-    process_data : Dict[str, Any]
-        The full processing data results
-
-    Returns
-    -------
-    pd.DataFrame
-        The final dataframe for residuals
-    """
-
-    def to_iso(astro_time):
-        return [t.strftime("%Y-%m-%dT%H:%M:%S.%f") for t in astro_time]
-
-    # Convert j2000 seconds time to astro time and then convert to iso
-    astro_epochs = np.apply_along_axis(AstroTime, 0, all_epochs, format="unix_j2000")
-    iso_epochs = np.apply_along_axis(to_iso, 0, astro_epochs)
-
-    # Get the latest process data
-    process_info = _get_latest_process(process_data)
-
-    # Retrieve residuals data
-    all_residuals_data = []
-    for ep, iso, address in zip(all_epochs, iso_epochs, process_info["rescm"]):
-        all_residuals_data.append([ep, iso] + list(address))
-
-    return pd.DataFrame(
-        all_residuals_data,
-        columns=[constants.TIME_J2000, constants.TIME_ISO]
-        + [t.pxp_id for t in config.solver.transponders],
-    )
-
-
-def _create_process_dataset(
-    proc_d: Dict[str, Any], n_iter: int, config: Configuration
-) -> xr.Dataset:
-    """Creates a process dataset from the process dictionary
-
-    Parameters
-    ----------
-    proc_d : Dict[str, Any]
-        Process dictionary
-    n_iter : int
-        Iteration number
-    config : Configuration
-        The configuration object
-
-    Returns
-    -------
-    xr.Dataset
-        The resulting process dataset
-    """
-    transponders = config.solver.transponders
-    num_transponders = len(transponders)
-    transponders_ids = [tp.pxp_id for tp in transponders]
-
-    ds = xr.Dataset(
-        data_vars={
-            "transponders_xyz": (
-                ("transponder", "coords"),
-                proc_d["transponders_xyz"],
-                {"units": "meters", "long_name": "Transponder ECEF location"},
-            ),
-            "delta_xyz": (
-                ("transponder", "coords"),
-                np.array(np.array_split(proc_d["data"]["delp"], num_transponders)),
-                {
-                    "units": "meters",
-                    "long_name": "Transponder location differences from apriori",
-                },
-            ),
-            "sigma_xyz": (
-                ("transponder", "coords"),
-                np.array(np.array_split(proc_d["data"]["sigpx"], num_transponders)),
-                {
-                    "units": "meters",
-                    "long_name": "Transponder location differences standard deviation",
-                },
-            ),
-            "rms_residual": (
-                ("iteration"),
-                [proc_d["rmsrescm"]],
-                {
-                    "units": "centimeters",
-                    "long_name": "Root mean square (RMS) of residuals",
-                },
-            ),
-            "error_factor": (
-                ("iteration"),
-                [proc_d["errfac"]],
-                {"units": "unitless", "long_name": "Error factor value"},
-            ),
-            "delta_enu": (
-                ("transponder", "coords"),
-                proc_d["enu"],
-                {
-                    "units": "meters",
-                    "long_name": "Transponder ENU differences from apriori",
-                },
-            ),
-            "sigma_enu": (
-                ("transponder", "coords"),
-                proc_d["sig_enu"],
-                {
-                    "units": "meters",
-                    "long_name": "Transponder ENU differences standard deviation",
-                },
-            ),
-            "transponders_lla": (
-                ("transponder", "coords"),
-                proc_d["transponders_lla"],
-                {"units": "degrees", "long_name": "Transponder Geodetic location"},
-            ),
-        },
-        coords={
-            "transponder": (
-                ("transponder"),
-                transponders_ids,
-                {"long_name": "Transponder id"},
-            ),
-            "coords": (("coords"), ["x", "y", "z"], {"long_name": "Coordinate label"}),
-            "iteration": (("iteration"), [n_iter], {"long_name": "Iteration number"}),
-        },
-    )
-    return ds
-
-
 def main(
     config: Configuration,
     all_files_dict: Dict[str, Any],
@@ -949,3 +512,37 @@ def main(
         # Set the median time to the process dataset
         process_ds.attrs["session_time"] = median_time_str
     return all_epochs, process_data, resdf, dist_center_df, process_ds, outliers_df
+
+
+def run_gnatss(
+    config_yaml: str,
+    distance_limit: float,
+    residual_limit: float,
+    outlier_threshold: float = constants.DATA_OUTLIER_THRESHOLD,
+    from_cache: bool = False,
+    return_raw: bool = False,
+    remove_outliers: bool = False,
+):
+    typer.echo("Starting GNATSS ...")
+    if from_cache:
+        typer.echo(
+            "Flag `from_cache` is set. Skipping data loading and processing for posfilter step."
+        )
+    config, data_dict = data_loading(
+        config_yaml,
+        distance_limit=distance_limit,
+        residual_limit=residual_limit,
+        outlier_threshold=outlier_threshold,
+        from_cache=from_cache,
+        remove_outliers=remove_outliers,
+    )
+    config, data_dict = preprocess_data(config, data_dict)
+
+    if config.posfilter and not from_cache:
+        data_dict = run_posfilter(config, data_dict)
+
+    if config.solver:
+        data_dict = run_solver(config, data_dict, return_raw=return_raw)
+
+    typer.echo("Finished GNATSS.")
+    return config, data_dict

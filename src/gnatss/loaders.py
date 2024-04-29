@@ -7,7 +7,6 @@ import pandas as pd
 import yaml
 from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
-from pydantic import validate_call
 
 from . import constants
 from .configs.io import CSVOutput
@@ -239,78 +238,109 @@ def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], 
     return None
 
 
+def _round_time_precision(gps_data, time_round):
+    # TODO: Find a way to determine this precision dynamically?
+    if isinstance(time_round, int) and time_round > 0:
+        gps_data.loc[:, constants.GPS_TIME] = gps_data[constants.GPS_TIME].round(
+            time_round
+        )
+    return gps_data
+
+
+def load_gps_positions(
+    files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
+):
+    """
+    Loads gps positions into a pandas dataframe from a list of files.
+    Usually named `GPS_POS_FREED`.
+
+    Parameters
+    ----------
+    files : list of str
+        The list of path string to files to load
+    time_round : int
+        The precision value to round the time values
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing all of the gps positions data.
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Geocentric x in meters
+        3: Geocentric y in meters
+        4: Geocentric z in meters
+        5 - 7: Standard deviations std_x, std_y, std_z
+    """
+    columns = [
+        constants.GPS_TIME,
+        "dtype",
+        *constants.ANT_GPS_GEOCENTRIC,
+        *constants.ANT_GPS_GEOCENTRIC_STD,
+    ]
+    gnss_positions = [
+        pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
+    ]
+    all_gps_positions = pd.concat(gnss_positions).reset_index(drop=True)
+    all_gps_positions = all_gps_positions.drop(columns="dtype")
+    # Round to match the delays precision
+    return _round_time_precision(all_gps_positions, time_round)
+
+
 def load_gps_solutions(
     files: List[str],
     time_round: int = constants.DELAY_TIME_PRECISION,
-    is_gnss_data: bool = False,
+    from_legacy: bool = False,
 ) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.
 
     Parameters
     ----------
-    files : list
+    files : list of str
         The list of path string to files to load
     time_round : int
         The precision value to round the time values
-    is_gnss_data : bool
-        If True, read according to L1 gnss data (Usually named `GPS_POS_FREED`).
 
     Returns
     -------
     pd.DataFrame
         Pandas DataFrame containing all of the gps solutions data.
-        1) if is_gnss_data is True
-            The numbers are column number.
-            1: Time unit seconds in J2000 epoch
-            2: Geocentric x in meters
-            3: Geocentric y in meters
-            4: Geocentric z in meters
-            5 - 7: Covariance matrix (3x3) Diagonals xx, yy, zz
-
-        2) if is_novatel_l1_data is False
-            The numbers are column number.
-            1: Time unit seconds in J2000 epoch
-            2: Geocentric x in meters
-            3: Geocentric y in meters
-            4: Geocentric z in meters
-            5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Geocentric x in meters
+        3: Geocentric y in meters
+        4: Geocentric z in meters
+        5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
     """
-    if is_gnss_data:
-        columns = [
-            constants.GPS_TIME,
-            "dtype",
-            *constants.ANT_GPS_GEOCENTRIC,
-            *constants.ANT_GPS_GEOCENTRIC_STD,
-        ]
-        gps_solutions = [
-            pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
-        ]
-        all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
-        all_gps_solutions = all_gps_solutions.drop(columns="dtype")
-        # Do we need to sort the gps solutions?
-
-    else:
+    if from_legacy:
         columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
         gps_solutions = [
             pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
         ]
         all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
 
-    # Round to match the delays precision
-    # TODO: Find a way to determine this precision dynamically?
-    if (
-        isinstance(time_round, int) and time_round > 0
-    ):  # TODO Should skip this step for novatel l1 data?
-        all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
-            constants.GPS_TIME
-        ].round(time_round)
+        # Round to match the delays precision
+        return _round_time_precision(all_gps_solutions, time_round)
+    else:
+        # The new format of the GPS solutions
+        # the column names are included in csv file(s)
+        gps_solutions = [pd.read_csv(i) for i in files]
+        all_gps_positions = pd.concat(gps_solutions).reset_index(drop=True)
 
-    return all_gps_solutions
+        if any(len(sol.columns) <= 1 for sol in gps_solutions):
+            raise ValueError(
+                "Legacy GPS solutions file detected but not in legacy mode"
+            )
+
+        return all_gps_positions
 
 
 def load_deletions(
-    file_paths: List[str], config: Configuration, time_scale="tt"
+    config: Configuration,
+    file_paths: Optional[List[str]] = None,
+    time_scale="tt",
+    remove_outliers: bool = False,
 ) -> pd.DataFrame:
     """
     Loads the raw deletion text file into a pandas dataframe
@@ -370,7 +400,7 @@ def load_deletions(
     # Try to find outliers.csv file if there is one run already
     # this currently assumes that the file is in the output directory
     outliers_csv = output_path / CSVOutput.outliers.value
-    if outliers_csv.exists():
+    if outliers_csv.exists() and remove_outliers:
         import typer
 
         typer.echo(f"Found {str(outliers_csv.absolute())} file. Including into cuts...")
@@ -457,8 +487,45 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
     return qc_df
 
 
-@validate_call
-def read_novatel_L1_data_files(
+def load_novatel(data_files: List[str]) -> pd.DataFrame:
+    """
+    Read from Novatel L1 data files and return its dataframe representation.
+    Link to data format specifications:
+    INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
+
+    Parameters
+    ----------
+    data_files: list pf str
+        Paths to the Novatel L1 data files to be loaded
+
+    Returns
+    -------
+    pd.DataFrame
+        Parsed Novatel L1 data in a pandas dataframe
+    """  # noqa
+    return _read_novatel_L1_data_files(data_files, data_format="INSPVAA")
+
+
+def load_novatel_std(data_files: List[str]) -> pd.DataFrame:
+    """
+    Read from Novatel L1 data files and return its dataframe representation.
+    Link to data format specifications:
+    INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
+
+    Parameters
+    ----------
+    data_files: list pf str
+        Paths to the Novatel L1 data files to be loaded
+
+    Returns
+    -------
+    pd.DataFrame
+        Parsed Novatel L1 data in a pandas dataframe
+    """  # noqa
+    return _read_novatel_L1_data_files(data_files, data_format="INSSTDEVA")
+
+
+def _read_novatel_L1_data_files(
     data_files: list[str], data_format: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
 ) -> pd.DataFrame:
     """

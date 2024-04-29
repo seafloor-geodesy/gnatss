@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation
 from .. import constants
 from ..configs.posfilter import AtdOffset
 from ..configs.solver import ArrayCenter
-from .kalman import run_filter_simulation
+from ..ops.kalman import run_filter_simulation
 
 
 def spline_interpolate(
