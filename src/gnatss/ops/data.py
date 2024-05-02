@@ -360,7 +360,7 @@ def preprocess_tt(travel_times: pd.DataFrame) -> pd.DataFrame:
 def standardize_data(
     pos_freed_trans_twtt: pd.DataFrame, data_precision: int = 8
 ) -> pd.DataFrame:
-    is_transmit = pos_freed_trans_twtt[constants.garpos.ST].isna()
+    is_transmit = pos_freed_trans_twtt[constants.DATA_SPEC.tx_time].isna()
 
     # Standardize receive data
     receive_df = pos_freed_trans_twtt[~is_transmit]
@@ -369,11 +369,16 @@ def standardize_data(
     # Standardize transmit data
     transmit_df = pos_freed_trans_twtt[is_transmit]
     transmit_df = transmit_df.drop(
-        [constants.garpos.ST, constants.garpos.TT, constants.garpos.MT], axis=1
+        [
+            constants.DATA_SPEC.tx_time,
+            constants.DATA_SPEC.travel_time,
+            constants.DATA_SPEC.transponder_id,
+        ],
+        axis=1,
     )
     transmit_df.columns = _get_standard_columns(transmit_df.columns, "transmit")
 
-    return pd.merge(receive_df, transmit_df, on=constants.garpos.ST).round(
+    return pd.merge(receive_df, transmit_df, on=constants.DATA_SPEC.tx_time).round(
         data_precision
     )
 

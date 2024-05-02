@@ -2,10 +2,7 @@
 
 Module for storing constants used in package
 """
-from ..dataspec import DataSpec
-from . import garpos
-
-__all__ = ["garpos"]
+from .dataspec import DataSpec
 
 # Config constants
 DEFAULT_CONFIG_PROCS = ("main", "solver", "posfilter")
