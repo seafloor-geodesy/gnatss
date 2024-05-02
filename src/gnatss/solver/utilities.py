@@ -26,6 +26,7 @@ def _print_detected_outliers(
     message = f"There are {n_outliers} outliers found during this run.\n"
     if n_outliers > 0:
         message += f"This is {percent_outliers}% of the total number of data points.\n"
+        # TODO: Update this message to include --remove-outliers flag
         message += "Please re-run the program again to remove these outliers.\n"
         if percent_outliers > outlier_threshold:
             raise RuntimeError(
