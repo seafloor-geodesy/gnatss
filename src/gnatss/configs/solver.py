@@ -186,3 +186,6 @@ class Solver(BaseModel):
     travel_times_correction: float = Field(
         0.0, description="Correction to times in travel times (secs.)"
     )
+    twtt_model: Literal["simple_twtt"] = Field(
+        "simple_twtt", description="Travel time model to use."
+    )
