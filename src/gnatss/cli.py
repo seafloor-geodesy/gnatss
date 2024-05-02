@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from . import package_name
+from . import __version__, package_name
 from .configs.solver import Solver
 from .main import run_gnatss
 
@@ -14,8 +14,22 @@ OVERRIDE_MESSAGE = "Note that this will override the value set as configuration.
 app = typer.Typer(name=package_name, pretty_exceptions_show_locals=False)
 
 
+def version_callback(value: bool):
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
 @app.callback()
-def callback():
+def callback(
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        help="Show version and exit.",
+        callback=version_callback,
+        is_eager=True,
+    )
+):
     """
     GNSS-A Processing in Python
     """
