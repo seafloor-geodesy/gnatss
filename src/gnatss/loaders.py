@@ -400,7 +400,10 @@ def load_deletions(
     # Try to find outliers.csv file if there is one run already
     # this currently assumes that the file is in the output directory
     outliers_csv = output_path / CSVOutput.outliers.value
-    if outliers_csv.exists() and remove_outliers:
+    if remove_outliers:
+        if not outliers_csv.exists():
+            raise FileNotFoundError("Outliers file not found.")
+
         import typer
 
         typer.echo(f"Found {str(outliers_csv.absolute())} file. Including into cuts...")

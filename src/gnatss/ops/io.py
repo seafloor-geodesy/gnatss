@@ -59,7 +59,7 @@ def to_file(
         )
 
     if isinstance(data, pd.DataFrame):
-        if len(data) == 0:
+        if data.empty:
             typer.echo(no_data_message)
             return
         export_kwargs = {"index": False}
@@ -186,16 +186,31 @@ def load_config(
 
 
 def load_datasets(
-    config: Configuration, from_cache: bool = False, remove_outliers: bool = False
+    config: Configuration,
+    from_cache: bool = False,
+    remove_outliers: bool = False,
+    skip_posfilter: bool = False,
+    skip_solver: bool = False,
 ):
-    all_files_dict = gather_files_all_procs(
-        config, mode="object", from_cache=from_cache
-    )
+    all_files_dict = {}
+    mode = "object"
+
+    # Gather main
+    all_files_dict.update(gather_files(config, proc="main", mode=mode))
+
+    # Gather posfilter
+    if not skip_posfilter:
+        all_files_dict.update(gather_files(config, proc="posfilter", mode=mode))
+
+    # Gather solver
+    if not skip_solver:
+        all_files_dict.update(gather_files(config, proc="solver", mode=mode))
+
     data_dict = {}
-    gps_solution_key = "gps_solution"
     if from_cache:
         # Special case for gps_solution
         typer.echo("Loading gps solution from cache ...")
+        gps_solution_key = "gps_solution"
         file_path = config.output.path + CSVOutput.gps_solution
         gps_solution = _load_csv_data(config, file_path)
         data_dict[gps_solution_key] = gps_solution
@@ -204,6 +219,8 @@ def load_datasets(
         # from configuration
         if gps_solution_key in all_files_dict:
             all_files_dict.pop(gps_solution_key)
+
+        # TODO: Skip travel times if gps_solution is loaded from cache
 
     deletions_key = "deletions"
     if deletions_key not in all_files_dict:
