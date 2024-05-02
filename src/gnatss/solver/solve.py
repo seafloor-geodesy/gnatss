@@ -1,9 +1,11 @@
-from typing import Any, Tuple
+from typing import Any, Literal, Tuple
 
 import numba
 import numpy as np
 from nptyping import Float64, NDArray, Shape
 from numba.typed import List as NumbaList
+
+from .methods import simple_twtt
 
 DEFAULT_VECTOR_NORM = np.array([2.0, 0.0, 0.0])
 
@@ -283,17 +285,15 @@ def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
     return input_vector / vector_norm
 
 
-@numba.njit(cache=True)
+@numba.njit()
 def calc_twtt_model(
+    model: Literal["simple_twtt"],
     transmit_vectors: NDArray[Shape["*, 3"], Float64],
     reply_vectors: NDArray[Shape["*, 3"], Float64],
     transponders_mean_sv: NDArray[Shape["*"], Float64],
 ) -> NDArray[Shape["*"], Float64]:
     """
-    Calculate the Simple Modeled TWTT (Two way travel time) in seconds
-
-    .. math::
-        \\frac{\\hat{D_s} + \\hat{D_r}}{c}
+    Calculate the Modeled TWTT (Two way travel time) in seconds
 
     Parameters
     ----------
@@ -310,13 +310,8 @@ def calc_twtt_model(
         The modeled two way travel times in seconds
 
     """
-    # Calculate distances in meters
-    transmit_distance = np.array(
-        [np.linalg.norm(vector) for vector in transmit_vectors]
-    )
-    reply_distance = np.array([np.linalg.norm(vector) for vector in reply_vectors])
-
-    return (transmit_distance + reply_distance) / transponders_mean_sv
+    if model == "simple_twtt":
+        return simple_twtt(transmit_vectors, reply_vectors, transponders_mean_sv)
 
 
 @numba.njit(cache=True)
@@ -355,6 +350,7 @@ def solve_transponder_locations(
     transponders_delay: NDArray,
     transponders_mean_sv: NDArray,
     travel_times_variance: NDArray,
+    twtt_model: Literal["simple_twtt"] = "simple_twtt",
 ) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Solve transponder locations by performing basic GNSS-Acoustic
@@ -399,7 +395,10 @@ def solve_transponder_locations(
     )
 
     # Calculate Modeled TWTT (Two way travel time) in seconds
-    twtt_model = calc_twtt_model(transmit_vectors, reply_vectors, transponders_mean_sv)
+    twtt_model = calc_twtt_model(
+        twtt_model, transmit_vectors, reply_vectors, transponders_mean_sv
+    )
+    # twtt_model = simple_twtt(transmit_vectors, reply_vectors, transponders_mean_sv)
 
     # Calculate the travel time residual
     tt_residual = calc_tt_residual(observed_delays, transponders_delay, twtt_model)
@@ -451,6 +450,7 @@ def perform_solve(
     transponders_xyz: NDArray[Shape["*, 3"], Float64],
     transponders_delay: NDArray[Shape["*"], Float64],
     travel_times_variance: float,
+    twtt_model: Literal["simple_twtt"] = "simple_twtt",
 ):
     """
     Perform the solve for the given data inputs and transponder information.
@@ -486,6 +486,7 @@ def perform_solve(
             transponders_delay,
             transponders_mean_sv,
             travel_times_variance,
+            twtt_model=twtt_model,
         )
         all_results.append(results)
     return all_results

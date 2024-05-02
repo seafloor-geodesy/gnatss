@@ -1,5 +1,6 @@
 import warnings
-from typing import Any, Dict, List, Tuple
+from enum import StrEnum
+from typing import Any, Dict, List, Literal, Tuple
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,10 @@ from ..ops.validate import check_solutions
 from ..utilities.geo import _get_rotation_matrix
 from ..utilities.time import AstroTime
 from .solve import perform_solve
+
+
+class TWTTModel(StrEnum):
+    simple_twtt = "simple_twtt"
 
 
 def _print_detected_outliers(
@@ -363,7 +368,10 @@ def extract_distance_from_center(
 
 
 def prepare_and_solve(
-    all_observations: pd.DataFrame, config: Configuration, max_iter: int = 6
+    all_observations: pd.DataFrame,
+    config: Configuration,
+    max_iter: int = 6,
+    twtt_model: Literal["simple_twtt"] = "simple_twtt",
 ) -> Tuple[Dict[int, Any], bool]:
     """
     Prepare data inputs and perform solving algorithm
@@ -432,6 +440,7 @@ def prepare_and_solve(
             transponders_xyz,
             transponders_delay,
             travel_times_variance,
+            twtt_model,
         )
 
         is_converged, transponders_xyz, data = check_solutions(
