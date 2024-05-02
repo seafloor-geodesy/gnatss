@@ -1,7 +1,7 @@
 import typer
 
 from .. import constants
-from ..ops.data import standardize_data
+from ..ops.data import ensure_monotonic_increasing, standardize_data
 from .posfilter import kalman_filtering, rotation, spline_interpolate
 from .utilities import export_gps_solution, filter_columns
 
@@ -29,6 +29,9 @@ def run_posfilter(config, data_dict):
         f"Standardizing data to specification version {constants.DATA_SPEC.version} ..."
     )
     all_observations = standardize_data(pos_freed_trans_twtt)
+
+    # Ensure the data is sorted properly
+    all_observations = ensure_monotonic_increasing(all_observations)
 
     # This will overwrite the gps_solution file
     # if also set on the solver input

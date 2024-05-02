@@ -449,3 +449,15 @@ def compute_harmonic_mean(
             typer.echo(transponder)
         typer.echo("Finished computing harmonic mean")
     return config
+
+
+def ensure_monotonic_increasing(all_observations: pd.DataFrame) -> pd.DataFrame:
+    # In case things are not sorted, let's sort on the fly
+    # This is important for the solver to work properly
+    # as it assumes the data is sorted by receive time and that
+    # the data is monotonic increasing
+    if not all_observations[constants.DATA_SPEC.rx_time].is_monotonic_increasing:
+        all_observations = all_observations.sort_values(
+            by=constants.DATA_SPEC.rx_time
+        ).reset_index(drop=True)
+    return all_observations

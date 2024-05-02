@@ -402,7 +402,13 @@ def load_deletions(
     outliers_csv = output_path / CSVOutput.outliers.value
     if remove_outliers:
         if not outliers_csv.exists():
-            raise FileNotFoundError("Outliers file not found.")
+            raise FileNotFoundError(
+                (
+                    "Outliers file not found. "
+                    "Please remove `--remove_outliers` flag "
+                    "and rerun the solver."
+                )
+            )
 
         import typer
 
