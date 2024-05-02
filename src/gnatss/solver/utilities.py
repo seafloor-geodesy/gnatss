@@ -1,5 +1,4 @@
 import warnings
-from enum import StrEnum
 from typing import Any, Dict, List, Literal, Tuple
 
 import numpy as np
@@ -16,10 +15,6 @@ from ..ops.validate import check_solutions
 from ..utilities.geo import _get_rotation_matrix
 from ..utilities.time import AstroTime
 from .solve import perform_solve
-
-
-class TWTTModel(StrEnum):
-    simple_twtt = "simple_twtt"
 
 
 def _print_detected_outliers(
