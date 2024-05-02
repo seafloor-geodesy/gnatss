@@ -42,8 +42,8 @@ class GPSSolutionInput(InputData):
 
 
 class SolverInputs(BaseModel):
-    sound_speed: InputData = Field(
-        ..., description="Sound speed data path specification"
+    sound_speed: Optional[InputData] = Field(
+        None, description="Sound speed data path specification"
     )
     # NOTE: 3/3/2023 - These are required for now and will change in the future.
     travel_times: Optional[InputData] = Field(

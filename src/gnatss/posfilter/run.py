@@ -30,6 +30,11 @@ def run_posfilter(config, data_dict):
     )
     all_observations = standardize_data(pos_freed_trans_twtt)
 
+    # Sort by receive time
+    all_observations = all_observations.sort_values(
+        by=constants.DATA_SPEC.rx_time
+    ).reset_index(drop=True)
+
     # This will overwrite the gps_solution file
     # if also set on the solver input
     data_dict.update({"gps_solution": all_observations})

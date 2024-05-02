@@ -107,9 +107,6 @@ def run(
         skip_posfilter = not posfilter
         skip_solver = not solver
 
-    typer.echo(f"skip_posfilter: {skip_posfilter}")
-    typer.echo(f"skip_solver: {skip_solver}")
-
     run_gnatss(
         config_yaml=config_yaml,
         distance_limit=distance_limit,

@@ -6,7 +6,7 @@ import typer
 import xarray as xr
 
 from .. import constants
-from ..configs.io import CSVOutput
+from ..configs.io import CSVOutput, OutputPath
 from ..configs.main import Configuration
 from ..loaders import (
     load_configuration,
@@ -25,6 +25,14 @@ def _to_file_fs(fs, file_path: str, export_func, **kwargs):
     with fs.open(file_path, "wb") as f:
         export_func(f, **kwargs)
         typer.echo(f"Successfully exported data to {file_path}")
+
+
+def _check_and_delete_outliers_file(output: OutputPath):
+    file_path = output.path + CSVOutput.outliers
+    if output.fs.exists(file_path):
+        # Delete previous outliers file if it exists
+        # this is mostly for outliers
+        output.fs.rm(file_path)
 
 
 def to_file(
@@ -61,6 +69,10 @@ def to_file(
     if isinstance(data, pd.DataFrame):
         if data.empty:
             typer.echo(no_data_message)
+            # For outliers, we need to delete the file if it exists
+            # when there is no data
+            if key == "outliers":
+                _check_and_delete_outliers_file(config.output)
             return
         export_kwargs = {"index": False}
     elif isinstance(data, xr.Dataset):

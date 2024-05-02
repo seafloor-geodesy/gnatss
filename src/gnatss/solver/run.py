@@ -1,3 +1,4 @@
+from .. import constants
 from ..ops.validate import check_sig3d
 from .utilities import (
     _print_detected_outliers,
@@ -16,6 +17,16 @@ def run_solver(config, data_dict, return_raw: bool = False):
     all_observations = data_dict.get("gps_solution")
     if all_observations is None:
         raise ValueError("No GNSS-A L2 data found. Unable to perform solver.")
+
+    # In case things are not sorted, let's sort on the fly
+    # This is important for the solver to work properly
+    # as it assumes the data is sorted by receive time and that
+    # the data is monotonic increasing
+    if not all_observations[constants.DATA_SPEC.rx_time].is_monotonic_increasing:
+        all_observations = all_observations.sort_values(
+            by=constants.DATA_SPEC.rx_time
+        ).reset_index(drop=True)
+
     all_observations = filter_deletions_and_qc(all_observations, data_dict)
     all_observations = check_sig3d(all_observations, config.solver.gps_sigma_limit)
     all_observations, dist_center_df = filter_by_distance_limit(
