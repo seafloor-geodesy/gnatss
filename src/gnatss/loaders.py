@@ -543,6 +543,8 @@ def _read_novatel_L1_data_files(
     INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
     INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
 
+    A small percent of rows in the L1 data files do not follow the INSPVAA and INSSTDEVA format, and are not included in the dataframe.
+
     Parameters
     ----------
     data_files: list pf str

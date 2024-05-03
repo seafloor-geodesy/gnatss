@@ -1,22 +1,52 @@
 site_id: NCL1
+campaign: Cascadia
+time_origin: 2022-09-28 00:00:00
+array_center:
+  lat: 45.3023
+  lon: -124.9656
+transponders:
+  - lat: 45.302064471
+    lon: -124.978181346
+    height: -1176.5866
+    internal_delay: 0.200000
+    sv_mean: 1481.551
+  - lat: 45.295207747
+    lon: -124.958752845
+    height: -1146.5881
+    internal_delay: 0.320000
+    sv_mean: 1481.521
+  - lat: 45.309643593
+    lon: -124.959348875
+    height: -1133.7305
+    internal_delay: 0.440000
+    sv_mean: 1481.509
+travel_times_variance: 1e-10
+travel_times_correction: 0.0
+transducer_delay_time: 0.0
 
+# Main input files
+input_files:
+  travel_times:
+      path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
+
+# Posfilter configuration
+posfilter:
+  export:
+    full: false
+  atd_offsets:
+    forward: 0.0053
+    rightward: 0
+    downward: 0.92813
+  input_files:
+    novatel:
+      path: ./tests/data/2022/NCL1/NOV/NCL1_INSPVAA.dat
+    novatel_std:
+      path: ./tests/data/2022/NCL1/NOV/NCL1_INSSTDEVA.dat
+    gps_positions:
+      path: ./tests/data/2022/NCL1/**/GPS_PPP/GPS_POS_FREED
+
+# Solver configuration
 solver:
-  transponders:
-    - lat: 45.302064471
-      lon: -124.978181346
-      height: -1176.5866
-      internal_delay: 0.200000
-      sv_mean: 1481.551
-    - lat: 45.295207747
-      lon: -124.958752845
-      height: -1146.5881
-      internal_delay: 0.320000
-      sv_mean: 1481.521
-    - lat: 45.309643593
-      lon: -124.959348875
-      height: -1133.7305
-      internal_delay: 0.440000
-      sv_mean: 1481.509
   reference_ellipsoid:
     semi_major_axis: 6378137.000
     reverse_flattening: 298.257222101
@@ -24,36 +54,15 @@ solver:
   std_dev: true
   geoid_undulation: -26.59
   bisection_tolerance: 1e-10
-  array_center:
-    lat: 45.3023
-    lon: -124.9656
-  travel_times_variance: 1e-10
-  travel_times_correction: 0.0
-  transducer_delay_time: 0.0
   harmonic_mean_start_depth: -4.0
   input_files:
     sound_speed:
       path: ./tests/data/2022/NCL1/ctd/CTD_NCL1_Ch_Mi
-    travel_times:
-      path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
-    gps_solution:
-      path: ./tests/data/2022/NCL1/**/posfilter/POS_FREED_TRANS_TWTT
-    # deletions and quality_controls files are optional
-    # users should be able to also add their points in ./output/deletions.csv
-    # quality_controls:
-    #   path: ./tests/data/2022/NCL1/quality_control.csv
-    # deletions:
-    #   path: ./tests/data/2022/NCL1/deletns.dat
+    # deletions: # Path to deletns.dat deletions file used by Chadwell code as well
+    #   path: ../tests/data/2022/NCL1/deletns.dat
+    # gps_solution:
+    #   path: ./test-output/gps_solution.csv
 
-posfilter:
-  atd_offsets:
-    forward: 0.0053
-    rightward: 0
-    downward: 0.92813
-  input_files:
-    roll_pitch_heading:
-      path: ./tests/data/2022/NCL1/**/WG_*/RPH_TWTT
-
-
+# Output configuration
 output:
-  path: ./tests/data/output/
+  path: ./test-output/

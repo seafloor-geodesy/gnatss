@@ -3,20 +3,23 @@ from typing import Any, Dict, List
 import pandas as pd
 import pytest
 from pandas import DataFrame, concat, read_csv
-from pandas.api.types import is_float_dtype
+from pandas.api.types import is_float_dtype, is_integer_dtype, is_object_dtype
 
 from gnatss.configs.io import CSVOutput, InputData
 from gnatss.configs.main import Configuration
+from gnatss.configs.solver import GPSSolutionInput
 from gnatss.constants import (
     DEL_ENDTIME,
     DEL_STARTTIME,
     GPS_COV,
     GPS_GEOCENTRIC,
     GPS_TIME,
+    L1_DATA_FORMAT,
     RPH_LOCAL_TANGENTS,
     RPH_TIME,
     SP_DEPTH,
     SP_SOUND_SPEED,
+    TIME_J2000,
     TT_DATE,
     TT_TIME,
 )
@@ -25,16 +28,18 @@ from gnatss.loaders import (
     load_configuration,
     load_deletions,
     load_gps_solutions,
+    load_novatel,
+    load_novatel_std,
     load_roll_pitch_heading,
     load_sound_speed,
     load_travel_times,
 )
-from gnatss.main import gather_files_all_procs
+from gnatss.ops.io import gather_files_all_procs
 from tests import TEST_DATA_FOLDER
 
 
 @pytest.fixture
-def configuration() -> Dict[str, Any]:
+def configuration() -> Configuration:
     return load_configuration(TEST_DATA_FOLDER / "config.yaml")
 
 
@@ -47,8 +52,27 @@ def all_files_dict() -> Dict[str, Any]:
 @pytest.fixture
 def all_files_dict_j2k_travel_times() -> Dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    config.solver.input_files.travel_times.path = (
-        "./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k"
+    config.input_files.travel_times = InputData(
+        path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k"
+    )
+    return gather_files_all_procs(config)
+
+
+@pytest.fixture
+def all_files_dict_legacy_gps_solutions() -> Dict[str, Any]:
+    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
+    config.solver.input_files.gps_solution = GPSSolutionInput(
+        path="./tests/data/2022/NCL1/**/posfilter/POS_FREED_TRANS_TWTT",
+        legacy=True,
+    )
+    return gather_files_all_procs(config)
+
+
+@pytest.fixture
+def all_files_dict_roll_pitch_heading() -> Dict[str, Any]:
+    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
+    config.posfilter.input_files.roll_pitch_heading = InputData(
+        path="./tests/data/2022/NCL1/**/WG_*/RPH_TWTT",
     )
     return gather_files_all_procs(config)
 
@@ -126,10 +150,7 @@ def _load_travel_times_pass_testcase_helper(
     )
 
 
-@pytest.mark.parametrize(
-    "is_j2k, time_scale",
-    [(True, "tt"), (False, "tt")],
-)
+@pytest.mark.parametrize("is_j2k, time_scale", [(True, "tt"), (False, "tt")])
 def test_load_j2k_travel_times(
     transponder_ids, all_files_dict_j2k_travel_times, is_j2k, time_scale
 ):
@@ -184,9 +205,11 @@ def test_load_non_j2k_travel_times(transponder_ids, all_files_dict, is_j2k, time
     "time_round",
     [3, 6],
 )
-def test_load_gps_solutions(all_files_dict, time_round):
+def test_legacy_load_gps_solutions(all_files_dict_legacy_gps_solutions, time_round):
     loaded_gps_solutions = load_gps_solutions(
-        all_files_dict["gps_solution"], time_round
+        all_files_dict_legacy_gps_solutions["gps_solution"],
+        time_round,
+        from_legacy=True,
     )
     expected_columns = [GPS_TIME, *GPS_GEOCENTRIC, *GPS_COV]
 
@@ -200,7 +223,7 @@ def test_load_gps_solutions(all_files_dict, time_round):
     raw_gps_solutions = pd.concat(
         [
             read_csv(i, sep=r"\s+", header=None, names=expected_columns)
-            for i in all_files_dict["gps_solution"]
+            for i in all_files_dict_legacy_gps_solutions["gps_solution"]
         ]
     ).reset_index(drop=True)
 
@@ -212,10 +235,12 @@ def test_load_gps_solutions(all_files_dict, time_round):
     assert loaded_gps_solutions[GPS_TIME].equals(raw_gps_solutions[GPS_TIME])
 
 
-def test_load_roll_pitch_heading(all_files_dict):
+def test_load_roll_pitch_heading(all_files_dict_roll_pitch_heading):
     # TODO: Add test for load_roll_pitch_heading data with Covariance rows
 
-    loaded_rph_solutions = load_roll_pitch_heading(all_files_dict["roll_pitch_heading"])
+    loaded_rph_solutions = load_roll_pitch_heading(
+        all_files_dict_roll_pitch_heading["roll_pitch_heading"]
+    )
     expected_columns = [RPH_TIME, *RPH_LOCAL_TANGENTS]
 
     assert isinstance(loaded_rph_solutions, DataFrame)
@@ -228,7 +253,7 @@ def test_load_roll_pitch_heading(all_files_dict):
     raw_rph_solutions = pd.concat(
         [
             read_csv(i, sep=r"\s+", header=None, names=expected_columns)
-            for i in all_files_dict["roll_pitch_heading"]
+            for i in all_files_dict_roll_pitch_heading["roll_pitch_heading"]
         ]
     ).reset_index(drop=True)
 
@@ -306,7 +331,9 @@ def test_load_deletions_outliers_and_deletions(
     assert outliers_file.is_file()
     assert deletions_file.is_file()
 
-    loaded_deletions_df = load_deletions(None, configuration, "tt")
+    loaded_deletions_df = load_deletions(
+        configuration, None, "tt", remove_outliers=True
+    )
 
     # Assert concatenation of outliers and deletions df
     assert loaded_deletions_df.shape[0] == outliers_rows + deletions_rows
@@ -334,7 +361,9 @@ def test_load_deletions_outliers_only_case(
     assert outliers_file.is_file()
     assert not deletions_file.is_file()
 
-    loaded_deletions_df = load_deletions(None, configuration, "tt")
+    loaded_deletions_df = load_deletions(
+        configuration, None, "tt", remove_outliers=True
+    )
 
     assert loaded_deletions_df.shape[0] == outliers_rows
     assert loaded_deletions_df.columns.tolist() == [DEL_STARTTIME, DEL_ENDTIME]
@@ -376,7 +405,9 @@ def test_load_deletions_outliers_and_deletions_from_config(
         assert Path(config_deletions_file).is_file()
     assert not deletions_file.is_file()
 
-    loaded_deletions_df = load_deletions(config_deletions_files, configuration, "tt")
+    loaded_deletions_df = load_deletions(
+        configuration, config_deletions_files, "tt", remove_outliers=True
+    )
 
     # Assert concatenation of outliers and deletions df
     assert loaded_deletions_df.shape[0] == outliers_rows + config_deletions_rows
@@ -391,3 +422,89 @@ def test_load_deletions_outliers_and_deletions_from_config(
     assert deletions_file.is_file()
     for config_deletions_file in config_deletions_files:
         assert Path(config_deletions_file).is_file()
+
+
+def test_load_novatel(
+    all_files_dict,
+):
+    # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
+    # There is an extra generated float column "time".
+    expected_columns = list(L1_DATA_FORMAT["INSPVAA"]["data_fields"]) + [TIME_J2000]
+    expected_column_dtypes = list(L1_DATA_FORMAT["INSPVAA"]["data_fields_dtypes"]) + [
+        "float"
+    ]
+
+    data_files = all_files_dict["novatel"]
+
+    l1_df = load_novatel(data_files)
+    l1_df_columns = l1_df.columns.tolist()
+    l1_df_dtypes = l1_df.dtypes.tolist()
+
+    assert l1_df_columns == expected_columns
+
+    for expected_column_dtype, column_dtype in zip(
+        expected_column_dtypes, l1_df_dtypes
+    ):
+        if expected_column_dtype == "int":
+            assert is_integer_dtype(column_dtype)
+        elif expected_column_dtype == "float":
+            assert is_float_dtype(column_dtype)
+        else:
+            # Only integer and float dtypes should be present
+            assert False
+
+    # TODO: Confirm appropriate missing rows threshold
+    missing_rows_threshold_percent = 1
+    data_files_rows = 0
+    for data_file in data_files:
+        with open(data_file, "r") as f:
+            data_files_rows += len(f.read().split("\n"))
+    minimum_expected_rows = int(
+        ((100 - missing_rows_threshold_percent) * data_files_rows) / 100
+    )
+    assert l1_df.shape[0] >= minimum_expected_rows
+
+
+def test_load_novatel_std(
+    all_files_dict,
+):
+    # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
+    # There is an extra generated float column "TIME_J2000".
+    expected_columns = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields"]) + [TIME_J2000]
+    expected_column_dtypes = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields_dtypes"]) + [
+        "float"
+    ]
+
+    data_files = all_files_dict["novatel_std"]
+
+    l1_df = load_novatel_std(data_files)
+    l1_df_columns = l1_df.columns.tolist()
+    l1_df_dtypes = l1_df.dtypes.tolist()
+
+    print(f"{l1_df_columns=}\n{expected_columns=}")
+
+    assert l1_df_columns == expected_columns
+
+    for expected_column_dtype, column_dtype in zip(
+        expected_column_dtypes, l1_df_dtypes
+    ):
+        if expected_column_dtype == "int":
+            assert is_integer_dtype(column_dtype)
+        elif expected_column_dtype == "float":
+            assert is_float_dtype(column_dtype)
+        elif expected_column_dtype == "object":
+            assert is_object_dtype(column_dtype)
+        else:
+            # Only integer, float, and object dtypes should be present
+            assert False
+
+    # TODO: Confirm appropriate missing rows threshold
+    missing_rows_threshold_percent = 1
+    data_files_rows = 0
+    for data_file in data_files:
+        with open(data_file, "r") as f:
+            data_files_rows += len(f.read().split("\n"))
+    minimum_expected_rows = int(
+        ((100 - missing_rows_threshold_percent) * data_files_rows) / 100
+    )
+    assert l1_df.shape[0] >= minimum_expected_rows
