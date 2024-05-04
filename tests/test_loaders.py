@@ -28,25 +28,12 @@ from gnatss.loaders import (
     load_configuration,
     load_deletions,
     load_gps_solutions,
-    load_novatel,
-    load_novatel_std,
     load_roll_pitch_heading,
     load_sound_speed,
     load_travel_times,
 )
 from gnatss.ops.io import gather_files_all_procs
 from tests import TEST_DATA_FOLDER
-
-
-@pytest.fixture
-def configuration() -> Configuration:
-    return load_configuration(TEST_DATA_FOLDER / "config.yaml")
-
-
-@pytest.fixture
-def all_files_dict() -> Dict[str, Any]:
-    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    return gather_files_all_procs(config)
 
 
 @pytest.fixture
@@ -424,9 +411,7 @@ def test_load_deletions_outliers_and_deletions_from_config(
         assert Path(config_deletions_file).is_file()
 
 
-def test_load_novatel(
-    all_files_dict,
-):
+def test_load_novatel(all_files_dict, novatel_data):
     # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
     # There is an extra generated float column "time".
     expected_columns = list(L1_DATA_FORMAT["INSPVAA"]["data_fields"]) + [TIME_J2000]
@@ -436,7 +421,7 @@ def test_load_novatel(
 
     data_files = all_files_dict["novatel"]
 
-    l1_df = load_novatel(data_files)
+    l1_df = novatel_data
     l1_df_columns = l1_df.columns.tolist()
     l1_df_dtypes = l1_df.dtypes.tolist()
 
@@ -467,6 +452,7 @@ def test_load_novatel(
 
 def test_load_novatel_std(
     all_files_dict,
+    novatel_std_data,
 ):
     # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
     # There is an extra generated float column "TIME_J2000".
@@ -477,11 +463,53 @@ def test_load_novatel_std(
 
     data_files = all_files_dict["novatel_std"]
 
-    l1_df = load_novatel_std(data_files)
+    l1_df = novatel_std_data
     l1_df_columns = l1_df.columns.tolist()
     l1_df_dtypes = l1_df.dtypes.tolist()
 
-    print(f"{l1_df_columns=}\n{expected_columns=}")
+    assert l1_df_columns == expected_columns
+
+    for expected_column_dtype, column_dtype in zip(
+        expected_column_dtypes, l1_df_dtypes
+    ):
+        if expected_column_dtype == "int":
+            assert is_integer_dtype(column_dtype)
+        elif expected_column_dtype == "float":
+            assert is_float_dtype(column_dtype)
+        elif expected_column_dtype == "object":
+            assert is_object_dtype(column_dtype)
+        else:
+            # Only integer, float, and object dtypes should be present
+            assert False
+
+    # TODO: Confirm appropriate missing rows threshold
+    missing_rows_threshold_percent = 1
+    data_files_rows = 0
+    for data_file in data_files:
+        with open(data_file, "r") as f:
+            data_files_rows += len(f.read().split("\n"))
+    minimum_expected_rows = int(
+        ((100 - missing_rows_threshold_percent) * data_files_rows) / 100
+    )
+    assert l1_df.shape[0] >= minimum_expected_rows
+
+
+def test_load_novatel_std_v2(
+    all_files_dict,
+    novatel_std_data,
+):
+    # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
+    # There is an extra generated float column "TIME_J2000".
+    expected_columns = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields"]) + [TIME_J2000]
+    expected_column_dtypes = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields_dtypes"]) + [
+        "float"
+    ]
+
+    data_files = all_files_dict["novatel_std"]
+
+    l1_df = novatel_std_data
+    l1_df_columns = l1_df.columns.tolist()
+    l1_df_dtypes = l1_df.dtypes.tolist()
 
     assert l1_df_columns == expected_columns
 
