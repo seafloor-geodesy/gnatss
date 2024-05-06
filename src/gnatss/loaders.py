@@ -167,7 +167,7 @@ def load_travel_times(
 
 
 def load_roll_pitch_heading(
-    files: List[str], from_raw_data_file: bool = False
+    files: List[str],
 ) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.

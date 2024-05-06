@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import pandas as pd
 import pytest
@@ -55,15 +55,6 @@ def all_files_dict_legacy_gps_solutions() -> Dict[str, Any]:
     return gather_files_all_procs(config)
 
 
-@pytest.fixture
-def all_files_dict_roll_pitch_heading() -> Dict[str, Any]:
-    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    config.posfilter.input_files.roll_pitch_heading = InputData(
-        path="./tests/data/2022/NCL1/**/WG_*/RPH_TWTT",
-    )
-    return gather_files_all_procs(config)
-
-
 @pytest.mark.parametrize(
     "config_yaml_path",
     [None, TEST_DATA_FOLDER / "invalid_config.yaml"],
@@ -88,13 +79,6 @@ def test_load_sound_speed(all_files_dict):
     assert isinstance(svdf, DataFrame)
     assert {SP_DEPTH, SP_SOUND_SPEED} == set(svdf.columns.values.tolist())
     assert is_float_dtype(svdf[SP_DEPTH]) and is_float_dtype(svdf[SP_SOUND_SPEED])
-
-
-@pytest.fixture
-def transponder_ids() -> List[str]:
-    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    transponders = config.solver.transponders
-    return [t.pxp_id for t in transponders]
 
 
 def _load_travel_times_pass_testcase_helper(
@@ -253,16 +237,11 @@ def create_and_cleanup_outliers_file(
     all_files_dict,
     transponder_ids,
     configuration,
+    travel_times_data,
 ):
     outliers_file = Path(configuration.output.path) / CSVOutput.outliers.value
     deletions_file = Path(configuration.output.path) / CSVOutput.deletions.value
-    loaded_travel_times = load_travel_times(
-        files=all_files_dict["travel_times"],
-        transponder_ids=transponder_ids,
-        is_j2k=False,
-        time_scale="tt",
-    )
-    outliers_df = loaded_travel_times.sample(frac=0.05)
+    outliers_df = travel_times_data.sample(frac=0.05)
     outliers_file.unlink(missing_ok=True)
     deletions_file.unlink(missing_ok=True)
     outliers_df.to_csv(outliers_file, index=False)
@@ -278,17 +257,12 @@ def create_and_cleanup_outliers_and_deletions_files(
     all_files_dict,
     transponder_ids,
     configuration,
+    travel_times_data,
 ):
     deletions_file = Path(configuration.output.path) / CSVOutput.deletions.value
     outliers_file = Path(configuration.output.path) / CSVOutput.outliers.value
-    loaded_travel_times = load_travel_times(
-        files=all_files_dict["travel_times"],
-        transponder_ids=transponder_ids,
-        is_j2k=False,
-        time_scale="tt",
-    )
-    outliers_df = loaded_travel_times.sample(frac=0.05)
-    deletions_df = loaded_travel_times.sample(frac=0.1)
+    outliers_df = travel_times_data.sample(frac=0.05)
+    deletions_df = travel_times_data.sample(frac=0.1)
     deletions_df = pd.DataFrame.from_records(
         deletions_df[TT_TIME].apply(lambda row: (row, row)).to_numpy(),
         columns=[DEL_STARTTIME, DEL_ENDTIME],
