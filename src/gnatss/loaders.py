@@ -167,7 +167,7 @@ def load_travel_times(
 
 
 def load_roll_pitch_heading(
-    files: List[str], from_raw_data_file: bool = False
+    files: List[str],
 ) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.
@@ -542,6 +542,8 @@ def _read_novatel_L1_data_files(
     Link to data format specifications:
     INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
     INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
+
+    A small percent of rows in the L1 data files do not follow the INSPVAA and INSSTDEVA format, and are not included in the dataframe.
 
     Parameters
     ----------

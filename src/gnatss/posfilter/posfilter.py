@@ -29,6 +29,8 @@ def spline_interpolate(
         Pandas Dataframe containing Antenna enu directions std deviation Novatel L1 data
     twtt_df : pd.DataFrame
         The travel times data
+    full_result : bool
+        TODO: Add description
 
     Returns
     -------
@@ -45,6 +47,7 @@ def spline_interpolate(
     # with an 'outer' join, this will result in missing values
     # at points of travel times data that doesn't have corresponding
     # INS RPH data
+    # TODO: Confirm why we are using TT_TIME, GPS_TIME, and RPH_TIME for merge
     initial_df = pd.merge(
         twtt_df[[constants.TT_TIME]],
         merged_rph,
@@ -64,6 +67,7 @@ def spline_interpolate(
         if col not in constants.PLATFORM_COV_RPH_DIAG:
             result_df[col] = 0.0
 
+    # TODO: Confirm: return values df has different columns depending on full_results
     if full_result:
         return result_df
 
