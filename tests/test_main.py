@@ -3,7 +3,8 @@ from unittest.mock import call
 import pytest
 
 from gnatss.configs.solver import SolverTransponder
-from gnatss.main import _get_latest_process, _print_final_stats, gather_files
+from gnatss.ops.io import gather_files
+from gnatss.solver.utilities import _get_latest_process, _print_final_stats
 
 
 @pytest.mark.parametrize("proc", ["solver", "posfilter", "random"])

@@ -7,7 +7,7 @@ from nptyping import Float64, NDArray, Shape
 from numba.typed import List as NumbaList
 from numpy.testing import assert_allclose
 
-from gnatss.ops.solve import (
+from gnatss.solver.solve import (
     __get_diagonal,
     _calc_cov,
     _calc_partial_derivatives,
