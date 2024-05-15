@@ -26,7 +26,10 @@ def tests(session: nox.Session) -> None:
     """
     Run the unit and regular tests.
     """
+    test_data_zip_path = (DIR / "tests" / "data" / "2022.zip").absolute()
     session.install(".[test]")
+    session.run("git", "lfs", "pull")
+    session.run("unzip", str(test_data_zip_path), "-d", str(test_data_zip_path.parent))
     session.run("pytest", "-vvv", "tests", *session.posargs)
 
 
