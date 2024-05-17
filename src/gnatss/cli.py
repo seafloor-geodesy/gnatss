@@ -63,12 +63,12 @@ def run(
         True, help="Flag to plot residuals from run and store in output folder."
     ),
     from_cache: Optional[bool] = typer.Option(
-        False, help="Flag to load the GNSS-A L2 Data from cache."
+        False, help="Flag to load the GNSS-A Level-2 Data from cache."
     ),
     remove_outliers: Optional[bool] = typer.Option(
         False,
         help=(
-            "Flag to execute removing outliers from the GNSS-A L2 Data "
+            "Flag to execute removing outliers from the GNSS-A Level-2 Data "
             "before running the solver process."
         ),
     ),
@@ -76,11 +76,11 @@ def run(
         True, help="Flag to run the full end-to-end GNSS-A processing routine."
     ),
     solver: Optional[bool] = typer.Option(
-        False, help="Flag to run the solver process only. Requires GNSS-A L2 Data."
+        False, help="Flag to run the solver process only. Requires GNSS-A Level-2 Data."
     ),
     posfilter: Optional[bool] = typer.Option(
         False,
-        help="Flag to run the posfilter process only. Requires GNSS-A L1 Data Inputs.",
+        help="Flag to run the posfilter process only. Requires GNSS-A Level-1 Data Inputs.",
     ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A

@@ -20,8 +20,8 @@ developed and maintained by [John DeSanto](https://github.com/johnbdesanto).
 
 ## Using the software
 
-**This software is currently under heavy development and is not available via
-[PyPI](https://pypi.org/), the Python Package Index**
+**This software is available via [PyPI](https://pypi.org/), the Python Package
+Index**
 
 You can install the software with pip directly by running the following command:
 
@@ -34,70 +34,61 @@ Line Interface (CLI) using the command `gnatss`. For example: `gnatss --help`,
 will get you to the main GNSS-A Processing in Python help page.
 
 ```console
+
  Usage: gnatss [OPTIONS] COMMAND [ARGS]...
 
  GNSS-A Processing in Python
 
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────╮
-│ --install-completion        [bash|zsh|fish|powershell|pwsh]  Install completion for the specified │
-│                                                              shell.                               │
-│                                                              [default: None]                      │
-│ --show-completion           [bash|zsh|fish|powershell|pwsh]  Show completion for the specified    │
-│                                                              shell, to copy it or customize the   │
-│                                                              installation.                        │
-│                                                              [default: None]                      │
-│ --help                                                       Show this message and exit.          │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────╮
-│ run      Runs the full pre-processing routine for GNSS-A                                          │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --version                     Show version and exit.                                                                                                            │
+│ --install-completion          Install completion for the current shell.                                                                                         │
+│ --show-completion             Show completion for the current shell, to copy it or customize the installation.                                                  │
+│ --help                        Show this message and exit.                                                                                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ run   Runs the full pre-processing routine for GNSS-A                                                                                                           │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 ```
 
-## Pre-processing solve routine
+## Pre-processing routines
 
 Currently there's a single command available in the CLI, `run`, which will run
 the full pre-processing routine for GNSS-A. You can retrieve the helper text for
 this command by running `gnatss run --help`.
 
 ```console
- Usage: gnatss run [OPTIONS]
+
+ Usage: gnatss run [OPTIONS] CONFIG_YAML
 
  Runs the full pre-processing routine for GNSS-A
  Note: Currently only supports 3 transponders
 
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────╮
-│ --config-yaml                                              TEXT   Custom path to configuration │
-│                                                                   yaml file. **Currently only  │
-│                                                                   support local files!**       │
-│                                                                   [default: None]              │
-│ --extract-dist-center         --no-extract-dist-center            Flag to extract distance     │
-│                                                                   from center from run.        │
-│                                                                   [default:                    │
-│                                                                   extract-dist-center]         │
-│ --extract-process-dataset     --no-extract-process-data           Flag to extract process      │
-│                                                                   results.                     │
-│                                                                   [default:                    │
-│                                                                   extract-process-dataset]     │
-│ --qc                          --no-qc                             Flag to plot residuals from  │
-│                                                                   run and store in             │
-│                                                                   output folder.               │
-│                                                                   [default: qc]                │
-│ --distance-limit                                           FLOAT  Distance in meters from      │
-│                                                                   center beyond which points   │
-│                                                                   will be excluded from        │
-│                                                                   solution. Note that this     │
-│                                                                   will override the value set  │
-│                                                                   as configuration.            │
-│                                                                   [default: None]              │
-│ --residual-limit                                           FLOAT  Maximum residual in          │
-│                                                                   centimeters beyond which     │
-│                                                                   data points will be excluded │
-│                                                                   from solution. Note that     │
-│                                                                   this will override the value │
-│                                                                   set as configuration.        │
-│                                                                   [default: None]              │
-│ --help                                                            Show this message and exit.  │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_yaml      TEXT  Custom path to configuration yaml file. **Currently only support local files!** [default: None] [required]                          │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --extract-dist-center        --no-extract-dist-center               Flag to extract distance from center from run. [default: extract-dist-center]               │
+│ --extract-process-dataset    --no-extract-process-dataset           Flag to extract process results. [default: extract-process-dataset]                         │
+│ --outlier-threshold                                          FLOAT  Threshold for allowable percentage of outliers before raising a runtime error.              │
+│                                                                     [default: None]                                                                             │
+│ --distance-limit                                             FLOAT  Distance in meters from center beyond which points will be excluded from solution. Note     │
+│                                                                     that this will override the value set as configuration.                                     │
+│                                                                     [default: None]                                                                             │
+│ --residual-limit                                             FLOAT  Maximum residual in centimeters beyond which data points will be excluded from solution.    │
+│                                                                     Note that this will override the value set as configuration.                                │
+│                                                                     [default: None]                                                                             │
+│ --qc                         --no-qc                                Flag to plot residuals from run and store in output folder. [default: qc]                   │
+│ --from-cache                 --no-from-cache                        Flag to load the GNSS-A Level-2 Data from cache. [default: no-from-cache]                   │
+│ --remove-outliers            --no-remove-outliers                   Flag to execute removing outliers from the GNSS-A Level-2 Data before running the solver    │
+│                                                                     process.                                                                                    │
+│                                                                     [default: no-remove-outliers]                                                               │
+│ --run-all                    --no-run-all                           Flag to run the full end-to-end GNSS-A processing routine. [default: run-all]               │
+│ --solver                     --no-solver                            Flag to run the solver process only. Requires GNSS-A Level-2 Data. [default: no-solver]     │
+│ --posfilter                  --no-posfilter                         Flag to run the posfilter process only. Requires GNSS-A Level-1 Data Inputs.                │
+│                                                                     [default: no-posfilter]                                                                     │
+│ --help                                                              Show this message and exit.                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 _Currently the pre-processing routine have been tested to only supports 3
@@ -106,71 +97,83 @@ transponders, but this will be expanded in the future._
 ### Configuration yaml file
 
 The run command takes in a configuration yaml file, which is used to configure
-the pre-processing routine. By default, the program will look for a
-configuration file in the current working directory called `config.yaml`. If
-this file is found somewhere else, you can pass in the path to the file using
-the `--config-yaml` flag.
+the pre-processing routine. **You will need to provide a config yaml file when
+calling `gnatss run`.**
 
 Here's a sample configuration yaml file:
 
 ```yaml
-site_id: SITE1
+site_id: SITE #Site Identifier
+campaign: Region #Geographical region/Subduction Zone
+time_origin: YYYY-MM-DD 00:00:00 #Time of survey
+array_center:
+  lat: xx.yyyy #decimal latitude
+  lon: xxx.yyyy #decimal longitude
+transponders: # list out all transponder and info, each entry is a different transponder (default: 3 transponders)
+  - lat: xx.yyyyyyyyyy #decimal latitude
+    lon: xx.yyyyyyyyyy #decimal longitude
+    height: -zzzz.zz #transponder depth (m, positive up)
+    internal_delay: t.tttt #Transponder Turn-Around Time (s)
+    sv_mean: vvvv.vvv #Estimate of mean sound velocity (m/s)
+  - lat: xx.yyyyyyyyyy #decimal latitude
+    lon: xx.yyyyyyyyyy #decimal longitude
+    height: -zzzz.zz #transponder depth (m, positive up)
+    internal_delay: t.tttt #Transponder Turn-Around Time (s)
+    sv_mean: vvvv.vvv #Estimate of mean sound velocity (m/s)
+  - lat: xx.yyyyyyyyyy #decimal latitude
+    lon: xx.yyyyyyyyyy #decimal longitude
+    height: -zzzz.zz #transponder depth (m, positive up)
+    internal_delay: t.tttt #Transponder Turn-Around Time (s)
+    sv_mean: vvvv.vvv #Estimate of mean sound velocity (m/s)
+travel_times_variance: 1e-10 #Default value
+travel_times_correction: 0.0 #Default value
+transducer_delay_time: 0.0 #Default value
 
+# Main input files
+input_files:
+  travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
+    path: /path/to/pxp_tt
+
+# Posfilter configuration
+posfilter:
+  export:
+    full: false #false for only required fields, true to include optional RPH value and uncertainties
+  atd_offsets:
+    forward: 0.0053 #Value for SV3 Wave Glider
+    rightward: 0 #Value for SV3 Wave Glider
+    downward: 0.92813 #Value for SV3 Wave Glider
+  input_files:
+    novatel:
+      path: /path/to/file #File with INSPVAA strings
+    novatel_std:
+      path: /path/to/file #File with INSSTDEVA strings
+    gps_positions: #Assume Chadwell format, (j2000 seconds, "GPSPOS" string, ECEF XYZ coordinates (m), XYZ Standard Deviations)
+      path: /path/to/GPS_POS_FREED #File path to antenna positions, use wildcards ** for day-separated data
+
+# Solver configuration
 solver:
-  # note that the coordinates are not real and are just for example
-  transponders:
-    - lat: 47.302064471
-      lon: -126.978181346
-      height: -1176.5866
-      internal_delay: 0.200000
-      sv_mean: 1481.551
-    - lat: 47.295207747
-      lon: -126.958752845
-      height: -1146.5881
-      internal_delay: 0.320000
-      sv_mean: 1481.521
-    - lat: 47.309643593
-      lon: -126.959348875
-      height: -1133.7305
-      internal_delay: 0.440000
-      sv_mean: 1481.509
-  reference_ellipsoid:
+  reference_ellipsoid: #These values should be constant unless the Earth changes
     semi_major_axis: 6378137.000
     reverse_flattening: 298.257222101
-  gps_sigma_limit: 0.05
-  std_dev: true
-  geoid_undulation: -26.59
-  bisection_tolerance: 1e-10
-  array_center:
-    lat: 47.3023
-    lon: -126.9656
-  travel_times_variance: 1e-10
-  travel_times_correction: 0.0
-  transducer_delay_time: 0.0
-  harmonic_mean_start_depth: -4.0
+  gps_sigma_limit: 0.05 #Uncertainty threshold for transducer positions, data with larger uncertainties ignored
+  std_dev: true #true=standard deviation, false=covariance, probably deprecated
+  geoid_undulation: xx.yy #Geoid height in m
+  bisection_tolerance: 1e-10 #Do not change
+  harmonic_mean_start_depth: -4.0 #Shallowest water depth for calculating mean soundvelocity from CTD data
   input_files:
-    sound_speed:
-      path: /path/to/CTD_NCL1_Ch_Mi
-    travel_times:
-      path: /path/to/**/WG_*/pxp_tt # this option will take in glob patterns
-    gps_solution:
-      path: /path/to/**/posfilter/POS_FREED_TRANS_TWTT # this option will take in glob patterns
+    sound_speed: #Assume 2-column text file with depth (m), sound velocity (m/s)
+      path: /path/to/file
+    # deletions: # Path to deletns.dat deletions file used by Chadwell code as well
+    #   path: ../tests/data/2022/NCL1/deletns.dat
+    #gps_solution: #Path to pre-processed input data in standard GNSS-A data format, this skips the Posfilter step
+    #  path: ../gps_solution.csv
+    #quality_control:
+    #  path: /Users/lsetiawan/Repos/SSEC/offshore-geodesy/tests/data/2022/NCL1/quality_control.csv
 
-output:
-  path: /my/output/dir/
+# Output configuration
+output: # Directory path to output directory
+  path: /path/to/output/
 ```
-
-### Deletions file
-
-This will output the final resulting deletions file to the output directory
-specified in the configuration yaml file. This file will be in Comma Separated
-Value (CSV) format called `deletions.csv`.
-
-### Residual file
-
-This will output the final resulting residual file to the output directory
-specified in the configuration yaml file. This file will be in Comma Separated
-Value (CSV) format called `residuals.csv`.
 
 ## Contributing
 

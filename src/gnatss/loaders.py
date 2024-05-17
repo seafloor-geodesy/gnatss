@@ -480,38 +480,38 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
 
 def load_novatel(data_files: List[str]) -> pd.DataFrame:
     """
-    Read from Novatel L1 data files and return its dataframe representation.
+    Read from Novatel Level-1 data files and return its dataframe representation.
     Link to data format specifications:
     INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
 
     Parameters
     ----------
     data_files: list pf str
-        Paths to the Novatel L1 data files to be loaded
+        Paths to the Novatel Level-1 data files to be loaded
 
     Returns
     -------
     pd.DataFrame
-        Parsed Novatel L1 data in a pandas dataframe
+        Parsed Novatel Level-1 data in a pandas dataframe
     """  # noqa
     return _read_novatel_L1_data_files(data_files, data_format="INSPVAA")
 
 
 def load_novatel_std(data_files: List[str]) -> pd.DataFrame:
     """
-    Read from Novatel L1 data files and return its dataframe representation.
+    Read from Novatel Level-1 data files and return its dataframe representation.
     Link to data format specifications:
     INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
 
     Parameters
     ----------
     data_files: list pf str
-        Paths to the Novatel L1 data files to be loaded
+        Paths to the Novatel Level-1 data files to be loaded
 
     Returns
     -------
     pd.DataFrame
-        Parsed Novatel L1 data in a pandas dataframe
+        Parsed Novatel Level-1 data in a pandas dataframe
     """  # noqa
     return _read_novatel_L1_data_files(data_files, data_format="INSSTDEVA")
 
@@ -520,17 +520,17 @@ def _read_novatel_L1_data_files(
     data_files: list[str], data_format: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
 ) -> pd.DataFrame:
     """
-    Read from Novatel L1 data files and return its dataframe representation.
+    Read from Novatel Level-1 data files and return its dataframe representation.
     Link to data format specifications:
     INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
     INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
 
-    A small percent of rows in the L1 data files do not follow the INSPVAA and INSSTDEVA format, and are not included in the dataframe.
+    A small percent of rows in the Level-1 data files do not follow the INSPVAA and INSSTDEVA format, and are not included in the dataframe.
 
     Parameters
     ----------
     data_files: list pf str
-        Paths to the Novatel L1 data files to be loaded
+        Paths to the Novatel Level-1 data files to be loaded
 
     data_format: {"INSPVAA", "INSSTDEVA"}
         Specify which format the data file is in.
@@ -544,7 +544,7 @@ def _read_novatel_L1_data_files(
     if data_format not in constants.L1_DATA_FORMAT.keys():
         raise Exception("Unsupported data_format value")
 
-    # Read Novatel's INSPVAA/INSSTDEVA L1 data format including regex, fields, and dtypes
+    # Read Novatel's INSPVAA/INSSTDEVA Level-1 data format including regex, fields, and dtypes
     l1_data_config = constants.L1_DATA_FORMAT.get(data_format)
     re_pattern = compile(l1_data_config.get("regex_pattern"))
 

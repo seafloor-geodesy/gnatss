@@ -24,9 +24,9 @@ def spline_interpolate(
     Parameters
     ----------
     inspvaa_df :  DataFrame
-        Pandas Dataframe containing Antenna enu directions Novatel L1 data
+        Pandas Dataframe containing Antenna enu directions Novatel Level-1 data
     insstdeva_df :  DataFrame
-        Pandas Dataframe containing Antenna enu directions std deviation Novatel L1 data
+        Pandas Dataframe containing Antenna enu directions std deviation Novatel Level-1 data
     twtt_df : pd.DataFrame
         The travel times data
     full_result : bool
@@ -180,11 +180,11 @@ def kalman_filtering(
     Parameters
     ----------
     inspvaa_df :  pd.DataFrame
-        Pandas Dataframe containing Antenna enu directions Novatel L1 data
+        Pandas Dataframe containing Antenna enu directions Novatel Level-1 data
     insstdeva_df :  pd.DataFrame
-        Pandas Dataframe containing Antenna enu directions std deviation Novatel L1 data
+        Pandas Dataframe containing Antenna enu directions std deviation Novatel Level-1 data
     gps_df :  pd.DataFrame
-        Pandas Dataframe containing GPS solutions Novatel L1 data
+        Pandas Dataframe containing GPS solutions Novatel Level-1 data
     twtt_df :  pd.DataFrame
         Pandas Dataframe containing two way travel time data
     gnss_pos_psd : float
