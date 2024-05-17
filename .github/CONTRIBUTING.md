@@ -2,9 +2,8 @@
 
 Thank you for investing your time in contributing to our project!
 
-Read our
-[Code of Conduct](https://github.com/uw-ssec/code-of-conduct/blob/main/CODE_OF_CONDUCT.md)
-to keep our community approachable and respectable.
+Read our [Code of Conduct](../CODE_OF_CONDUCT.md) to keep our community
+approachable and respectable.
 
 ## Quick development
 
