@@ -1,15 +1,17 @@
-import warnings
 from pathlib import Path
-from typing import List, Optional
+from re import compile
+from typing import List, Literal, Optional, Union
 
+import numpy as np
 import pandas as pd
 import yaml
+from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
-from pydantic import ValidationError
 
 from . import constants
 from .configs.io import CSVOutput
 from .configs.main import Configuration
+from .utilities.time import gps_ws_time_to_astrotime
 
 
 def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
@@ -17,19 +19,13 @@ def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
     Loads configuration yaml file into a Config object
     to be used throughout the pre-processing
     """
-    try:
-        config = Configuration()
-    except ValidationError:
-        warnings.warn(
-            "Loading attempt failed, trying to load configuration from file path given."
+    if config_yaml is None or not Path(config_yaml).exists():
+        raise FileNotFoundError(
+            "Configuration file not found. Unable to create configuration"
         )
-        if config_yaml is None or not Path(config_yaml).exists():
-            raise FileNotFoundError(
-                "Configuration file not found. Unable to create configuration"
-            )
 
-        yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
-        config = Configuration(**yaml_dict)
+    yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
+    config = Configuration(**yaml_dict)
     return config
 
 
@@ -50,7 +46,7 @@ def load_sound_speed(sv_files: List[str]) -> pd.DataFrame:
     columns = [constants.SP_DEPTH, constants.SP_SOUND_SPEED]
 
     sv_dfs = [
-        pd.read_csv(sv_file, delim_whitespace=True, header=None, names=columns)
+        pd.read_csv(sv_file, sep=r"\s+", header=None, names=columns)
         .drop_duplicates(constants.SP_DEPTH)
         .reset_index(drop=True)
         for sv_file in sv_files
@@ -129,7 +125,7 @@ def load_travel_times(
         # If it's already j2k then pop off date column, idx 0
         columns.pop(0)
     # Read all travel times
-    travel_times = [pd.read_csv(i, delim_whitespace=True, header=None) for i in files]
+    travel_times = [pd.read_csv(i, sep=r"\s+", header=None) for i in files]
     all_travel_times = pd.concat(travel_times).reset_index(drop=True)
 
     # Remove any columns that are not being used
@@ -170,49 +166,138 @@ def load_travel_times(
     return all_travel_times
 
 
-def load_roll_pitch_heading(files: List[str]) -> pd.DataFrame:
+def load_roll_pitch_heading(
+    files: List[str],
+) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.
 
     Parameters
     ----------
     files : List[str]
-        The list of path string to files to load
+        The list of path string to files to load.
 
     Returns
     -------
     pd.DataFrame
-        Pandas DataFrame containing all of
-        the roll pitch heading data.
-        Expected columns will have 'time' and
-        the 'roll', 'pitch', 'heading' values
+        Pandas DataFrame containing all of the roll pitch heading data.
+        Expected columns will have 'time' and the 'roll', 'pitch', 'heading' values.
+        Optional roll, pitch, heading covariance columns will be dropped from the dataframe.
+        Return empty Dataframe if files is empty string.
+    """
+    required_columns = [
+        constants.RPH_TIME,
+        *constants.RPH_LOCAL_TANGENTS,
+    ]
+    optional_columns = [*constants.RPH_COV]
+
+    if files:
+        # Read all rph files
+        rph_dfs = [
+            pd.read_csv(
+                i,
+                sep=r"\s+",
+                header=None,
+                names=[*required_columns, *optional_columns],
+            )
+            .drop_duplicates(constants.RPH_TIME)
+            .reset_index(drop=True)
+            for i in files
+        ]
+        # Remove optional columns from all_rph df
+        all_rph = pd.concat(rph_dfs)[required_columns].reset_index(drop=True)
+        return all_rph
+    else:
+        return pd.DataFrame(columns=required_columns)
+
+
+def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], None]:
+    """
+        Retrieves the Antenna Transducer Offset values from configuration and turn them
+        into a numpy array. Returns None if atd_offsets not present in configuration.
+
+        Parameters
+        ----------
+        config : Configuration
+        The configuration object
+
+        Returns
+    -------
+        Union[NDArray[Shape["3"], Float], None]
+             Numpy array containing the forward, rightward and downward
+             antenna transducer offsets. Return None if atd_offsets not present in configuration.
+    """
+    if config.posfilter and config.posfilter.atd_offsets:
+        return np.array(
+            [
+                config.posfilter.atd_offsets.forward,
+                config.posfilter.atd_offsets.rightward,
+                config.posfilter.atd_offsets.downward,
+            ]
+        )
+    return None
+
+
+def _round_time_precision(gps_data, time_round):
+    # TODO: Find a way to determine this precision dynamically?
+    if isinstance(time_round, int) and time_round > 0:
+        gps_data.loc[:, constants.GPS_TIME] = gps_data[constants.GPS_TIME].round(
+            time_round
+        )
+    return gps_data
+
+
+def load_gps_positions(
+    files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
+):
+    """
+    Loads gps positions into a pandas dataframe from a list of files.
+    Usually named `GPS_POS_FREED`.
+
+    Parameters
+    ----------
+    files : list of str
+        The list of path string to files to load
+    time_round : int
+        The precision value to round the time values
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing all of the gps positions data.
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Geocentric x in meters
+        3: Geocentric y in meters
+        4: Geocentric z in meters
+        5 - 7: Standard deviations std_x, std_y, std_z
     """
     columns = [
-        constants.RPH_TIME,
-        constants.RPH_ROLL,
-        constants.RPH_PITCH,
-        constants.RPH_HEADING,
+        constants.GPS_TIME,
+        "dtype",
+        *constants.ANT_GPS_GEOCENTRIC,
+        *constants.ANT_GPS_GEOCENTRIC_STD,
     ]
-    # Read all rph files
-    rph_dfs = [
-        pd.read_csv(i, delim_whitespace=True, header=None, names=columns)
-        .drop_duplicates(constants.RPH_TIME)
-        .reset_index(drop=True)
-        for i in files
+    gnss_positions = [
+        pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
     ]
-    all_rph = pd.concat(rph_dfs).reset_index(drop=True)
-    return all_rph
+    all_gps_positions = pd.concat(gnss_positions).reset_index(drop=True)
+    all_gps_positions = all_gps_positions.drop(columns="dtype")
+    # Round to match the delays precision
+    return _round_time_precision(all_gps_positions, time_round)
 
 
 def load_gps_solutions(
-    files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
+    files: List[str],
+    time_round: int = constants.DELAY_TIME_PRECISION,
+    from_legacy: bool = False,
 ) -> pd.DataFrame:
     """
     Loads gps solutions into a pandas dataframe from a list of files.
 
     Parameters
     ----------
-    files : list
+    files : list of str
         The list of path string to files to load
     time_round : int
         The precision value to round the time values
@@ -221,43 +306,41 @@ def load_gps_solutions(
     -------
     pd.DataFrame
         Pandas DataFrame containing all of the gps solutions data.
-        Expected columns will have 'time',
-        the geocentric 'x,y,z',
-        and covariance matrix 'xx' to 'zz'
-
-    Notes
-    -----
-    The input gps solutions data is assumed to follow the structure below:
-
-    The numbers are column number.
-
-    1: Time unit seconds in J2000 epoch
-    2: Geocentric x in meters
-    3: Geocentric y in meters
-    4: Geocentric z in meters
-    5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
-
-    These files are often called `POS_FREED_TRANS_TWTT`.
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Geocentric x in meters
+        3: Geocentric y in meters
+        4: Geocentric z in meters
+        5 - 13: Covariance matrix (3x3) xx, xy, xz, yx, yy, yz, zx, zy, zz
     """
-    columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
-    # Real all gps solutions
-    gps_solutions = [
-        pd.read_csv(i, delim_whitespace=True, header=None, names=columns) for i in files
-    ]
-    all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
+    if from_legacy:
+        columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
+        gps_solutions = [
+            pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
+        ]
+        all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
 
-    # Round to match the delays precision
-    # TODO: Find a way to determine this precision dynamically?
-    if isinstance(time_round, int) and time_round > 0:
-        all_gps_solutions.loc[:, constants.GPS_TIME] = all_gps_solutions[
-            constants.GPS_TIME
-        ].round(time_round)
+        # Round to match the delays precision
+        return _round_time_precision(all_gps_solutions, time_round)
+    else:
+        # The new format of the GPS solutions
+        # the column names are included in csv file(s)
+        gps_solutions = [pd.read_csv(i) for i in files]
+        all_gps_positions = pd.concat(gps_solutions).reset_index(drop=True)
 
-    return all_gps_solutions
+        if any(len(sol.columns) <= 1 for sol in gps_solutions):
+            raise ValueError(
+                "Legacy GPS solutions file detected but not in legacy mode"
+            )
+
+        return all_gps_positions
 
 
 def load_deletions(
-    file_paths: List[str], config: Configuration, time_scale="tt"
+    config: Configuration,
+    file_paths: Optional[List[str]] = None,
+    time_scale="tt",
+    remove_outliers: bool = False,
 ) -> pd.DataFrame:
     """
     Loads the raw deletion text file into a pandas dataframe
@@ -317,7 +400,16 @@ def load_deletions(
     # Try to find outliers.csv file if there is one run already
     # this currently assumes that the file is in the output directory
     outliers_csv = output_path / CSVOutput.outliers.value
-    if outliers_csv.exists():
+    if remove_outliers:
+        if not outliers_csv.exists():
+            raise FileNotFoundError(
+                (
+                    "Outliers file not found. "
+                    "Please remove `--remove_outliers` flag "
+                    "and rerun the solver."
+                )
+            )
+
         import typer
 
         typer.echo(f"Found {str(outliers_csv.absolute())} file. Including into cuts...")
@@ -402,3 +494,100 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
         qc_df = pd.DataFrame(columns=[constants.QC_STARTTIME, constants.QC_ENDTIME])
 
     return qc_df
+
+
+def load_novatel(data_files: List[str]) -> pd.DataFrame:
+    """
+    Read from Novatel L1 data files and return its dataframe representation.
+    Link to data format specifications:
+    INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
+
+    Parameters
+    ----------
+    data_files: list pf str
+        Paths to the Novatel L1 data files to be loaded
+
+    Returns
+    -------
+    pd.DataFrame
+        Parsed Novatel L1 data in a pandas dataframe
+    """  # noqa
+    return _read_novatel_L1_data_files(data_files, data_format="INSPVAA")
+
+
+def load_novatel_std(data_files: List[str]) -> pd.DataFrame:
+    """
+    Read from Novatel L1 data files and return its dataframe representation.
+    Link to data format specifications:
+    INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
+
+    Parameters
+    ----------
+    data_files: list pf str
+        Paths to the Novatel L1 data files to be loaded
+
+    Returns
+    -------
+    pd.DataFrame
+        Parsed Novatel L1 data in a pandas dataframe
+    """  # noqa
+    return _read_novatel_L1_data_files(data_files, data_format="INSSTDEVA")
+
+
+def _read_novatel_L1_data_files(
+    data_files: list[str], data_format: Literal["INSPVAA", "INSSTDEVA"] = "INSPVAA"
+) -> pd.DataFrame:
+    """
+    Read from Novatel L1 data files and return its dataframe representation.
+    Link to data format specifications:
+    INSSTDEVA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSSTDEV.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____30
+    INSPVAA: https://docs.novatel.com/OEM7/Content/SPAN_Logs/INSPVA.htm?tocpath=Commands%20%2526%20Logs%7CLogs%7CSPAN%20Logs%7C_____22
+
+    A small percent of rows in the L1 data files do not follow the INSPVAA and INSSTDEVA format, and are not included in the dataframe.
+
+    Parameters
+    ----------
+    data_files: list pf str
+        Paths to the Novatel L1 data files to be loaded
+
+    data_format: {"INSPVAA", "INSSTDEVA"}
+        Specify which format the data file is in.
+        Currently support INSPVAA and INSSTDEVA formats.
+
+    Returns
+    -------
+    pd.DataFrame
+
+    """  # noqa
+    if data_format not in constants.L1_DATA_FORMAT.keys():
+        raise Exception("Unsupported data_format value")
+
+    # Read Novatel's INSPVAA/INSSTDEVA L1 data format including regex, fields, and dtypes
+    l1_data_config = constants.L1_DATA_FORMAT.get(data_format)
+    re_pattern = compile(l1_data_config.get("regex_pattern"))
+
+    # List of numpy arrays, on for each of the data_files
+    data_file_arrays = []
+    for data_file in data_files:
+        data_file_text = Path(data_file).read_text()
+        # all_groups is a list of tuples, where each tuple represents a row entry in
+        # the numpy array. Each tuple element represents a data field in that row,
+        # as defined in the regex's named capture groups.
+        all_groups = re_pattern.findall(data_file_text)
+        data_fields_dtypes = zip(
+            l1_data_config.get("data_fields"),
+            l1_data_config.get("data_fields_dtypes"),
+        )
+
+        data_file_array = np.array(all_groups, dtype=list(data_fields_dtypes))
+        data_file_arrays.append(data_file_array)
+    all_data_array = np.concatenate(data_file_arrays, axis=0, casting="no")
+
+    df = pd.DataFrame(all_data_array)
+    # New pd column to convert GNSS Week and Seconds to J2000 Seconds
+    df[constants.TIME_J2000] = pd.Series(
+        gps_ws_time_to_astrotime(
+            all_data_array["week"], all_data_array["seconds"]
+        ).unix_j2000
+    )
+    return df

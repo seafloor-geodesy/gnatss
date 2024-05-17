@@ -7,7 +7,7 @@ import nox
 
 DIR = Path(__file__).parent.resolve()
 
-nox.options.sessions = ["lint", "tests"]
+nox.options.sessions = ["lint", "tests", "build"]
 
 
 @nox.session
@@ -25,8 +25,20 @@ def lint(session: nox.Session) -> None:
 def tests(session: nox.Session) -> None:
     """
     Run the unit and regular tests.
+
+    Notes
+    -----
+    This session will download the test data from the repository
+    from git lfs. Must have the following installed in your system:
+    - git-lfs: https://github.com/git-lfs/git-lfs
+    - unzip: https://linuxize.com/post/how-to-unzip-files-in-linux/
     """
     session.install(".[test]")
+    session.run(
+        "python",
+        "-c",
+        "from gnatss.utilities.testing import download_test_data; download_test_data(unzip=True)",
+    )
     session.run("pytest", "-vvv", "tests", *session.posargs)
 
 

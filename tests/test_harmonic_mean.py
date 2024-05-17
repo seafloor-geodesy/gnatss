@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from gnatss.constants import SP_DEPTH, SP_SOUND_SPEED
-from gnatss.harmonic_mean import _compute_hm, _sv_harmon_mean, sv_harmonic_mean
+from gnatss.ops.harmonic_mean import _compute_hm, _sv_harmon_mean, sv_harmonic_mean
 
 from . import TEST_DATA_FOLDER
 

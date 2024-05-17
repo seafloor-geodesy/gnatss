@@ -10,6 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, computed_field
 
 from .io import InputData
+from .transponders import Transponder
 
 
 class ReferenceEllipsoid(BaseModel):
@@ -34,16 +35,22 @@ class ArrayCenter(BaseModel):
     alt: float = Field(0.0, description="Altitude")
 
 
+class GPSSolutionInput(InputData):
+    legacy: bool = Field(
+        False, description="Flag to indicate if the input file is in legacy format."
+    )
+
+
 class SolverInputs(BaseModel):
-    sound_speed: InputData = Field(
-        ..., description="Sound speed data path specification"
+    sound_speed: Optional[InputData] = Field(
+        None, description="Sound speed data path specification"
     )
     # NOTE: 3/3/2023 - These are required for now and will change in the future.
-    travel_times: InputData = Field(
-        ..., description="Travel times data path specification."
+    travel_times: Optional[InputData] = Field(
+        None, description="Travel times data path specification."
     )
-    gps_solution: InputData = Field(
-        ..., description="GPS solution data path specification."
+    gps_solution: Optional[GPSSolutionInput] = Field(
+        None, description="GPS solution data path specification."
     )
     deletions: Optional[InputData] = Field(
         None, description="Deletions file for unwanted data points."
@@ -113,8 +120,8 @@ class Solver(BaseModel):
     """
 
     defaults: SolverGlobal = SolverGlobal()
-    transponders: Optional[List[SolverTransponder]] = Field(
-        ..., description="A list of transponders configurations"
+    transponders: Optional[List[Transponder]] = Field(
+        None, description="A list of transponders configurations"
     )
     reference_ellipsoid: Optional[ReferenceEllipsoid] = Field(
         ..., description="Reference ellipsoid configurations"
@@ -139,8 +146,8 @@ class Solver(BaseModel):
     bisection_tolerance: float = Field(
         1e-10, description="Tolerance to stop bisection during ray trace"
     )
-    array_center: ArrayCenter = Field(
-        ..., description="Array center to use for calculation"
+    array_center: Optional[ArrayCenter] = Field(
+        None, description="Array center to use for calculation"
     )
     travel_times_variance: float = Field(
         1e-10, description="VARIANCE (s**2) PXP two-way travel time measurement"
@@ -171,6 +178,14 @@ class Solver(BaseModel):
             "which data points will be excluded from solution"
         ),
     )
+    residual_outliers_threshold: float = Field(
+        25.0,
+        ge=0.0,
+        description="Residual outliers threshold acceptable before throwing an error in percent",
+    )
     travel_times_correction: float = Field(
         0.0, description="Correction to times in travel times (secs.)"
+    )
+    twtt_model: Literal["simple_twtt"] = Field(
+        "simple_twtt", description="Travel time model to use."
     )

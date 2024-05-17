@@ -9,7 +9,7 @@ API components that are currently available.
 
 Harmonic Mean module
 ====================
-.. automodapi:: gnatss.harmonic_mean
+.. automodapi:: gnatss.ops.harmonic_mean
    :no-inheritance-diagram:
    :no-heading:
 
@@ -33,9 +33,15 @@ Quality Control
    :no-inheritance-diagram:
    :no-heading:
 
+Posfilter
+---------
+.. automodapi:: gnatss.posfilter.posfilter
+   :no-inheritance-diagram:
+   :no-heading:
+
 Solve
 -----
-.. automodapi:: gnatss.ops.solve
+.. automodapi:: gnatss.solver.solve
    :no-inheritance-diagram:
    :no-heading:
 

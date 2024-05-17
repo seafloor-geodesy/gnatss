@@ -21,7 +21,7 @@ jobs:
       with:
         fetch-depth: 0 # Fetch all history for all branches and tags.
     - name: Setup Python
-      uses: actions/setup-python@v5.0.0
+      uses: actions/setup-python@v5.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Print system platform
@@ -39,12 +39,14 @@ jobs:
       run: pip install ".[test]"
     - name: Prepare fortran modules
       run: cd tests/fortran && f2py -c -m flib *.f && cd -
+    - name: Install nox
+      run: pip install nox
     - name: Run unit tests
       env:
         FORCE_COLOR: 3
       run: |
         set -o pipefail
-        pytest -vvv --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/ |& tee unit_test_log${{ matrix.python-version }}.log
+        nox -s tests -- --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/ |& tee unit_test_log${{ matrix.python-version }}.log
     - name: Upload unit test log
       if: ${{ success() || failure() }}
       uses: actions/upload-artifact@v4

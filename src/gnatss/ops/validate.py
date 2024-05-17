@@ -1,4 +1,5 @@
-from typing import List, Tuple
+import itertools
+from typing import List, Literal, Tuple
 
 import numba
 import numpy as np
@@ -186,7 +187,11 @@ def _check_cols_in_series(input_series: pd.Series, columns: List[str]) -> None:
 
 
 def calc_std_and_verify(
-    gps_series: pd.Series, std_dev: bool = True, sigma_limit: float = 0.05, verify=True
+    gps_series: pd.Series,
+    std_dev: bool = True,
+    sigma_limit: float = 0.05,
+    verify=True,
+    data_type: Literal["receive", "transmit"] = "receive",
 ) -> float:
     """
     Calculate the 3d standard deviation and verify the value based on limit
@@ -213,13 +218,8 @@ def calc_std_and_verify(
     ValueError
         If 3D Standard Deviation exceeds the GPS Sigma limit
     """
-    # Checks for GPS Covariance Diagonal values
-    _check_cols_in_series(input_series=gps_series, columns=constants.GPS_COV_DIAG)
-
     # Compute the 3d std (sum variances of GPS components and take sqrt)
-    sig_3d = np.sqrt(
-        np.sum(gps_series[constants.GPS_COV_DIAG] ** (2 if std_dev else 1))
-    )
+    sig_3d = np.sqrt(np.sum(gps_series ** (2 if std_dev else 1)))
 
     if verify and (sig_3d > sigma_limit):
         # Verify sigma value, throw error if greater than gps sigma limit
@@ -232,16 +232,31 @@ def calc_std_and_verify(
 
 
 def check_sig3d(data: pd.DataFrame, gps_sigma_limit: float):
+    # Get covariance diagonal columns
+    diag_cov_cols = {
+        "receive": [*constants.DATA_SPEC.gnss_rx_diag_cov_fields.keys()],
+        "transmit": [*constants.DATA_SPEC.gnss_tx_diag_cov_fields.keys()],
+    }
+    diag_cov_columns = list(itertools.chain.from_iterable(diag_cov_cols.values()))
+    # Checks for GPS Covariance Diagonal values
+    assert all([col in data.columns for col in diag_cov_columns])
+
     # Compute 3d standard deviation
-    data[constants.SIG_3D] = data.apply(
-        calc_std_and_verify, axis="columns", verify=False
+    rx_sig_3d = data[diag_cov_cols["receive"]].apply(
+        calc_std_and_verify, axis="columns", verify=False, data_type="receive"
     )
+    # Filter out everything that exceeds the gps sigma limit
+    data = data[rx_sig_3d < gps_sigma_limit]
+
+    tx_sig_3d = data[diag_cov_cols["transmit"]].apply(
+        calc_std_and_verify, axis="columns", verify=False, data_type="transmit"
+    )
+    # Filter out everything that exceeds the gps sigma limit
+    data = data[tx_sig_3d < gps_sigma_limit]
 
     # TODO: Put debug for the times that are not valid and option to save to file
     # In fortran it get sent to GPS_3drms_exceeds
     # Find a way to distinguish between transmit and reply
     # data_exceeds = data[data.sig_3d > gps_sigma_limit]
 
-    # Filter out everything that exceeds the gps sigma limit
-    data = data[data.sig_3d < gps_sigma_limit]
-    return data.drop(constants.SIG_3D, axis="columns")
+    return data
