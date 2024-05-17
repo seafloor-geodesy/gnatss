@@ -62,12 +62,18 @@ test = [
     "pytest-benchmark",
     "PyGithub",
 ]
+all = [
+    "gnatss[docs,test]",
+]
 
 [project.license]
 file = "LICENSE"
 
 [project.urls]
-Homepage = "https://github.com/uw-ssec/offshore-geodesy"
+Homepage = "https://github.com/seafloor-geodesy/gnatss"
+Documentation = "https://gnatss.readthedocs.io"
+Repository = "https://github.com/seafloor-geodesy/gnatss.git"
+Issues = "https://github.com/seafloor-geodesy/gnatss/issues"
 
 [project.scripts]
 gnatss = "gnatss.cli:app"
