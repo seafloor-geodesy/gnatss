@@ -53,7 +53,7 @@ installation and usage.
 
    ```bash
    conda activate gnatss
-   pip install -e ".[docs,lint,test]"
+   pip install -e ".[all]"
    ```
 
 ## Post setup
@@ -71,10 +71,11 @@ You can also/alternatively run `pre-commit run` (changes only) or
 
 ## Testing
 
-Use pytest to run the unit checks:
+Use pytest to run the unit checks via `nox`. This will download the necessary
+test data and run the tests:
 
 ```bash
-pytest -vvv tests
+nox -s tests
 ```
 
 ## Coverage
