@@ -1,73 +1,66 @@
+from pathlib import Path
 from unittest.mock import call
 
 import pytest
 
+from gnatss.configs.io import InputData
 from gnatss.configs.solver import SolverTransponder
 from gnatss.ops.io import gather_files
 from gnatss.solver.utilities import _get_latest_process, _print_final_stats
 
 
-@pytest.mark.parametrize("proc", ["solver", "posfilter", "random"])
-def test_gather_files(mocker, proc):
-    tt = "travel_times"
-    rph = "roll_pitch_heading"
-    glob_vals = [tt, rph]
-    expected_procs = {
-        "solver": ["sound_speed", tt, "gps_solution", "deletions"],
-        "posfilter": [rph],
-    }
-
-    # Setup get_filesystem mock
-    glob_res = [
-        "/some/path/to/1",
-        "/some/path/to/2",
-        "/some/path/to/3",
-    ]
-
-    class Filesystem:
-        def glob(path):
-            return glob_res
-
-    mocker.patch("gnatss.main._get_filesystem", return_value=Filesystem)
-
-    # Setup mock configuration
-    item_keys = []
-    if proc in expected_procs:
-        item_keys = expected_procs[proc]
-
-    sample_dict = {
-        k: {
-            "path": f"/some/path/to/{k}"
-            if k not in glob_vals
-            else "/some/glob/**/path",
-            "storage_options": {},
-        }
-        for k in item_keys
-    }
-    config = mocker.patch("gnatss.configs.main.Configuration")
-    if proc in list(expected_procs.keys()):
-        # Test for actual proc that exists
-        getattr(config, proc).input_files.model_dump.return_value = sample_dict
-
-        all_files_dict = gather_files(config, proc=proc)
-        # Check all_files_dict
-        assert isinstance(all_files_dict, dict)
-        assert sorted(list(all_files_dict.keys())) == sorted(item_keys)
-
-        # Test glob
-        for val in glob_vals:
-            if val in all_files_dict:
-                assert isinstance(all_files_dict[val], list)
-                assert all_files_dict[val] == glob_res
-    else:
-        # Test for random
-        del config.random
-
+@pytest.mark.parametrize(
+    "proc, mode",
+    [
+        ("posfilter", "files"),
+        ("posfilter", "object"),
+        ("unrecognized_proc", "files"),
+        ("unrecognized_proc", "object"),
+    ],
+)
+def test_gather_files(configuration, proc, mode):
+    if proc == "unrecognized_proc":
         with pytest.raises(AttributeError) as exc_info:
-            all_files_dict = gather_files(config, proc=proc)
+            _ = gather_files(configuration, proc=proc, mode=mode)
+        assert str(exc_info.value) == f"Unknown process type: {proc}"
 
-        assert exc_info.type == AttributeError
-        assert exc_info.value.args[0] == f"Unknown process type: {proc}"
+    elif proc == "posfilter":
+        all_files_dict = gather_files(configuration, proc=proc, mode=mode)
+        print(f"{all_files_dict=}")
+
+        if mode == "files":
+            assert isinstance(all_files_dict, dict)
+            assert all(
+                key in all_files_dict.keys()
+                for key in ("gps_positions", "novatel", "novatel_std")
+            )
+            assert (
+                len(all_files_dict["gps_positions"]) == 3
+                and len(all_files_dict["novatel"]) == 1
+                and len(all_files_dict["novatel_std"]) == 1
+            )
+
+            for key, val in all_files_dict.items():
+                assert isinstance(val, list)
+                assert isinstance(key, str)
+                assert all(isinstance(file, str) for file in val)
+                assert all(Path(file).is_file() for file in val)
+
+        elif mode == "object":
+            assert isinstance(all_files_dict, dict)
+            assert all(
+                key in all_files_dict.keys()
+                for key in ("gps_positions", "novatel", "novatel_std")
+            )
+            for key, val in all_files_dict.items():
+                assert isinstance(val, InputData)
+                assert isinstance(key, str)
+
+        else:
+            assert False
+
+    else:
+        assert False
 
 
 def test__get_latest_process():

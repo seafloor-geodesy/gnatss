@@ -6,7 +6,7 @@ import typer
 import xarray as xr
 
 from .. import constants
-from ..configs.io import CSVOutput, OutputPath
+from ..configs.io import CSVOutput, InputData, OutputPath
 from ..configs.main import Configuration
 from ..loaders import (
     load_configuration,
@@ -113,7 +113,7 @@ def gather_files(
     config: Configuration,
     proc: Literal["main", "solver", "posfilter"] = "solver",
     mode: Literal["files", "object"] = "files",
-) -> Dict[str, List[str]]:
+) -> Dict[str, List[Union[str, InputData]]]:
     """Gather file paths for the various dataset files defined in proc config.
 
     Parameters
