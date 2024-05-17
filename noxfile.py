@@ -33,15 +33,11 @@ def tests(session: nox.Session) -> None:
     - git-lfs: https://github.com/git-lfs/git-lfs
     - unzip: https://linuxize.com/post/how-to-unzip-files-in-linux/
     """
-    test_data_zip_path = (DIR / "tests" / "data" / "2022.zip").absolute()
     session.install(".[test]")
-    session.run("git", "lfs", "pull", external=True)
     session.run(
-        "unzip",
-        str(test_data_zip_path),
-        "-d",
-        str(test_data_zip_path.parent),
-        external=True,
+        "python",
+        "-c",
+        "from gnatss.utilities.testing import download_test_data; download_test_data(unzip=True)",
     )
     session.run("pytest", "-vvv", "tests", *session.posargs)
 
