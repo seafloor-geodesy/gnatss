@@ -6,14 +6,14 @@ root: intro
 parts:
   - caption: Getting Started
     chapters:
-    - file: install
-    - file: gnssa
+      - file: install
+      - file: gnssa
   - caption: User Guide
     chapters:
-    - file: input
-    - file: config_yaml
-    - file: position_inversion
+      - file: input
+      - file: config_yaml
+      - file: position_inversion
   - caption: Help & reference
     chapters:
-    - file: configs
-    - file: api
+      - file: configs
+      - file: api

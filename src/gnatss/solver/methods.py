@@ -31,9 +31,7 @@ def simple_twtt(
 
     """
     # Calculate distances in meters
-    transmit_distance = np.array(
-        [np.linalg.norm(vector) for vector in transmit_vectors]
-    )
+    transmit_distance = np.array([np.linalg.norm(vector) for vector in transmit_vectors])
     reply_distance = np.array([np.linalg.norm(vector) for vector in reply_vectors])
 
     return (transmit_distance + reply_distance) / transponders_mean_sv

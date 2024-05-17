@@ -31,8 +31,7 @@ def test_gather_files(configuration, proc, mode):
         if mode == "files":
             assert isinstance(all_files_dict, dict)
             assert all(
-                key in all_files_dict.keys()
-                for key in ("gps_positions", "novatel", "novatel_std")
+                key in all_files_dict.keys() for key in ("gps_positions", "novatel", "novatel_std")
             )
             assert (
                 len(all_files_dict["gps_positions"]) == 3
@@ -49,8 +48,7 @@ def test_gather_files(configuration, proc, mode):
         elif mode == "object":
             assert isinstance(all_files_dict, dict)
             assert all(
-                key in all_files_dict.keys()
-                for key in ("gps_positions", "novatel", "novatel_std")
+                key in all_files_dict.keys() for key in ("gps_positions", "novatel", "novatel_std")
             )
             for key, val in all_files_dict.items():
                 assert isinstance(val, InputData)
@@ -84,15 +82,9 @@ def test__print_final_stats(mocker):
     mock_echo = mocker.patch("typer.echo")
     # Create some mock data
     transponders = [
-        SolverTransponder(
-            pxp_id="1", lat=1.1, lon=2.1, height=3.1, internal_delay=0.01
-        ),
-        SolverTransponder(
-            pxp_id="2", lat=1.2, lon=2.2, height=3.2, internal_delay=0.02
-        ),
-        SolverTransponder(
-            pxp_id="3", lat=1.3, lon=2.3, height=3.3, internal_delay=0.03
-        ),
+        SolverTransponder(pxp_id="1", lat=1.1, lon=2.1, height=3.1, internal_delay=0.01),
+        SolverTransponder(pxp_id="2", lat=1.2, lon=2.2, height=3.2, internal_delay=0.02),
+        SolverTransponder(pxp_id="3", lat=1.3, lon=2.3, height=3.3, internal_delay=0.03),
     ]
     process_data = {
         1: {

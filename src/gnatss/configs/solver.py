@@ -3,6 +3,7 @@
 The solver module containing base models for
 solver configuration
 """
+
 from functools import cached_property
 from typing import List, Literal, Optional
 from uuid import uuid4
@@ -95,8 +96,7 @@ class SolverTransponder(BaseModel):
     pxp_id: Optional[str] = Field(
         None,
         description=(
-            "Transponder id string. "
-            "**This field will be computed during object creation**"
+            "Transponder id string. " "**This field will be computed during object creation**"
         ),
     )
     azimuth: Optional[float] = Field(
@@ -136,13 +136,9 @@ class Solver(BaseModel):
         True,
         description="GPS positional uncertainty flag std. dev. (True) or variance (False)",
     )
-    geoid_undulation: float = Field(
-        ..., description="Geoid undulation at sea surface point"
-    )
+    geoid_undulation: float = Field(..., description="Geoid undulation at sea surface point")
     # TODO: Separate into different plugin for ray tracing
-    ray_trace_type: Literal["scale", "1d"] = Field(
-        "scale", description="Ray trace method to use"
-    )
+    ray_trace_type: Literal["scale", "1d"] = Field("scale", description="Ray trace method to use")
     bisection_tolerance: float = Field(
         1e-10, description="Tolerance to stop bisection during ray trace"
     )
@@ -159,15 +155,12 @@ class Solver(BaseModel):
     harmonic_mean_start_depth: float = Field(
         0.0, description="Start depth in meters for harmonic mean computation."
     )
-    input_files: SolverInputs = Field(
-        ..., description="Input files data path specifications."
-    )
+    input_files: SolverInputs = Field(..., description="Input files data path specifications.")
     distance_limit: float = Field(
         150.0,
         ge=0.0,
         description=(
-            "Distance in meters from center beyond "
-            "which points will be excluded from solution"
+            "Distance in meters from center beyond " "which points will be excluded from solution"
         ),
     )
     residual_limit: float = Field(

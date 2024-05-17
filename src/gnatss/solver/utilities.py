@@ -17,9 +17,7 @@ from ..utilities.time import AstroTime
 from .solve import perform_solve
 
 
-def _print_detected_outliers(
-    outliers_df, outlier_threshold, all_epochs, residual_limit
-) -> None:
+def _print_detected_outliers(outliers_df, outlier_threshold, all_epochs, residual_limit) -> None:
     # Print out the number of outliers detected
     n_outliers = len(outliers_df)
     percent_outliers = np.round((n_outliers / all_epochs.size) * 100.0, 2)
@@ -35,9 +33,7 @@ def _print_detected_outliers(
     typer.echo(message)
 
 
-def _print_final_stats(
-    transponders: List[SolverTransponder], process_data: Dict[str, Any]
-):
+def _print_final_stats(transponders: List[SolverTransponder], process_data: Dict[str, Any]):
     """Print out final solution statistics and results"""
     num_transponders = len(transponders)
     # Get the latest process data
@@ -194,9 +190,7 @@ def generate_process_xr_dataset(process_data, resdf, config) -> xr.Dataset:
     )
 
     # Get the median time of residuals
-    median_time = AstroTime(
-        np.median(resdf[constants.TIME_J2000].values), format="unix_j2000"
-    )
+    median_time = AstroTime(np.median(resdf[constants.TIME_J2000].values), format="unix_j2000")
     median_time_str = median_time.strftime("%Y-%m-%dT%H:00:00")
 
     # Set the median time to the process dataset
@@ -222,9 +216,9 @@ def filter_by_distance_limit(all_observations, config):
     distance_limit = config.solver.distance_limit
 
     # Extract the rows of observations with distances beyond the limit
-    filtered_rows = dist_center_df[
-        dist_center_df[constants.GPS_DISTANCE] > distance_limit
-    ][constants.DATA_SPEC.tx_time]
+    filtered_rows = dist_center_df[dist_center_df[constants.GPS_DISTANCE] > distance_limit][
+        constants.DATA_SPEC.tx_time
+    ]
 
     # Filter out data based on the filtered rows and reset index
     all_observations = all_observations[
@@ -311,9 +305,7 @@ def extract_distance_from_center(
     """
 
     def _compute_enu(coords, array_center):
-        return ecef2enu(
-            *coords, array_center.lat, array_center.lon, array_center.alt, deg=True
-        )
+        return ecef2enu(*coords, array_center.lat, array_center.lon, array_center.alt, deg=True)
 
     # Set up transmit columns
     transmit_cols = constants.DATA_SPEC.transducer_tx_fields.keys()
@@ -339,16 +331,12 @@ def extract_distance_from_center(
     enu_df = pd.DataFrame.from_records(enu_arrays, columns=constants.GPS_LOCAL_TANGENT)
     # Compute azimuth from north to east
     enu_df.loc[:, constants.GPS_AZ] = enu_df.apply(
-        lambda row: np.degrees(
-            np.arctan2(row[constants.GPS_EAST], row[constants.GPS_NORTH])
-        ),
+        lambda row: np.degrees(np.arctan2(row[constants.GPS_EAST], row[constants.GPS_NORTH])),
         axis=1,
     )
     # Compute distance from center
     enu_df.loc[:, constants.GPS_DISTANCE] = enu_df.apply(
-        lambda row: np.sqrt(
-            row[constants.GPS_NORTH] ** 2 + row[constants.GPS_EAST] ** 2
-        ),
+        lambda row: np.sqrt(row[constants.GPS_NORTH] ** 2 + row[constants.GPS_EAST] ** 2),
         axis=1,
     )
 
@@ -416,9 +404,7 @@ def prepare_and_solve(
     while not is_converged:
         # Max converge attempt failure
         if n_iter > max_iter:
-            warnings.warn(
-                "Exceeds the allowed number of attempt, " "please adjust your data."
-            )
+            warnings.warn("Exceeds the allowed number of attempt, " "please adjust your data.")
             break
 
         # Increase iter num
@@ -437,9 +423,7 @@ def prepare_and_solve(
             twtt_model,
         )
 
-        is_converged, transponders_xyz, data = check_solutions(
-            all_results, transponders_xyz
-        )
+        is_converged, transponders_xyz, data = check_solutions(all_results, transponders_xyz)
 
         process_dict[n_iter]["data"] = data
 
@@ -452,9 +436,7 @@ def prepare_and_solve(
 
         # This assumes that all data is ADSIG > 0
         RMSRES = np.sum(np.array(data["address"]) ** 2)
-        RMSRESCM = np.sum(
-            ((100 * transponders_mean_sv) * np.array(data["address"])) ** 2
-        )
+        RMSRESCM = np.sum(((100 * transponders_mean_sv) * np.array(data["address"])) ** 2)
         ERRFAC = np.sum((np.array(data["address"]) / np.array(data["adsig"])) ** 2)
 
         RMSRES = np.sqrt(RMSRES / num_data)

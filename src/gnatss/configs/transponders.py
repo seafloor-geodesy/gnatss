@@ -28,8 +28,7 @@ class Transponder(BaseModel):
     pxp_id: Optional[str] = Field(
         None,
         description=(
-            "Transponder id string. "
-            "**This field will be computed during object creation**"
+            "Transponder id string. " "**This field will be computed during object creation**"
         ),
     )
     azimuth: Optional[float] = Field(

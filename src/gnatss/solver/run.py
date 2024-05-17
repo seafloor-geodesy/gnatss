@@ -16,22 +16,18 @@ from .utilities import (
 def run_solver(config, data_dict, return_raw: bool = False):
     all_observations = data_dict.get("gps_solution")
     if all_observations is None:
-        raise ValueError("No GNSS-A L2 data found. Unable to perform solver.")
+        raise ValueError("No GNSS-A Level-2 data found. Unable to perform solver.")
 
     # Ensure the data is sorted properly
     all_observations = ensure_monotonic_increasing(all_observations)
 
     all_observations = filter_deletions_and_qc(all_observations, data_dict)
     all_observations = check_sig3d(all_observations, config.solver.gps_sigma_limit)
-    all_observations, dist_center_df = filter_by_distance_limit(
-        all_observations, config
-    )
+    all_observations, dist_center_df = filter_by_distance_limit(all_observations, config)
     all_epochs = get_all_epochs(all_observations)
 
     twtt_model = config.solver.twtt_model
-    process_data, is_converged = prepare_and_solve(
-        all_observations, config, twtt_model=twtt_model
-    )
+    process_data, is_converged = prepare_and_solve(all_observations, config, twtt_model=twtt_model)
 
     if is_converged:
         _print_final_stats(config.solver.transponders, process_data)

@@ -25,9 +25,7 @@ def run_posfilter(config, data_dict):
     pos_freed_trans_twtt = rotation(
         pos_twtt, cov_rph_twtt, config.posfilter.atd_offsets, config.array_center
     )
-    typer.echo(
-        f"Standardizing data to specification version {constants.DATA_SPEC.version} ..."
-    )
+    typer.echo(f"Standardizing data to specification version {constants.DATA_SPEC.version} ...")
     all_observations = standardize_data(pos_freed_trans_twtt)
 
     # Ensure the data is sorted properly

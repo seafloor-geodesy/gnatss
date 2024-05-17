@@ -29,7 +29,7 @@ TRANSMIT_COV_LOC_COLS = list(constants.DATA_SPEC.gnss_tx_cov_fields.keys())
 
 @numba.njit(cache=True)
 def _split_cov(
-    cov_values: NDArray[Shape["9"], Float64]
+    cov_values: NDArray[Shape["9"], Float64],
 ) -> NDArray[Shape["3, 3"], Float64]:
     """
     Splits an array of covariance values of shape (9,)
@@ -147,9 +147,7 @@ def ecef_to_enu(
     return df
 
 
-def calc_lla_and_enu(
-    all_observations: pd.DataFrame, array_center: ArrayCenter
-) -> pd.DataFrame:
+def calc_lla_and_enu(all_observations: pd.DataFrame, array_center: ArrayCenter) -> pd.DataFrame:
     """
     Calculates the LLA and ENU coordinates for all observations
 
@@ -165,9 +163,7 @@ def calc_lla_and_enu(
     pd.DataFrame
         Modified dataset with LLA and ENU coordinates
     """
-    lla = all_observations[TRANSMIT_LOC_COLS].apply(
-        lambda row: ecef2geodetic(*row.values), axis=1
-    )
+    lla = all_observations[TRANSMIT_LOC_COLS].apply(lambda row: ecef2geodetic(*row.values), axis=1)
     enu = all_observations[TRANSMIT_LOC_COLS].apply(
         lambda row: ecef2enu(
             *row.values,
@@ -211,9 +207,7 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
 
     # Get reply xyz
     reply_xyz_list = []
-    grouped_obs[REPLY_LOC_COLS].apply(
-        lambda group: reply_xyz_list.append(group.to_numpy())
-    )
+    grouped_obs[REPLY_LOC_COLS].apply(lambda group: reply_xyz_list.append(group.to_numpy()))
 
     # Get observed delays
     observed_delay_list = []
@@ -223,14 +217,10 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
 
     # Get transmit cov matrices
     cov_vals_df = grouped_obs[TRANSMIT_COV_LOC_COLS].first()
-    gps_covariance_matrices = [
-        _split_cov(row.to_numpy()) for _, row in cov_vals_df.iterrows()
-    ]
+    gps_covariance_matrices = [_split_cov(row.to_numpy()) for _, row in cov_vals_df.iterrows()]
 
     # Merge all inputs
-    for data in zip(
-        transmit_xyz, reply_xyz_list, gps_covariance_matrices, observed_delay_list
-    ):
+    for data in zip(transmit_xyz, reply_xyz_list, gps_covariance_matrices, observed_delay_list):
         data_inputs.append(data)
     return data_inputs
 
@@ -266,17 +256,12 @@ def clean_tt(
     # Get cleaned travel times
     # This is anything that has 0 reply time
     cleaned_travel_times = travel_times.loc[
-        travel_times[transponder_ids]
-        .where(travel_times[transponder_ids] != 0)
-        .dropna()
-        .index
+        travel_times[transponder_ids].where(travel_times[transponder_ids] != 0).dropna().index
     ]
 
     # Apply travel time correction
     cleaned_travel_times.loc[:, constants.TT_TIME] = (
-        cleaned_travel_times[constants.TT_TIME]
-        + travel_times_correction
-        + transducer_delay_time
+        cleaned_travel_times[constants.TT_TIME] + travel_times_correction + transducer_delay_time
     )
 
     # TODO: Store junk travel times? These are travel times with 0 values
@@ -357,9 +342,7 @@ def preprocess_tt(travel_times: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def standardize_data(
-    pos_freed_trans_twtt: pd.DataFrame, data_precision: int = 8
-) -> pd.DataFrame:
+def standardize_data(pos_freed_trans_twtt: pd.DataFrame, data_precision: int = 8) -> pd.DataFrame:
     is_transmit = pos_freed_trans_twtt[constants.DATA_SPEC.tx_time].isna()
 
     # Standardize receive data
@@ -378,9 +361,7 @@ def standardize_data(
     )
     transmit_df.columns = _get_standard_columns(transmit_df.columns, "transmit")
 
-    return pd.merge(receive_df, transmit_df, on=constants.DATA_SPEC.tx_time).round(
-        data_precision
-    )
+    return pd.merge(receive_df, transmit_df, on=constants.DATA_SPEC.tx_time).round(data_precision)
 
 
 def data_loading(
@@ -403,9 +384,7 @@ def data_loading(
     if from_cache and not gps_solution_exists(config):
         from_cache = False
 
-    return config, load_datasets(
-        config, from_cache, remove_outliers, skip_posfilter, skip_solver
-    )
+    return config, load_datasets(config, from_cache, remove_outliers, skip_posfilter, skip_solver)
 
 
 def preprocess_data(config, data_dict):
@@ -447,9 +426,7 @@ def compute_harmonic_mean(
         start_depth = config.solver.harmonic_mean_start_depth
         for transponder in config.transponders:
             # Compute the harmonic mean and round to 3 decimal places
-            harmonic_mean = round(
-                sv_harmonic_mean(svdf, start_depth, transponder.height), 3
-            )
+            harmonic_mean = round(sv_harmonic_mean(svdf, start_depth, transponder.height), 3)
             transponder.sv_mean = harmonic_mean
             typer.echo(transponder)
         typer.echo("Finished computing harmonic mean")
@@ -462,7 +439,7 @@ def ensure_monotonic_increasing(all_observations: pd.DataFrame) -> pd.DataFrame:
     # as it assumes the data is sorted by receive time and that
     # the data is monotonic increasing
     if not all_observations[constants.DATA_SPEC.rx_time].is_monotonic_increasing:
-        all_observations = all_observations.sort_values(
-            by=constants.DATA_SPEC.rx_time
-        ).reset_index(drop=True)
+        all_observations = all_observations.sort_values(by=constants.DATA_SPEC.rx_time).reset_index(
+            drop=True
+        )
     return all_observations

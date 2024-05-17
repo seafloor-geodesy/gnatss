@@ -94,9 +94,7 @@ def clean_zeros(input_array: NDArray) -> NDArray:
         return np.array(np.trim_zeros(input_array))
     elif num_dims == 2:
         # 2D array
-        return np.array(
-            [np.trim_zeros(arr) for arr in input_array if np.trim_zeros(arr).size > 0]
-        )
+        return np.array([np.trim_zeros(arr) for arr in input_array if np.trim_zeros(arr).size > 0])
 
     raise NotImplementedError(
         f"Only 1 or 2-D arrays are supported, instead for {num_dims} dimensions"
