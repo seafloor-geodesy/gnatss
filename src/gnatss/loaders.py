@@ -20,9 +20,7 @@ def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
     to be used throughout the pre-processing
     """
     if config_yaml is None or not Path(config_yaml).exists():
-        raise FileNotFoundError(
-            "Configuration file not found. Unable to create configuration"
-        )
+        raise FileNotFoundError("Configuration file not found. Unable to create configuration")
 
     yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
     config = Configuration(**yaml_dict)
@@ -159,9 +157,7 @@ def load_travel_times(
         )
 
         # Drop unused columns for downstream computation
-        all_travel_times = all_travel_times.drop(
-            [constants.TT_DATE, constants.TIME_ASTRO], axis=1
-        )
+        all_travel_times = all_travel_times.drop([constants.TT_DATE, constants.TIME_ASTRO], axis=1)
 
     return all_travel_times
 
@@ -241,15 +237,11 @@ def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], 
 def _round_time_precision(gps_data, time_round):
     # TODO: Find a way to determine this precision dynamically?
     if isinstance(time_round, int) and time_round > 0:
-        gps_data.loc[:, constants.GPS_TIME] = gps_data[constants.GPS_TIME].round(
-            time_round
-        )
+        gps_data.loc[:, constants.GPS_TIME] = gps_data[constants.GPS_TIME].round(time_round)
     return gps_data
 
 
-def load_gps_positions(
-    files: List[str], time_round: int = constants.DELAY_TIME_PRECISION
-):
+def load_gps_positions(files: List[str], time_round: int = constants.DELAY_TIME_PRECISION):
     """
     Loads gps positions into a pandas dataframe from a list of files.
     Usually named `GPS_POS_FREED`.
@@ -278,9 +270,7 @@ def load_gps_positions(
         *constants.ANT_GPS_GEOCENTRIC,
         *constants.ANT_GPS_GEOCENTRIC_STD,
     ]
-    gnss_positions = [
-        pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
-    ]
+    gnss_positions = [pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files]
     all_gps_positions = pd.concat(gnss_positions).reset_index(drop=True)
     all_gps_positions = all_gps_positions.drop(columns="dtype")
     # Round to match the delays precision
@@ -315,9 +305,7 @@ def load_gps_solutions(
     """
     if from_legacy:
         columns = [constants.GPS_TIME, *constants.GPS_GEOCENTRIC, *constants.GPS_COV]
-        gps_solutions = [
-            pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files
-        ]
+        gps_solutions = [pd.read_csv(i, sep=r"\s+", header=None, names=columns) for i in files]
         all_gps_solutions = pd.concat(gps_solutions).reset_index(drop=True)
 
         # Round to match the delays precision
@@ -329,9 +317,7 @@ def load_gps_solutions(
         all_gps_positions = pd.concat(gps_solutions).reset_index(drop=True)
 
         if any(len(sol.columns) <= 1 for sol in gps_solutions):
-            raise ValueError(
-                "Legacy GPS solutions file detected but not in legacy mode"
-            )
+            raise ValueError("Legacy GPS solutions file detected but not in legacy mode")
 
         return all_gps_positions
 
@@ -456,9 +442,7 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
             pd.read_csv(qc_file, header=0, names=csv_columns).reset_index(drop=True)
             for qc_file in qc_files
         ]
-        qc_df = (
-            pd.concat(qc_dfs).reset_index(drop=True).drop(columns=[constants.QC_NOTES])
-        )
+        qc_df = pd.concat(qc_dfs).reset_index(drop=True).drop(columns=[constants.QC_NOTES])
 
         # If QC_STARTTIME & QC_ENDTIME are of string type, convert to unix_j2000 float
         if is_string_dtype(qc_df[constants.QC_STARTTIME]) and is_string_dtype(
@@ -478,9 +462,7 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
         elif is_integer_dtype(qc_df[constants.QC_STARTTIME]) and is_integer_dtype(
             qc_df[constants.QC_ENDTIME]
         ):
-            qc_df[constants.QC_ENDTIME] = qc_df[constants.QC_ENDTIME].apply(
-                lambda row: float(row)
-            )
+            qc_df[constants.QC_ENDTIME] = qc_df[constants.QC_ENDTIME].apply(lambda row: float(row))
 
         else:
             msg = (
@@ -586,8 +568,6 @@ def _read_novatel_L1_data_files(
     df = pd.DataFrame(all_data_array)
     # New pd column to convert GNSS Week and Seconds to J2000 Seconds
     df[constants.TIME_J2000] = pd.Series(
-        gps_ws_time_to_astrotime(
-            all_data_array["week"], all_data_array["seconds"]
-        ).unix_j2000
+        gps_ws_time_to_astrotime(all_data_array["week"], all_data_array["seconds"]).unix_j2000
     )
     return df

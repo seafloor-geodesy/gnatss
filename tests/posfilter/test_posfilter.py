@@ -48,8 +48,7 @@ def test_spline_interpolate(
         assert (
             len(
                 merged_df[
-                    merged_df[f"{col}_ref"] - merged_df[f"{col}_interpolated"]
-                    > rph_error_tol
+                    merged_df[f"{col}_ref"] - merged_df[f"{col}_interpolated"] > rph_error_tol
                 ]
             )
             == 0

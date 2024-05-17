@@ -1,35 +1,57 @@
 exclude: |
   (?x)^(
     docs/conf.py |
-    .devcontainer/
+    .devcontainer/ |
+    tests/ops_data.py
   )
+
+ci:
+  autoupdate_commit_msg: "chore: update pre-commit hooks"
+  autofix_commit_msg: "style: pre-commit fixes"
+
 repos:
+  - repo: https://github.com/adamchainz/blacken-docs
+    rev: "1.16.0"
+    hooks:
+      - id: blacken-docs
+        additional_dependencies: [black==24.*]
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: "v4.6.0"
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-docstring-first
-      - id: check-json
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
       - id: check-yaml
-      - id: pretty-format-json
-        args: ["--autofix", "--indent=2", "--no-sort-keys"]
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: "v1.10.0"
     hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
 
-  - repo: https://github.com/psf/black
-    rev: 23.11.0
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v4.0.0-alpha.8"
     hooks:
-      - id: black
+      - id: prettier
+        types_or: [yaml, markdown, html, css, scss, javascript, json]
+        args: [--prose-wrap=always]
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.1.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.4.4"
     hooks:
-      - id: flake8
+      - id: ruff
+        args: ["--fix", "--show-fixes"]
+      - id: ruff-format
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
@@ -38,3 +60,21 @@ repos:
         # Checks spelling in `docs/source` and `gnatss` dirs ONLY
         # Ignores `.ipynb` files and `_build` folders
         args: ["--skip=*.ipynb,docs/_build", "-w", "docs", "gnatss"]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: "v0.10.0.1"
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: "v0.17"
+    hooks:
+      - id: validate-pyproject
+        additional_dependencies: ["validate-pyproject-schema-store[all]"]
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: "0.28.3"
+    hooks:
+      - id: check-dependabot
+      - id: check-github-workflows
+      - id: check-readthedocs

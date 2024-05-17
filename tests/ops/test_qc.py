@@ -202,9 +202,7 @@ from gnatss.ops.qc import _compute_ticks_and_labels
         ),
     ],
 )
-def test__compute_ticks_and_labels(
-    data, time_col, expected_ticks, expected_labels
-) -> None:
+def test__compute_ticks_and_labels(data, time_col, expected_ticks, expected_labels) -> None:
     ticks, labels = _compute_ticks_and_labels(DataFrame({time_col: data}))
     assert isinstance(ticks, NDArray[Shape[f"{len(expected_ticks)}"], Float64])
     assert array_equal(ticks, expected_ticks)

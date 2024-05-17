@@ -78,9 +78,7 @@ def test_unix_j2000_time_format():
     assert isclose(initial_unix_j2000_utc.unix_j2000, 0.0, atol=1e-3)
 
     # Number of seconds elapsed from 01-Jan-2000-noon-tt to 02_Feb-2004-noon-tt
-    secs_elapsed_till_second_feb_2004_noon = float(
-        ((366 + 365 + 365 + 365) + 31 + 1) * erfa.DAYSEC
-    )
+    secs_elapsed_till_second_feb_2004_noon = float(((366 + 365 + 365 + 365) + 31 + 1) * erfa.DAYSEC)
 
     second_feb_2004_noon_unix_j2000 = AstroTime(
         0.0 + secs_elapsed_till_second_feb_2004_noon, format="unix_j2000"

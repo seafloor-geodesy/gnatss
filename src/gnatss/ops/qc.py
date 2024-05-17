@@ -149,9 +149,7 @@ def plot_residuals(
     if isinstance(outliers_df, pd.DataFrame) and len(outliers_df) > 0:
         for col in outliers_df.columns:
             if col not in time_labels:
-                outliers_df.plot.scatter(
-                    x="time", y=col, s=3, c=CB_COLORS[0], ax=axs, zorder=999
-                )
+                outliers_df.plot.scatter(x="time", y=col, s=3, c=CB_COLORS[0], ax=axs, zorder=999)
         col_names += ["To be removed"]
 
     # Add legend
@@ -165,9 +163,7 @@ def plot_residuals(
     plt.grid(zorder=1, color="0.95")
 
     # Calculate ticks and labels
-    ticks, labels = _compute_ticks_and_labels(
-        residuals_df, time_col=constants.TIME_J2000
-    )
+    ticks, labels = _compute_ticks_and_labels(residuals_df, time_col=constants.TIME_J2000)
     plt.xticks(ticks=ticks, labels=labels, rotation=45, ha="right")
 
     fig.tight_layout()

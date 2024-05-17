@@ -35,9 +35,7 @@ def _compute_hm(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> flo
         The end depth for calculation
 
     """  # noqa: E501
-    filtdf = svdf[
-        (svdf[SP_DEPTH].round() >= start_depth) & (svdf[SP_DEPTH].round() <= end_depth)
-    ]
+    filtdf = svdf[(svdf[SP_DEPTH].round() >= start_depth) & (svdf[SP_DEPTH].round() <= end_depth)]
 
     # Get weights
     weights = filtdf[SP_DEPTH].diff()

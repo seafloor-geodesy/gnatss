@@ -2,6 +2,7 @@
 
 Module for storing constants used in package
 """
+
 from .dataspec import DataSpec
 
 # Config constants
@@ -47,9 +48,7 @@ GPS_Y = "y"  # Geocentric y
 GPS_Z = "z"  # Geocentric z
 GPS_GEOCENTRIC = [GPS_X, GPS_Y, GPS_Z]  # Geocentric x,y,z
 ANT_GPS_GEOCENTRIC = [f"ant_{d}" for d in GPS_GEOCENTRIC]  # Geocentric ant x,y,z
-ANT_GPS_GEOCENTRIC_STD = [
-    f"ant_sig{d}" for d in GPS_GEOCENTRIC
-]  # Geocentric ant x,y,z std
+ANT_GPS_GEOCENTRIC_STD = [f"ant_sig{d}" for d in GPS_GEOCENTRIC]  # Geocentric ant x,y,z std
 
 GPS_LON = "lon"  # Geodetic longitude
 GPS_LAT = "lat"  # Geodetic latitude
@@ -60,9 +59,7 @@ GPS_EAST = "east"  # Local tangent East
 GPS_NORTH = "north"  # Local tangent North
 GPS_UP = "up"  # Local tangent Up
 GPS_LOCAL_TANGENT = [GPS_EAST, GPS_NORTH, GPS_UP]  # Local tangent e,n,u
-ANT_GPS_LOCAL_TANGENT = [
-    f"ant_{d}" for d in GPS_LOCAL_TANGENT
-]  # Local tangent ant e,n,u
+ANT_GPS_LOCAL_TANGENT = [f"ant_{d}" for d in GPS_LOCAL_TANGENT]  # Local tangent ant e,n,u
 GPS_COV_XX = "xx"
 GPS_COV_XY = "xy"
 GPS_COV_XZ = "xz"
@@ -114,9 +111,7 @@ RPH_COV = [
     RPH_COV_HP,
     RPH_COV_HH,
 ]  # Covariance matrix columns
-PLATFORM_COV_RPH_DIAG = [
-    f"cov_{c}" for c in RPH_COV_DIAG
-]  # Platform covariance diagonal
+PLATFORM_COV_RPH_DIAG = [f"cov_{c}" for c in RPH_COV_DIAG]  # Platform covariance diagonal
 PLATFORM_COV_RPH = [f"cov_{c}" for c in RPH_COV]  # Platform covariance columns
 
 # Antenna Position Direction columns

@@ -3,6 +3,7 @@
 The main configuration module containing base settings pydantic
 classes
 """
+
 import datetime
 from typing import List, Literal, Optional, Union
 
@@ -51,12 +52,8 @@ class Configuration(BaseConfiguration):
     time_origin: Optional[Union[str, datetime.datetime]] = Field(
         None, description="Origin of time used in the file [UTC]"
     )
-    ref_frame: Literal["wgs84"] = Field(
-        "wgs84", description="Reference frame used in the file"
-    )
-    array_center: ArrayCenter = Field(
-        ..., description="Array center to use for calculation"
-    )
+    ref_frame: Literal["wgs84"] = Field("wgs84", description="Reference frame used in the file")
+    array_center: ArrayCenter = Field(..., description="Array center to use for calculation")
     transponders: List[Transponder] = Field(
         ..., description="A list of transponders configurations"
     )
@@ -73,14 +70,10 @@ class Configuration(BaseConfiguration):
 
     # Processing configurations
     solver: Optional[Solver] = Field(None, description="Solver configurations")
-    posfilter: Optional[PositionFilter] = Field(
-        None, description="Position filter configurations"
-    )
+    posfilter: Optional[PositionFilter] = Field(None, description="Position filter configurations")
 
     # File related configurations
-    input_files: MainInputs = Field(
-        ..., description="Input files data path specifications."
-    )
+    input_files: MainInputs = Field(..., description="Input files data path specifications.")
     output: Optional[OutputPath] = Field(None, description="Output path configurations")
 
     # Extra configurations

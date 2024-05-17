@@ -2,6 +2,7 @@
 
 Time utilities module utilizing astropy
 """
+
 import numpy as np
 from astropy import units as u
 from astropy.time import Time as AstroTime  # noqa

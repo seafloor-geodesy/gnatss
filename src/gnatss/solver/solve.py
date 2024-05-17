@@ -47,7 +47,7 @@ def _calc_tr_vectors(
 
 @numba.njit(cache=True)
 def _calc_unit_vectors(
-    vectors: NDArray[Shape["*, 3"], Float64]
+    vectors: NDArray[Shape["*, 3"], Float64],
 ) -> NDArray[Shape["*, 3"], Float64]:
     """
     Calculates the unit vectors from an array of vectors.
@@ -315,9 +315,7 @@ def calc_twtt_model(
 
 
 @numba.njit(cache=True)
-def calc_tt_residual(
-    delays, transponder_delays, twtt_model
-) -> NDArray[Shape["*"], Float64]:
+def calc_tt_residual(delays, transponder_delays, twtt_model) -> NDArray[Shape["*"], Float64]:
     """
     Calculate the travel time residual in seconds
 
@@ -390,14 +388,10 @@ def solve_transponder_locations(
     num_transponders = len(transponders_mean_sv)
 
     # Get the transmit and reply vectors from xyz locations
-    transmit_vectors, reply_vectors = _calc_tr_vectors(
-        transponders_xyz, transmit_xyz, reply_xyz
-    )
+    transmit_vectors, reply_vectors = _calc_tr_vectors(transponders_xyz, transmit_xyz, reply_xyz)
 
     # Calculate Modeled TWTT (Two way travel time) in seconds
-    twtt_model = calc_twtt_model(
-        twtt_model, transmit_vectors, reply_vectors, transponders_mean_sv
-    )
+    twtt_model = calc_twtt_model(twtt_model, transmit_vectors, reply_vectors, transponders_mean_sv)
     # twtt_model = simple_twtt(transmit_vectors, reply_vectors, transponders_mean_sv)
 
     # Calculate the travel time residual
@@ -408,14 +402,10 @@ def solve_transponder_locations(
     reply_uv = _calc_unit_vectors(reply_vectors)
 
     # Calculate the partial derivatives
-    partial_derivatives = _calc_partial_derivatives(
-        transmit_uv, reply_uv, transponders_mean_sv
-    )
+    partial_derivatives = _calc_partial_derivatives(transmit_uv, reply_uv, transponders_mean_sv)
 
     # Setup the A partial derivative matrix and B covariance matrix
-    a_partials, b_cov = _setup_ab(
-        observed_delays, num_transponders, partial_derivatives
-    )
+    a_partials, b_cov = _setup_ab(observed_delays, num_transponders, partial_derivatives)
 
     # Calculate covariance matrix for partlp vectors (COVF) Units m^2
     covariance_matrix = _calc_cov(

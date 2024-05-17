@@ -58,9 +58,7 @@ def to_file(
         return
 
     if file_format == "csv" and not isinstance(data, pd.DataFrame):
-        raise ValueError(
-            f"Data must be a pandas DataFrame for CSV export, got {type(data)}"
-        )
+        raise ValueError(f"Data must be a pandas DataFrame for CSV export, got {type(data)}")
     elif file_format in ["netcdf", "zarr"] and not isinstance(data, xr.Dataset):
         raise ValueError(
             f"Data must be an xarray Dataset for {file_format} export, got {type(data)}"
@@ -249,9 +247,7 @@ def load_datasets(
     return data_dict
 
 
-def load_files_to_dataframe(
-    key, input_data, config: Configuration, remove_outliers: bool = False
-):
+def load_files_to_dataframe(key, input_data, config: Configuration, remove_outliers: bool = False):
     if input_data is None:
         typer.echo(f"Loading {key} from {config.output.path}")
         file_paths = input_data
@@ -274,9 +270,7 @@ def load_files_to_dataframe(
             **loader_kwargs,
         )
     elif key == "deletions":
-        return load_deletions(
-            config=config, file_paths=file_paths, remove_outliers=remove_outliers
-        )
+        return load_deletions(config=config, file_paths=file_paths, remove_outliers=remove_outliers)
     elif key == "gps_positions":
         # Posfilter input
         return load_gps_positions(file_paths)

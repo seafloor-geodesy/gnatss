@@ -35,9 +35,7 @@ def blank_env(blank_csv_test_file: Path) -> None:
         "GNATSS_ARRAY_CENTER__LAT": str(1.1),
         "GNATSS_ARRAY_CENTER__LON": str(2.2),
         "GNATSS_TRANSPONDERS": "[]",
-        "GNATSS_INPUT_FILES": dumps(
-            {"travel_times": {"path": str(blank_csv_test_file)}}
-        ),
+        "GNATSS_INPUT_FILES": dumps({"travel_times": {"path": str(blank_csv_test_file)}}),
     }
     for k, v in blank_envs.items():
         os.environ.setdefault(k, v)
@@ -99,6 +97,4 @@ def all_files_dict_roll_pitch_heading() -> Dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def roll_pitch_heading_data(all_files_dict_roll_pitch_heading) -> DataFrame:
-    return load_roll_pitch_heading(
-        all_files_dict_roll_pitch_heading["roll_pitch_heading"]
-    )
+    return load_roll_pitch_heading(all_files_dict_roll_pitch_heading["roll_pitch_heading"])

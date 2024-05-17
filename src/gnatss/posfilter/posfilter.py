@@ -58,9 +58,7 @@ def spline_interpolate(
 
     # Interpolate the missing values using cubic spline interpolation
     result_df = (
-        initial_df.interpolate(method="spline", order=3, s=0)
-        .dropna()
-        .reset_index(drop=True)
+        initial_df.interpolate(method="spline", order=3, s=0).dropna().reset_index(drop=True)
     )
 
     for col in constants.PLATFORM_COV_RPH:
@@ -115,9 +113,7 @@ def rotation(
 
     # Extract atd_offsets values
     if isinstance(atd_offsets, AtdOffset):
-        atd_offsets = np.array(
-            [atd_offsets.forward, atd_offsets.rightward, atd_offsets.downward]
-        )
+        atd_offsets = np.array([atd_offsets.forward, atd_offsets.rightward, atd_offsets.downward])
 
     # d_enu_columns and td_enu_columns are temporary columns used to calculate antenna positions
     d_enu_columns = ["d_e", "d_n", "d_u"]
@@ -146,9 +142,7 @@ def rotation(
 
     transducer_columns = constants.GPS_GEOCENTRIC
     # antenna_enu is the sum of corresponding td_enu_columns and d_enu_columns values
-    for trans_enu, td_enu, d_enu in zip(
-        constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns
-    ):
+    for trans_enu, td_enu, d_enu in zip(constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns):
         df[trans_enu] = df.loc[:, [td_enu, d_enu]].sum(axis=1)
 
     # convert to ecef coordinates
@@ -164,9 +158,7 @@ def rotation(
     )
 
     # Drop temporary columns
-    df = df.drop(
-        columns=[*d_enu_columns, *td_enu_columns, *constants.GPS_LOCAL_TANGENT]
-    )
+    df = df.drop(columns=[*d_enu_columns, *td_enu_columns, *constants.GPS_LOCAL_TANGENT])
 
     return df
 
@@ -246,16 +238,12 @@ def kalman_filtering(
     gps_df["rho_xz"] = 0.0
     gps_df["rho_yz"] = 0.0
 
-    merged_df = inspvaa_df.merge(
-        twtt_df[[constants.GPS_TIME]], on=constants.GPS_TIME, how="outer"
-    )
+    merged_df = inspvaa_df.merge(twtt_df[[constants.GPS_TIME]], on=constants.GPS_TIME, how="outer")
     merged_df = merged_df.merge(gps_df, on=constants.GPS_TIME, how="left")
     merged_df = merged_df.merge(insstdeva_df, on=constants.GPS_TIME, how="left")
     merged_df = merged_df.sort_values(constants.GPS_TIME).reset_index(drop=True)
 
-    first_pos = (
-        merged_df[~merged_df[constants.ANT_GPS_GEOCENTRIC[0]].isnull()].iloc[0].name
-    )
+    first_pos = merged_df[~merged_df[constants.ANT_GPS_GEOCENTRIC[0]].isnull()].iloc[0].name
     merged_df = merged_df.loc[first_pos:].reset_index(drop=True)
 
     merged_np_array = merged_df.to_numpy()
@@ -263,15 +251,11 @@ def kalman_filtering(
     # P: covariance matrix of the predicted state
     # K: Kalman gain
     # Pp: predicted covariance from the RTS smoother
-    x, P, _, _ = run_filter_simulation(
-        merged_np_array, start_dt, gnss_pos_psd, vel_psd, cov_err
-    )
+    x, P, _, _ = run_filter_simulation(merged_np_array, start_dt, gnss_pos_psd, vel_psd, cov_err)
 
     # Positions covariance
     ant_cov = P[:, :3, :3]
-    ant_cov_df = pd.DataFrame(
-        ant_cov.reshape(ant_cov.shape[0], -1), columns=constants.ANT_GPS_COV
-    )
+    ant_cov_df = pd.DataFrame(ant_cov.reshape(ant_cov.shape[0], -1), columns=constants.ANT_GPS_COV)
     ant_cov_df[[*constants.ANT_GPS_GEOCENTRIC_STD]] = ant_cov_df[
         [*constants.ANT_GPS_COV_DIAG]
     ].apply(np.sqrt)
@@ -283,9 +267,7 @@ def kalman_filtering(
         columns=constants.ANT_GPS_GEOCENTRIC,
     )
     smoothed_results[constants.GPS_TIME] = merged_df[constants.GPS_TIME]
-    smoothed_results = smoothed_results.merge(
-        ant_cov_df, on=constants.GPS_TIME, how="left"
-    )
+    smoothed_results = smoothed_results.merge(ant_cov_df, on=constants.GPS_TIME, how="left")
 
     if full_result:
         return smoothed_results

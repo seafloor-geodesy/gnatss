@@ -35,39 +35,21 @@ class DataV1(BaseData):
     T_transmit: float = Field(
         ..., description="Transmission time of acoustic signal [sec. from origin]"
     )
-    X_transmit: float = Field(
-        ..., description="Transducer position at T_transmit in ECEF [m]"
-    )
-    Y_transmit: float = Field(
-        ..., description="Transducer position at T_transmit in ECEF [m]"
-    )
-    Z_transmit: float = Field(
-        ..., description="Transducer position at T_transmit in ECEF [m]"
-    )
+    X_transmit: float = Field(..., description="Transducer position at T_transmit in ECEF [m]")
+    Y_transmit: float = Field(..., description="Transducer position at T_transmit in ECEF [m]")
+    Z_transmit: float = Field(..., description="Transducer position at T_transmit in ECEF [m]")
     # Transducer Receive
     T_receive: float = Field(
         ..., description="Reception time of acoustic signal [sec. from origin]"
     )
-    X_receive: float = Field(
-        ..., description="Transducer position at T_receive in ECEF [m]"
-    )
-    Y_receive: float = Field(
-        ..., description="Transducer position at T_receive in ECEF [m]"
-    )
-    Z_receive: float = Field(
-        ..., description="Transducer position at T_receive in ECEF [m]"
-    )
+    X_receive: float = Field(..., description="Transducer position at T_receive in ECEF [m]")
+    Y_receive: float = Field(..., description="Transducer position at T_receive in ECEF [m]")
+    Z_receive: float = Field(..., description="Transducer position at T_receive in ECEF [m]")
     # --- Optional Fields ---
     # Antenna (GNSS) Transmit
-    ant_X0: Optional[float] = Field(
-        None, description="GNSS position at T_transmit in ECEF [m]"
-    )
-    ant_Y0: Optional[float] = Field(
-        None, description="GNSS position at T_transmit in ECEF [m]"
-    )
-    ant_Z0: Optional[float] = Field(
-        None, description="GNSS position at T_transmit in ECEF [m]"
-    )
+    ant_X0: Optional[float] = Field(None, description="GNSS position at T_transmit in ECEF [m]")
+    ant_Y0: Optional[float] = Field(None, description="GNSS position at T_transmit in ECEF [m]")
+    ant_Z0: Optional[float] = Field(None, description="GNSS position at T_transmit in ECEF [m]")
     # Standard Deviation Antenna (GNSS) Transmit
     ant_sigX0: Optional[float] = Field(
         None,
@@ -121,43 +103,19 @@ class DataV1(BaseData):
         description="Heading at T_transmit [deg.]; *rotation around 'downward' axis in ATD offset",
     )
     # Covariance Platform Transmit
-    cov_RR0: Optional[float] = Field(
-        None, description="RR covariance value at T_transmit"
-    )
-    cov_PP0: Optional[float] = Field(
-        None, description="PP covariance value at T_transmit"
-    )
-    cov_HH0: Optional[float] = Field(
-        None, description="HH covariance value at T_transmit"
-    )
-    cov_RP0: Optional[float] = Field(
-        None, description="RP covariance value at T_transmit"
-    )
-    cov_RH0: Optional[float] = Field(
-        None, description="RH covariance value at T_transmit"
-    )
-    cov_PR0: Optional[float] = Field(
-        None, description="PR covariance value at T_transmit"
-    )
-    cov_PH0: Optional[float] = Field(
-        None, description="PH covariance value at T_transmit"
-    )
-    cov_HR0: Optional[float] = Field(
-        None, description="HR covariance value at T_transmit"
-    )
-    cov_HP0: Optional[float] = Field(
-        None, description="HP covariance value at T_transmit"
-    )
+    cov_RR0: Optional[float] = Field(None, description="RR covariance value at T_transmit")
+    cov_PP0: Optional[float] = Field(None, description="PP covariance value at T_transmit")
+    cov_HH0: Optional[float] = Field(None, description="HH covariance value at T_transmit")
+    cov_RP0: Optional[float] = Field(None, description="RP covariance value at T_transmit")
+    cov_RH0: Optional[float] = Field(None, description="RH covariance value at T_transmit")
+    cov_PR0: Optional[float] = Field(None, description="PR covariance value at T_transmit")
+    cov_PH0: Optional[float] = Field(None, description="PH covariance value at T_transmit")
+    cov_HR0: Optional[float] = Field(None, description="HR covariance value at T_transmit")
+    cov_HP0: Optional[float] = Field(None, description="HP covariance value at T_transmit")
     # Antenna (GNSS) Receive
-    ant_X1: Optional[float] = Field(
-        None, description="GNSS position at T_receive in ECEF [m]"
-    )
-    ant_Y1: Optional[float] = Field(
-        None, description="GNSS position at T_receive in ECEF [m]"
-    )
-    ant_Z1: Optional[float] = Field(
-        None, description="GNSS position at T_receive in ECEF [m]"
-    )
+    ant_X1: Optional[float] = Field(None, description="GNSS position at T_receive in ECEF [m]")
+    ant_Y1: Optional[float] = Field(None, description="GNSS position at T_receive in ECEF [m]")
+    ant_Z1: Optional[float] = Field(None, description="GNSS position at T_receive in ECEF [m]")
     # Standard Deviation Antenna (GNSS) Receive
     ant_sigX1: Optional[float] = Field(
         None,
@@ -211,30 +169,12 @@ class DataV1(BaseData):
         description="Heading at T_receive [deg.]; *rotation around 'downward' axis in ATD offset",
     )
     # Covariance Platform Receive
-    cov_RR1: Optional[float] = Field(
-        None, description="RR covariance value at T_receive"
-    )
-    cov_PP1: Optional[float] = Field(
-        None, description="PP covariance value at T_receive"
-    )
-    cov_HH1: Optional[float] = Field(
-        None, description="HH covariance value at T_receive"
-    )
-    cov_RP1: Optional[float] = Field(
-        None, description="RP covariance value at T_receive"
-    )
-    cov_RH1: Optional[float] = Field(
-        None, description="RH covariance value at T_receive"
-    )
-    cov_PR1: Optional[float] = Field(
-        None, description="PR covariance value at T_receive"
-    )
-    cov_PH1: Optional[float] = Field(
-        None, description="PH covariance value at T_receive"
-    )
-    cov_HR1: Optional[float] = Field(
-        None, description="HR covariance value at T_receive"
-    )
-    cov_HP1: Optional[float] = Field(
-        None, description="HP covariance value at T_receive"
-    )
+    cov_RR1: Optional[float] = Field(None, description="RR covariance value at T_receive")
+    cov_PP1: Optional[float] = Field(None, description="PP covariance value at T_receive")
+    cov_HH1: Optional[float] = Field(None, description="HH covariance value at T_receive")
+    cov_RP1: Optional[float] = Field(None, description="RP covariance value at T_receive")
+    cov_RH1: Optional[float] = Field(None, description="RH covariance value at T_receive")
+    cov_PR1: Optional[float] = Field(None, description="PR covariance value at T_receive")
+    cov_PH1: Optional[float] = Field(None, description="PH covariance value at T_receive")
+    cov_HR1: Optional[float] = Field(None, description="HR covariance value at T_receive")
+    cov_HP1: Optional[float] = Field(None, description="HP covariance value at T_receive")

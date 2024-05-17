@@ -28,7 +28,7 @@ def callback(
         help="Show version and exit.",
         callback=version_callback,
         is_eager=True,
-    )
+    ),
 ):
     """
     GNSS-A Processing in Python
@@ -49,24 +49,15 @@ def run(
     ),
     outlier_threshold: Optional[float] = typer.Option(
         None,
-        help=(
-            "Threshold for allowable percentage of outliers "
-            "before raising a runtime error."
-        ),
+        help=("Threshold for allowable percentage of outliers " "before raising a runtime error."),
     ),
     distance_limit: Optional[float] = typer.Option(
         None,
-        help=(
-            f"{Solver.model_fields.get('distance_limit').description}"
-            f". {OVERRIDE_MESSAGE}"
-        ),
+        help=(f"{Solver.model_fields.get('distance_limit').description}" f". {OVERRIDE_MESSAGE}"),
     ),
     residual_limit: Optional[float] = typer.Option(
         None,
-        help=(
-            f"{Solver.model_fields.get('residual_limit').description}"
-            f". {OVERRIDE_MESSAGE}"
-        ),
+        help=(f"{Solver.model_fields.get('residual_limit').description}" f". {OVERRIDE_MESSAGE}"),
     ),
     qc: Optional[bool] = typer.Option(
         True, help="Flag to plot residuals from run and store in output folder."

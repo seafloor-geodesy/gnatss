@@ -140,3 +140,6 @@ version.py
 
 # MacOS
 .DS_Store
+
+# Notebook dev folder
+notebooks

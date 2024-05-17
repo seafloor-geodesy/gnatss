@@ -140,9 +140,7 @@ def calc_lsq_constrained(
 
 def check_solutions(all_results, transponders_xyz):
     num_transponders = len(transponders_xyz)
-    all_atwa, all_atwf, travel_time_residuals, sigma_delays = _combine_results(
-        all_results
-    )
+    all_atwa, all_atwf, travel_time_residuals, sigma_delays = _combine_results(all_results)
     atwa = _sum_all(all_atwa)
     atwf = _sum_all(all_atwf)
     (
@@ -224,8 +222,7 @@ def calc_std_and_verify(
     if verify and (sig_3d > sigma_limit):
         # Verify sigma value, throw error if greater than gps sigma limit
         raise ValueError(
-            f"3D Standard Deviation of {sig_3d} exceeds "
-            f"GPS Sigma Limit of {sigma_limit}!"
+            f"3D Standard Deviation of {sig_3d} exceeds " f"GPS Sigma Limit of {sigma_limit}!"
         )
 
     return sig_3d

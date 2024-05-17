@@ -2,7 +2,9 @@
 
 Thank you for investing your time in contributing to our project!
 
-Read our [Code of Conduct](https://github.com/uw-ssec/code-of-conduct/blob/main/CODE_OF_CONDUCT.md) to keep our community approachable and respectable.
+Read our
+[Code of Conduct](https://github.com/uw-ssec/code-of-conduct/blob/main/CODE_OF_CONDUCT.md)
+to keep our community approachable and respectable.
 
 ## Quick development
 
@@ -28,30 +30,31 @@ environment for each run.
 
 ## Setting up a development environment manually
 
-This way of developing assumes that you're using conda
-as your environment and package management.
+This way of developing assumes that you're using conda as your environment and
+package management.
 
 ### Note
 
-We recommend using the `libmamba` solver instead of the classic solver,
-since the `conda create` and `conda install` step could take very long or fail.
-See instructions [here](https://conda.github.io/conda-libmamba-solver/getting-started/)
-for installation and usage.
+We recommend using the `libmamba` solver instead of the classic solver, since
+the `conda create` and `conda install` step could take very long or fail. See
+instructions
+[here](https://conda.github.io/conda-libmamba-solver/getting-started/) for
+installation and usage.
 
 ### Environment setup
 
 1. Create conda environment
 
-    ```bash
-    conda create --yes -n gnatss python=3.10 # use python 3.10
-    ```
+   ```bash
+   conda create --yes -n gnatss python=3.10 # use python 3.10
+   ```
 
 2. Activate and install dependencies
 
-    ```bash
-    conda activate gnatss
-    pip install -e ".[docs,lint,test]"
-    ```
+   ```bash
+   conda activate gnatss
+   pip install -e ".[docs,lint,test]"
+   ```
 
 ## Post setup
 

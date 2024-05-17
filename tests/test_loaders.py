@@ -39,9 +39,7 @@ from tests import TEST_DATA_FOLDER
 @pytest.fixture
 def all_files_dict_j2k_travel_times() -> Dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    config.input_files.travel_times = InputData(
-        path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k"
-    )
+    config.input_files.travel_times = InputData(path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k")
     return gather_files_all_procs(config)
 
 
@@ -107,8 +105,7 @@ def _load_travel_times_pass_testcase_helper(
     # Assert that df returned from "loaded_travel_times()" matches parameters of expected df
     assert isinstance(loaded_travel_times, DataFrame)
     assert all(
-        is_float_dtype(loaded_travel_times[column])
-        for column in [*transponder_ids, TT_TIME]
+        is_float_dtype(loaded_travel_times[column]) for column in [*transponder_ids, TT_TIME]
     )
     assert loaded_travel_times.shape == raw_travel_times.shape
     assert set(loaded_travel_times.columns.values.tolist()) == set(
@@ -187,8 +184,7 @@ def test_legacy_load_gps_solutions(all_files_dict_legacy_gps_solutions, time_rou
     assert isinstance(loaded_gps_solutions, DataFrame)
     assert set(expected_columns) == set(loaded_gps_solutions.columns.values.tolist())
     assert all(
-        is_float_dtype(loaded_gps_solutions[column])
-        for column in loaded_gps_solutions.columns
+        is_float_dtype(loaded_gps_solutions[column]) for column in loaded_gps_solutions.columns
     )
 
     raw_gps_solutions = pd.concat(
@@ -217,8 +213,7 @@ def test_load_roll_pitch_heading(all_files_dict_roll_pitch_heading):
     assert isinstance(loaded_rph_solutions, DataFrame)
     assert set(expected_columns) == set(loaded_rph_solutions.columns.values.tolist())
     assert all(
-        is_float_dtype(loaded_rph_solutions[column])
-        for column in loaded_rph_solutions.columns
+        is_float_dtype(loaded_rph_solutions[column]) for column in loaded_rph_solutions.columns
     )
 
     raw_rph_solutions = pd.concat(
@@ -292,9 +287,7 @@ def test_load_deletions_outliers_and_deletions(
     assert outliers_file.is_file()
     assert deletions_file.is_file()
 
-    loaded_deletions_df = load_deletions(
-        configuration, None, "tt", remove_outliers=True
-    )
+    loaded_deletions_df = load_deletions(configuration, None, "tt", remove_outliers=True)
 
     # Assert concatenation of outliers and deletions df
     assert loaded_deletions_df.shape[0] == outliers_rows + deletions_rows
@@ -322,9 +315,7 @@ def test_load_deletions_outliers_only_case(
     assert outliers_file.is_file()
     assert not deletions_file.is_file()
 
-    loaded_deletions_df = load_deletions(
-        configuration, None, "tt", remove_outliers=True
-    )
+    loaded_deletions_df = load_deletions(configuration, None, "tt", remove_outliers=True)
 
     assert loaded_deletions_df.shape[0] == outliers_rows
     assert loaded_deletions_df.columns.tolist() == [DEL_STARTTIME, DEL_ENDTIME]
@@ -343,9 +334,7 @@ def test_load_deletions_outliers_and_deletions_from_config(
     create_and_cleanup_outliers_file,
 ):
     # Use config.yaml to load deletions files
-    configuration.solver.input_files.deletions = InputData(
-        path="./tests/data/2022/**/deletns.dat"
-    )
+    configuration.solver.input_files.deletions = InputData(path="./tests/data/2022/**/deletns.dat")
 
     config_deletions_files = gather_files_all_procs(configuration)["deletions"]
     outliers_file = Path(configuration.output.path) / CSVOutput.outliers.value
@@ -389,9 +378,7 @@ def test_load_novatel(all_files_dict, novatel_data):
     # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
     # There is an extra generated float column "time".
     expected_columns = list(L1_DATA_FORMAT["INSPVAA"]["data_fields"]) + [TIME_J2000]
-    expected_column_dtypes = list(L1_DATA_FORMAT["INSPVAA"]["data_fields_dtypes"]) + [
-        "float"
-    ]
+    expected_column_dtypes = list(L1_DATA_FORMAT["INSPVAA"]["data_fields_dtypes"]) + ["float"]
 
     data_files = all_files_dict["novatel"]
 
@@ -401,9 +388,7 @@ def test_load_novatel(all_files_dict, novatel_data):
 
     assert l1_df_columns == expected_columns
 
-    for expected_column_dtype, column_dtype in zip(
-        expected_column_dtypes, l1_df_dtypes
-    ):
+    for expected_column_dtype, column_dtype in zip(expected_column_dtypes, l1_df_dtypes):
         if expected_column_dtype == "int":
             assert is_integer_dtype(column_dtype)
         elif expected_column_dtype == "float":
@@ -418,9 +403,7 @@ def test_load_novatel(all_files_dict, novatel_data):
     for data_file in data_files:
         with open(data_file, "r") as f:
             data_files_rows += len(f.read().split("\n"))
-    minimum_expected_rows = int(
-        ((100 - missing_rows_threshold_percent) * data_files_rows) / 100
-    )
+    minimum_expected_rows = int(((100 - missing_rows_threshold_percent) * data_files_rows) / 100)
     assert l1_df.shape[0] >= minimum_expected_rows
 
 
@@ -431,9 +414,7 @@ def test_load_novatel_std(
     # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
     # There is an extra generated float column "TIME_J2000".
     expected_columns = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields"]) + [TIME_J2000]
-    expected_column_dtypes = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields_dtypes"]) + [
-        "float"
-    ]
+    expected_column_dtypes = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields_dtypes"]) + ["float"]
 
     data_files = all_files_dict["novatel_std"]
 
@@ -443,9 +424,7 @@ def test_load_novatel_std(
 
     assert l1_df_columns == expected_columns
 
-    for expected_column_dtype, column_dtype in zip(
-        expected_column_dtypes, l1_df_dtypes
-    ):
+    for expected_column_dtype, column_dtype in zip(expected_column_dtypes, l1_df_dtypes):
         if expected_column_dtype == "int":
             assert is_integer_dtype(column_dtype)
         elif expected_column_dtype == "float":
@@ -462,9 +441,7 @@ def test_load_novatel_std(
     for data_file in data_files:
         with open(data_file, "r") as f:
             data_files_rows += len(f.read().split("\n"))
-    minimum_expected_rows = int(
-        ((100 - missing_rows_threshold_percent) * data_files_rows) / 100
-    )
+    minimum_expected_rows = int(((100 - missing_rows_threshold_percent) * data_files_rows) / 100)
     assert l1_df.shape[0] >= minimum_expected_rows
 
 
@@ -475,9 +452,7 @@ def test_load_novatel_std_v2(
     # Expected columns and its dtypes are defined in L1_DATA_FORMAT.
     # There is an extra generated float column "TIME_J2000".
     expected_columns = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields"]) + [TIME_J2000]
-    expected_column_dtypes = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields_dtypes"]) + [
-        "float"
-    ]
+    expected_column_dtypes = list(L1_DATA_FORMAT["INSSTDEVA"]["data_fields_dtypes"]) + ["float"]
 
     data_files = all_files_dict["novatel_std"]
 
@@ -487,9 +462,7 @@ def test_load_novatel_std_v2(
 
     assert l1_df_columns == expected_columns
 
-    for expected_column_dtype, column_dtype in zip(
-        expected_column_dtypes, l1_df_dtypes
-    ):
+    for expected_column_dtype, column_dtype in zip(expected_column_dtypes, l1_df_dtypes):
         if expected_column_dtype == "int":
             assert is_integer_dtype(column_dtype)
         elif expected_column_dtype == "float":
@@ -506,7 +479,5 @@ def test_load_novatel_std_v2(
     for data_file in data_files:
         with open(data_file, "r") as f:
             data_files_rows += len(f.read().split("\n"))
-    minimum_expected_rows = int(
-        ((100 - missing_rows_threshold_percent) * data_files_rows) / 100
-    )
+    minimum_expected_rows = int(((100 - missing_rows_threshold_percent) * data_files_rows) / 100)
     assert l1_df.shape[0] >= minimum_expected_rows

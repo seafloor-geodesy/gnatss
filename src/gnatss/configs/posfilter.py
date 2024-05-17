@@ -3,6 +3,7 @@
 The posfilter module containing base models for
 position filtering configuration
 """
+
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -22,9 +23,7 @@ class PositionFilterInputs(BaseModel):
     roll_pitch_heading: Optional[InputData] = Field(
         None, description="Roll Pitch Heading (RPH) data path specification."
     )
-    novatel: Optional[InputData] = Field(
-        None, description="Novatel data path specification."
-    )
+    novatel: Optional[InputData] = Field(None, description="Novatel data path specification.")
     novatel_std: Optional[InputData] = Field(
         None, description="Novatel STD data path specification."
     )

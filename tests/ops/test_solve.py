@@ -168,9 +168,7 @@ def test__calc_weight_mat(covariance_std):
 
 
 @given(
-    array=st_arrays(
-        dtype=np.float64, shape=(3, 3), elements=st.integers(min_value=1, max_value=6)
-    )
+    array=st_arrays(dtype=np.float64, shape=(3, 3), elements=st.integers(min_value=1, max_value=6))
 )
 @settings(deadline=None)
 def test___get_diagonal(array):
@@ -275,9 +273,7 @@ def test_solve_transponder_locations():
 def test_perform_solve():
     # Define test data
     transponders_mean_sv = np.array([1500.0, 1500.0, 1500.0])
-    transponders_xyz = np.array(
-        [[0.0, 0.0, 0.0], [0.0, 0.0, 1000.0], [1000.0, 0.0, 0.0]]
-    )
+    transponders_xyz = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1000.0], [1000.0, 0.0, 0.0]])
     transponders_delay = np.array([0.0, 0.0, 0.0])
     travel_times_variance = 1.0
 
@@ -287,9 +283,7 @@ def test_perform_solve():
         reply_xyz = np.random.rand(3)
         gps_covariance_matrix = np.eye(3)
         observed_delays = np.random.rand(3)
-        data_inputs.append(
-            (transmit_xyz, reply_xyz, gps_covariance_matrix, observed_delays)
-        )
+        data_inputs.append((transmit_xyz, reply_xyz, gps_covariance_matrix, observed_delays))
 
     # Call the function
     results = perform_solve(

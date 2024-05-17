@@ -11,13 +11,17 @@
 [![code style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![CodeFactor](https://www.codefactor.io/repository/github/seafloor-geodesy/gnatss/badge)](https://www.codefactor.io/repository/github/seafloor-geodesy/gnatss)
 
-GNATSS is an open-source software for processing Global Navigation Satellite Systems - Acoustic (GNSS-A) data for seafloor horizontal positioning.
-The software is a redevelopment of existing FORTRAN codes and shell scripts developed by C. David Chadwell for processing data including measurements made with Wave Gliders.
-Existing code, which includes proprietary routines, is developed and maintained by [John DeSanto](https://github.com/johnbdesanto).
+GNATSS is an open-source software for processing Global Navigation Satellite
+Systems - Acoustic (GNSS-A) data for seafloor horizontal positioning. The
+software is a redevelopment of existing FORTRAN codes and shell scripts
+developed by C. David Chadwell for processing data including measurements made
+with Wave Gliders. Existing code, which includes proprietary routines, is
+developed and maintained by [John DeSanto](https://github.com/johnbdesanto).
 
 ## Using the software
 
-**This software is currently under heavy development and is not available via [PyPI](https://pypi.org/), the Python Package Index**
+**This software is currently under heavy development and is not available via
+[PyPI](https://pypi.org/), the Python Package Index**
 
 You can install the software with pip directly by running the following command:
 
@@ -25,8 +29,9 @@ You can install the software with pip directly by running the following command:
 pip install gnatss
 ```
 
-Once the software is installed, you should be able to get to the GNATSS Command Line Interface (CLI)
-using the command `gnatss`. For example: `gnatss --help`, will get you to the main GNSS-A Processing in Python help page.
+Once the software is installed, you should be able to get to the GNATSS Command
+Line Interface (CLI) using the command `gnatss`. For example: `gnatss --help`,
+will get you to the main GNSS-A Processing in Python help page.
 
 ```console
  Usage: gnatss [OPTIONS] COMMAND [ARGS]...
@@ -50,8 +55,9 @@ using the command `gnatss`. For example: `gnatss --help`, will get you to the ma
 
 ## Pre-processing solve routine
 
-Currently there's a single command available in the CLI, `run`, which will run the full pre-processing routine for GNSS-A.
-You can retrieve the helper text for this command by running `gnatss run --help`.
+Currently there's a single command available in the CLI, `run`, which will run
+the full pre-processing routine for GNSS-A. You can retrieve the helper text for
+this command by running `gnatss run --help`.
 
 ```console
  Usage: gnatss run [OPTIONS]
@@ -94,13 +100,16 @@ You can retrieve the helper text for this command by running `gnatss run --help`
 ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-*Currently the pre-processing routine have been tested to only supports 3 transponders, but this will be expanded in the future.*
+_Currently the pre-processing routine have been tested to only supports 3
+transponders, but this will be expanded in the future._
 
 ### Configuration yaml file
 
-The run command takes in a configuration yaml file, which is used to configure the pre-processing routine.
-By default, the program will look for a configuration file in the current working directory called `config.yaml`.
-If this file is found somewhere else, you can pass in the path to the file using the `--config-yaml` flag.
+The run command takes in a configuration yaml file, which is used to configure
+the pre-processing routine. By default, the program will look for a
+configuration file in the current working directory called `config.yaml`. If
+this file is found somewhere else, you can pass in the path to the file using
+the `--config-yaml` flag.
 
 Here's a sample configuration yaml file:
 
@@ -153,17 +162,20 @@ output:
 
 ### Deletions file
 
-This will output the final resulting deletions file to the output directory specified in the configuration yaml file.
-This file will be in Comma Separated Value (CSV) format called `deletions.csv`.
+This will output the final resulting deletions file to the output directory
+specified in the configuration yaml file. This file will be in Comma Separated
+Value (CSV) format called `deletions.csv`.
 
 ### Residual file
 
-This will output the final resulting residual file to the output directory specified in the configuration yaml file.
-This file will be in Comma Separated Value (CSV) format called `residuals.csv`.
+This will output the final resulting residual file to the output directory
+specified in the configuration yaml file. This file will be in Comma Separated
+Value (CSV) format called `residuals.csv`.
 
 ## Contributing
 
-Please refer to our [Contributing Guide](.github/CONTRIBUTING.md) on how to setup your environment to contribute to this project.
+Please refer to our [Contributing Guide](.github/CONTRIBUTING.md) on how to
+setup your environment to contribute to this project.
 
 Thanks to our contributors so far!
 
