@@ -1,15 +1,17 @@
 # GNATSS
 
-[![ssec](https://img.shields.io/badge/SSEC-Project-purple?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAOCAQAAABedl5ZAAAACXBIWXMAAAHKAAABygHMtnUxAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAMNJREFUGBltwcEqwwEcAOAfc1F2sNsOTqSlNUopSv5jW1YzHHYY/6YtLa1Jy4mbl3Bz8QIeyKM4fMaUxr4vZnEpjWnmLMSYCysxTcddhF25+EvJia5hhCudULAePyRalvUteXIfBgYxJufRuaKuprKsbDjVUrUj40FNQ11PTzEmrCmrevPhRcVQai8m1PRVvOPZgX2JttWYsGhD3atbHWcyUqX4oqDtJkJiJHUYv+R1JbaNHJmP/+Q1HLu2GbNoSm3Ft0+Y1YMdPSTSwQAAAABJRU5ErkJggg==&style=plastic)](https://escience.washington.edu/offshore-geodesy/)
+[![image](https://img.shields.io/pypi/v/gnatss.svg)](https://pypi.python.org/pypi/gnatss)
 [![BSD License](https://badgen.net/badge/license/BSD-3-Clause/blue)](LICENSE)
+[![ssec](https://img.shields.io/badge/SSEC-Project-purple?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAOCAQAAABedl5ZAAAACXBIWXMAAAHKAAABygHMtnUxAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAMNJREFUGBltwcEqwwEcAOAfc1F2sNsOTqSlNUopSv5jW1YzHHYY/6YtLa1Jy4mbl3Bz8QIeyKM4fMaUxr4vZnEpjWnmLMSYCysxTcddhF25+EvJia5hhCudULAePyRalvUteXIfBgYxJufRuaKuprKsbDjVUrUj40FNQ11PTzEmrCmrevPhRcVQai8m1PRVvOPZgX2JttWYsGhD3atbHWcyUqX4oqDtJkJiJHUYv+R1JbaNHJmP/+Q1HLu2GbNoSm3Ft0+Y1YMdPSTSwQAAAABJRU5ErkJggg==&style=plastic)](https://escience.washington.edu/offshore-geodesy/)
 
 [![CI](https://github.com/seafloor-geodesy/gnatss/actions/workflows/ci.yaml/badge.svg)](https://github.com/seafloor-geodesy/gnatss/actions/workflows/ci.yaml)
 [![Documentation Status](https://readthedocs.org/projects/gnatss/badge/?version=latest)](https://gnatss.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/seafloor-geodesy/gnatss/graph/badge.svg?token=XB7S8FYOG7)](https://codecov.io/gh/seafloor-geodesy/gnatss)
 <br>
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
-[![code style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![CodeFactor](https://www.codefactor.io/repository/github/seafloor-geodesy/gnatss/badge)](https://www.codefactor.io/repository/github/seafloor-geodesy/gnatss)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/seafloor-geodesy/gnatss/main.svg)](https://results.pre-commit.ci/latest/github/seafloor-geodesy/gnatss/main)
 
 GNATSS is an open-source software for processing Global Navigation Satellite
 Systems - Acoustic (GNSS-A) data for seafloor horizontal positioning. The
