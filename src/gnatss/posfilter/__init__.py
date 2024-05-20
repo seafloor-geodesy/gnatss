@@ -1,3 +1,3 @@
-from .posfilter import kalman_filtering, spline_interpolate, rotation
+from .posfilter import kalman_filtering, rotation, spline_interpolate
 
 __all__ = ["kalman_filtering", "spline_interpolate", "rotation"]

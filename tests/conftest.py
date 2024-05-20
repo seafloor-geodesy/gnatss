@@ -8,15 +8,19 @@ from pandas import DataFrame
 
 from gnatss.configs.io import InputData
 from gnatss.configs.main import Configuration
+from gnatss.configs.solver import GPSSolutionInput
 from gnatss.loaders import (
     Path,
     load_configuration,
+    load_gps_positions,
+    load_gps_solutions,
     load_novatel,
     load_novatel_std,
     load_roll_pitch_heading,
     load_travel_times,
 )
 from gnatss.ops.io import gather_files_all_procs
+from gnatss.posfilter import kalman_filtering, spline_interpolate
 from tests import TEST_DATA_FOLDER
 
 
@@ -71,6 +75,12 @@ def novatel_std_data(all_files_dict) -> DataFrame:
 
 
 @pytest.fixture(scope="session")
+def gps_positions_data(all_files_dict) -> DataFrame:
+    data_files = all_files_dict["gps_positions"]
+    return load_gps_positions(data_files)
+
+
+@pytest.fixture(scope="session")
 def transponder_ids(configuration) -> List[str]:
     transponders = configuration.solver.transponders
     return [t.pxp_id for t in transponders]
@@ -97,4 +107,62 @@ def all_files_dict_roll_pitch_heading() -> Dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def roll_pitch_heading_data(all_files_dict_roll_pitch_heading) -> DataFrame:
-    return load_roll_pitch_heading(all_files_dict_roll_pitch_heading["roll_pitch_heading"])
+    return load_roll_pitch_heading(
+        all_files_dict_roll_pitch_heading["roll_pitch_heading"]
+    )
+
+
+@pytest.fixture(scope="session")
+def spline_interpolate_data(
+    novatel_data,
+    novatel_std_data,
+    travel_times_data,
+):
+    return spline_interpolate(
+        novatel_data, novatel_std_data, travel_times_data, full_result=False
+    )
+
+
+@pytest.fixture(scope="session")
+def _data(
+    novatel_data,
+    novatel_std_data,
+    travel_times_data,
+):
+    return spline_interpolate(
+        novatel_data, novatel_std_data, travel_times_data, full_result=False
+    )
+
+
+@pytest.fixture(scope="session")
+def kalman_filtering_data(
+    novatel_data,
+    novatel_std_data,
+    gps_positions_data,
+    travel_times_data,
+):
+    kalman_data = kalman_filtering(
+        inspvaa_df=novatel_data,
+        insstdeva_df=novatel_std_data,
+        gps_df=gps_positions_data,
+        twtt_df=travel_times_data,
+    )
+    return kalman_data
+
+
+@pytest.fixture(scope="session")
+def all_files_dict_legacy_gps_solutions() -> Dict[str, Any]:
+    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
+    config.solver.input_files.gps_solution = GPSSolutionInput(
+        path="./tests/data/2022/NCL1/**/posfilter/POS_FREED_TRANS_TWTT",
+        legacy=True,
+    )
+    return gather_files_all_procs(config)
+
+
+@pytest.fixture(scope="session")
+def legacy_gps_solutions_data(all_files_dict_legacy_gps_solutions):
+    return load_gps_solutions(
+        all_files_dict_legacy_gps_solutions["gps_solution"],
+        from_legacy=True,
+    )

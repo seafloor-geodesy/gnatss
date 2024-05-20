@@ -7,7 +7,6 @@ from pandas.api.types import is_float_dtype, is_integer_dtype, is_object_dtype
 
 from gnatss.configs.io import CSVOutput, InputData
 from gnatss.configs.main import Configuration
-from gnatss.configs.solver import GPSSolutionInput
 from gnatss.constants import (
     DEL_ENDTIME,
     DEL_STARTTIME,
@@ -40,16 +39,6 @@ from tests import TEST_DATA_FOLDER
 def all_files_dict_j2k_travel_times() -> Dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
     config.input_files.travel_times = InputData(path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k")
-    return gather_files_all_procs(config)
-
-
-@pytest.fixture
-def all_files_dict_legacy_gps_solutions() -> Dict[str, Any]:
-    config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    config.solver.input_files.gps_solution = GPSSolutionInput(
-        path="./tests/data/2022/NCL1/**/posfilter/POS_FREED_TRANS_TWTT",
-        legacy=True,
-    )
     return gather_files_all_procs(config)
 
 
