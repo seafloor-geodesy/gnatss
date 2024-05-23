@@ -291,6 +291,8 @@ def load_gps_solutions(
         The list of path string to files to load
     time_round : int
         The precision value to round the time values
+    from_legacy: bool
+        Defaults to False. If True, parses gps solutions legacy format files.
 
     Returns
     -------
