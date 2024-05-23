@@ -107,9 +107,7 @@ def all_files_dict_roll_pitch_heading() -> Dict[str, Any]:
 
 @pytest.fixture(scope="session")
 def roll_pitch_heading_data(all_files_dict_roll_pitch_heading) -> DataFrame:
-    return load_roll_pitch_heading(
-        all_files_dict_roll_pitch_heading["roll_pitch_heading"]
-    )
+    return load_roll_pitch_heading(all_files_dict_roll_pitch_heading["roll_pitch_heading"])
 
 
 @pytest.fixture(scope="session")
@@ -118,9 +116,7 @@ def spline_interpolate_data(
     novatel_std_data,
     travel_times_data,
 ):
-    return spline_interpolate(
-        novatel_data, novatel_std_data, travel_times_data, full_result=False
-    )
+    return spline_interpolate(novatel_data, novatel_std_data, travel_times_data, full_result=False)
 
 
 @pytest.fixture(scope="session")
@@ -129,9 +125,7 @@ def _data(
     novatel_std_data,
     travel_times_data,
 ):
-    return spline_interpolate(
-        novatel_data, novatel_std_data, travel_times_data, full_result=False
-    )
+    return spline_interpolate(novatel_data, novatel_std_data, travel_times_data, full_result=False)
 
 
 @pytest.fixture(scope="session")
