@@ -16,7 +16,7 @@ PWD = Path(".")
 TEST_DATA_ZIP_FILE = (PWD / "tests" / "data" / "2022.zip").resolve()
 
 
-def download_test_data(zip_file_path: Optional[str] = None, unzip: bool = False):
+def download_test_data(zip_file_path: Optional[str] = None, unzip: bool = False) -> str:
     if zip_file_path is not None:
         global TEST_DATA_ZIP_FILE
         TEST_DATA_ZIP_FILE = Path(zip_file_path).resolve()
