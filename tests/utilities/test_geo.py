@@ -69,9 +69,7 @@ def test_plh2xyz(coordinates):
     )
     # Parse the string exported from the fortran code
     fx, fy, fz = np.round(
-        np.array(re.findall(r"(-?\d+.\d+)+", result.stdout.decode("utf-8"))).astype(
-            float
-        ),
+        np.array(re.findall(r"(-?\d+.\d+)+", result.stdout.decode("utf-8"))).astype(float),
         3,
     )  # round to 3 decimal places
 
@@ -104,9 +102,7 @@ def test_xyz2enu(coordinates, array_center):
         (False, np.array([[-0.0, -0.0, 1.0], [1.0, -0.0, 0.0], [0.0, 1.0, 0.0]])),
     ],
 )
-def test__get_rotation_matrix(
-    to_enu: bool, expected: NDArray[Shape["3, 3"], Float64]
-) -> None:
+def test__get_rotation_matrix(to_enu: bool, expected: NDArray[Shape["3, 3"], Float64]) -> None:
     lat, lon = 0.0, 0.0
     res_array = _get_rotation_matrix(lat, lon, to_enu)
     assert np.array_equal(res_array, expected)
