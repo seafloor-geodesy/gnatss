@@ -2,3 +2,9 @@
 omit =
     */version.py
     */configs/*
+exclude_lines =
+    @numba.jit
+    @jit
+    @numba.stencil
+    @numba.guvectorize
+    @numba.vectorize
