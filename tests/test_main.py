@@ -3,10 +3,22 @@ from unittest.mock import call
 
 import pytest
 
+from gnatss.main import run_gnatss
 from gnatss.configs.io import InputData
 from gnatss.configs.solver import SolverTransponder
 from gnatss.ops.io import gather_files
 from gnatss.solver.utilities import _get_latest_process, _print_final_stats
+
+from tests import TEST_DATA_FOLDER
+
+
+config_yaml_path = (TEST_DATA_FOLDER / "config.yaml").resolve()
+
+
+def test_run_gnatss():
+    config, data_dict = run_gnatss(str(config_yaml_path))
+    print(f"{type(config)}\n{config}\n\n\n")
+    print(f"{type(data_dict)}\n{data_dict}\n\n\n")
 
 
 @pytest.mark.parametrize(
