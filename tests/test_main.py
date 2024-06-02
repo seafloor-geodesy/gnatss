@@ -4,6 +4,7 @@ from unittest.mock import call
 import pytest
 
 from gnatss.main import run_gnatss
+from gnatss.configs.main import Configuration
 from gnatss.configs.io import InputData
 from gnatss.configs.solver import SolverTransponder
 from gnatss.ops.io import gather_files
@@ -16,9 +17,13 @@ config_yaml_path = (TEST_DATA_FOLDER / "config.yaml").resolve()
 
 
 def test_run_gnatss():
+    """
+    end-to-end run of gnatss
+    """
     config, data_dict = run_gnatss(str(config_yaml_path))
-    print(f"{type(config)}\n{config}\n\n\n")
-    print(f"{type(data_dict)}\n{data_dict}\n\n\n")
+
+    assert isinstance(config, Configuration)
+    assert isinstance(data_dict, dict)
 
 
 @pytest.mark.parametrize(
