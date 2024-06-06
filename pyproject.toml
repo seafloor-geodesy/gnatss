@@ -7,13 +7,12 @@ name = "gnatss"
 dynamic = ["version"]
 description = "Community Seafloor Global Navigation Satellite Systems - Acoustic (GNSS-A) Transponder Surveying Software"
 readme = "README.md"
-requires-python = ">=3.9,<3.12"
+requires-python = ">=3.10,<3.12"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
