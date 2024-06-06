@@ -141,7 +141,9 @@ def rotation(
 
     transducer_columns = constants.GPS_GEOCENTRIC
     # antenna_enu is the sum of corresponding td_enu_columns and d_enu_columns values
-    for trans_enu, td_enu, d_enu in zip(constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns):
+    for trans_enu, td_enu, d_enu in zip(
+        constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns, strict=False
+    ):
         df[trans_enu] = df.loc[:, [td_enu, d_enu]].sum(axis=1)
 
     # convert to ecef coordinates

@@ -563,6 +563,7 @@ def _read_novatel_L1_data_files(
         data_fields_dtypes = zip(
             l1_data_config.get("data_fields"),
             l1_data_config.get("data_fields_dtypes"),
+            strict=False,
         )
 
         data_file_array = np.array(all_groups, dtype=list(data_fields_dtypes))

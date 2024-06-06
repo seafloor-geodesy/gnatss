@@ -272,7 +272,7 @@ def extract_latest_residuals(
 
     # Retrieve residuals data
     all_residuals_data = []
-    for ep, iso, address in zip(all_epochs, iso_epochs, process_info["rescm"]):
+    for ep, iso, address in zip(all_epochs, iso_epochs, process_info["rescm"], strict=False):
         all_residuals_data.append([ep, iso, *list(address)])
 
     return pd.DataFrame(

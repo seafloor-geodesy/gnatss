@@ -145,7 +145,7 @@ def ecef_to_enu(
         ),
         axis=1,
     )
-    return df.assign(**dict(zip(output_enu_columns, zip(*enu))))
+    return df.assign(**dict(zip(output_enu_columns, zip(*enu, strict=False), strict=False)))
 
 
 def calc_lla_and_enu(all_observations: pd.DataFrame, array_center: ArrayCenter) -> pd.DataFrame:
@@ -177,10 +177,12 @@ def calc_lla_and_enu(all_observations: pd.DataFrame, array_center: ArrayCenter) 
         axis=1,
     )
     all_observations = all_observations.assign(
-        **dict(zip(_prep_col_names(constants.GPS_GEODETIC), zip(*lla)))
+        **dict(zip(_prep_col_names(constants.GPS_GEODETIC), zip(*lla, strict=False), strict=False))
     )
     return all_observations.assign(
-        **dict(zip(_prep_col_names(constants.GPS_LOCAL_TANGENT), zip(*enu)))
+        **dict(
+            zip(_prep_col_names(constants.GPS_LOCAL_TANGENT), zip(*enu, strict=False), strict=False)
+        )
     )
 
 
@@ -222,7 +224,9 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
     gps_covariance_matrices = [_split_cov(row.to_numpy()) for _, row in cov_vals_df.iterrows()]
 
     # Merge all inputs
-    for data in zip(transmit_xyz, reply_xyz_list, gps_covariance_matrices, observed_delay_list):
+    for data in zip(
+        transmit_xyz, reply_xyz_list, gps_covariance_matrices, observed_delay_list, strict=False
+    ):
         data_inputs.append(data)
     return data_inputs
 
