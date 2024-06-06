@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 DATA_TYPES = {"transmit": "0", "receive": "1"}
 
 

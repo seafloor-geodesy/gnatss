@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 import pandas as pd
 import typer
@@ -37,15 +39,16 @@ def _check_and_delete_outliers_file(output: OutputPath):
 
 def to_file(
     config: Configuration,
-    data_dict: Dict[str, Any],
+    data_dict: dict[str, Any],
     key: str,
-    file_name: Union[str, enum.Enum],
+    file_name: str | enum.Enum,
     file_format: Literal["csv", "netcdf", "zarr"] = "csv",
 ):
     to_format = f"to_{file_format}"
 
     if config.output is None:
-        raise ValueError("Output configuration is not set")
+        msg: str = "Output configuration is not set"
+        raise ValueError(msg)
 
     if isinstance(file_name, enum.Enum):
         file_name = file_name.value
@@ -58,11 +61,12 @@ def to_file(
         return
 
     if file_format == "csv" and not isinstance(data, pd.DataFrame):
-        raise ValueError(f"Data must be a pandas DataFrame for CSV export, got {type(data)}")
-    elif file_format in ["netcdf", "zarr"] and not isinstance(data, xr.Dataset):
-        raise ValueError(
-            f"Data must be an xarray Dataset for {file_format} export, got {type(data)}"
-        )
+        msg: str = f"Data must be a pandas DataFrame for CSV export, got {type(data)}"
+        raise ValueError(msg)
+
+    if file_format in ["netcdf", "zarr"] and not isinstance(data, xr.Dataset):
+        msg = f"Data must be an xarray Dataset for {file_format} export, got {type(data)}"
+        raise ValueError(msg)
 
     if isinstance(data, pd.DataFrame):
         if data.empty:
@@ -89,9 +93,9 @@ def to_file(
 
 def set_limits(
     config,
-    distance_limit: Optional[float] = None,
-    residual_limit: Optional[float] = None,
-    residual_outliers_threshold: Optional[float] = None,
+    distance_limit: float | None = None,
+    residual_limit: float | None = None,
+    residual_outliers_threshold: float | None = None,
 ):
     # Override the distance and residual limits if provided
     # this short-circuits pydantic model
@@ -111,7 +115,7 @@ def gather_files(
     config: Configuration,
     proc: Literal["main", "solver", "posfilter"] = "solver",
     mode: Literal["files", "object"] = "files",
-) -> Dict[str, List[Union[str, InputData]]]:
+) -> dict[str, list[str | InputData]]:
     """Gather file paths for the various dataset files defined in proc config.
 
     Parameters
@@ -123,7 +127,7 @@ def gather_files(
 
     Returns
     -------
-    Dict[str, Any]
+    dict[str, Any]
         A dictionary containing the various datasets file paths
     """
     all_files_dict = {}
@@ -132,7 +136,8 @@ def gather_files(
     else:
         # Check for process type first
         if not hasattr(config, proc):
-            raise AttributeError(f"Unknown process type: {proc}")
+            msg: str = f"Unknown process type: {proc}"
+            raise AttributeError(msg)
         proc_config = getattr(config, proc)
 
     if proc_config:
@@ -145,7 +150,8 @@ def gather_files(
             elif mode == "object":
                 all_files = input_data
             else:
-                raise ValueError(f"Unknown mode: {mode}")
+                msg: str = f"Unknown mode: {mode}"
+                raise ValueError(msg)
             all_files_dict.setdefault(field, all_files)
     return all_files_dict
 
@@ -154,7 +160,7 @@ def gather_files_all_procs(
     config: Configuration,
     mode: Literal["files", "object"] = "files",
     from_cache: bool = False,
-) -> Dict[str, List[str]]:
+) -> dict[str, list[str]]:
     """Gather file paths for the various dataset files from all procs in config.
 
     Parameters
@@ -164,10 +170,10 @@ def gather_files_all_procs(
 
     Returns
     -------
-    Dict[str, Any]
+    dict[str, Any]
         A dictionary containing the various datasets file paths
     """
-    all_files_dict = dict()
+    all_files_dict = {}
     for proc in constants.DEFAULT_CONFIG_PROCS:
         if from_cache and proc == "posfilter":
             # Skip performing posfilter operations
@@ -181,18 +187,17 @@ def gather_files_all_procs(
 
 def load_config(
     config_yaml: str,
-    distance_limit: Optional[float] = None,
-    residual_limit: Optional[float] = None,
-    outlier_threshold: Optional[float] = None,
+    distance_limit: float | None = None,
+    residual_limit: float | None = None,
+    outlier_threshold: float | None = None,
 ):
     config = load_configuration(config_yaml)
-    config = set_limits(
+    return set_limits(
         config,
         distance_limit=distance_limit,
         residual_limit=residual_limit,
         residual_outliers_threshold=outlier_threshold,
     )
-    return config
 
 
 def load_datasets(
@@ -263,28 +268,33 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
         "novatel": load_novatel,
         "novatel_std": load_novatel_std,
     }
+
     if key == "travel_times":
         return load_travel_times(
             file_paths,
             transponder_ids=[tp.pxp_id for tp in config.transponders],
             **loader_kwargs,
         )
-    elif key == "deletions":
+
+    if key == "deletions":
         return load_deletions(config=config, file_paths=file_paths, remove_outliers=remove_outliers)
-    elif key == "gps_positions":
+
+    if key == "gps_positions":
         # Posfilter input
         return load_gps_positions(file_paths)
-    elif key == "gps_solution":
+
+    if key == "gps_solution":
         # Solver input
         return load_gps_solutions(file_paths, from_legacy=False)
-    else:
-        loader = loaders_map[key]
-        return loader(file_paths)
+
+    loader = loaders_map[key]
+    return loader(file_paths)
 
 
 def _load_csv_data(config, file_path):
     if not config.output.fs.exists(file_path):
-        raise FileNotFoundError(f"File {file_path} not found")
+        msg: str = f"File {file_path} not found"
+        raise FileNotFoundError(msg)
 
     with config.output.fs.open(file_path, "rb") as f:
         return pd.read_csv(f)

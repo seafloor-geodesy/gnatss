@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from math import pi
 
 import numba
@@ -27,7 +29,7 @@ def ecef2geodetic(
     z: float,
     semimajor_axis: float = semimajor_axis,
     semiminor_axis: float = semiminor_axis,
-    eps=finfo(np.float32).eps,
+    eps=finfo(np.float32).eps,  # noqa: B008
 ) -> tuple:
     """
     convert ECEF (meters) to geodetic coordinates
@@ -159,8 +161,7 @@ def update_vel_cov(row, R_velocity, rot):
     R_velocity[2, 0] = R_velocity[0, 2]
     R_velocity[2, 1] = R_velocity[1, 2]
 
-    R_velocity = rot @ R_velocity @ rot.T
-    return R_velocity
+    return rot @ R_velocity @ rot.T
 
 
 @numba.njit
@@ -192,7 +193,7 @@ def update_position(row, Nx, X, P, R_position):
     K = (P @ H.T) @ np.linalg.inv(S)
     X = X + K @ y
 
-    I = np.identity(Nx)  # noqa
+    I = np.identity(Nx)  # noqa: E741
     P = (I - K @ H) @ P
     return X, P, R_position
 
@@ -234,7 +235,7 @@ def rts_smoother(Ts, Xs, Ps, F, Q, start_dt=DEFAULT_START_DT):
         A[k] = P[k] @ F.T @ np.linalg.inv(Pp[k])
         x[k] += A[k] @ (x[k + 1] - Xp[k])
         P[k] += A[k] @ (P[k + 1] - Pp[k]) @ A[k].T
-        i += 1
+        i += 1  # noqa: SIM113
 
     return x, P, A, Pp
 
@@ -249,7 +250,7 @@ def kalman_init(
 ):
     dt = start_dt
     Nx = 6
-    Nu = 3  # noqa
+    Nu = 3  # noqa: F841
 
     # error states: pos_xyz, v_ned, eul, bias_acc, bias_gyro
     X = np.zeros((Nx, 1))

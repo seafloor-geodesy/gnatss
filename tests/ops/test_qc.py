@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from nptyping import Float64, NDArray, Shape, Str0
 from numpy import array_equal

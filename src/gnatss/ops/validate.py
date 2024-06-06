@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import itertools
-from typing import List, Literal, Tuple
+from typing import Literal
 
 import numba
 import numpy as np
@@ -13,7 +15,7 @@ from .utils import clean_zeros
 
 
 @numba.njit(cache=True)
-def _calc_qmxqt(atwa: NDArray, q: NDArray) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
+def _calc_qmxqt(atwa: NDArray, q: NDArray) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     mx = np.linalg.inv(atwa)
 
     mxqt = mx @ q.T
@@ -26,15 +28,13 @@ def _calc_qmxqt(atwa: NDArray, q: NDArray) -> Tuple[NDArray, NDArray, NDArray, N
 @numba.njit(cache=True)
 def _calc_xp(x: NDArray, qmxqtiqmx: NDArray, zerr: NDArray) -> NDArray:
     xdel = zerr.T @ qmxqtiqmx
-    xp = x + xdel
-    return xp
+    return x + xdel
 
 
 @numba.njit(cache=True)
 def _calc_mxp(mx: NDArray, qmxqtiqmx: NDArray, mxqt: NDArray) -> NDArray:
     delmx = mxqt @ qmxqtiqmx
-    mxp = mx - delmx
-    return mxp
+    return mx - delmx
 
 
 @numba.njit(cache=True)
@@ -51,7 +51,7 @@ def _create_q_matrix(num_transponders: int) -> NDArray:
     q = np.zeros(shape=(mpars, mpars))
     neg = 0
     pos = 3
-    for i in range(0, mpars):
+    for i in range(mpars):
         if pos < mpars:
             q[i, neg] = -1.0
             q[i, pos] = 1.0
@@ -63,7 +63,7 @@ def _create_q_matrix(num_transponders: int) -> NDArray:
 @numba.njit(cache=True)
 def _combine_results(
     all_results: NumbaList,
-) -> Tuple[NumbaList, NumbaList, NumbaList, NumbaList]:
+) -> tuple[NumbaList, NumbaList, NumbaList, NumbaList]:
     all_atwa = NumbaList()
     all_atwf = NumbaList()
     travel_time_residuals = NumbaList()
@@ -176,12 +176,13 @@ def check_solutions(all_results, transponders_xyz):
     return is_converged, transponders_xyz, check_result
 
 
-def _check_cols_in_series(input_series: pd.Series, columns: List[str]) -> None:
+def _check_cols_in_series(input_series: pd.Series, columns: list[str]) -> None:
     """Private func to check if the columns exists in data series"""
     for col in columns:
         if col not in input_series:
             # Catch if some of thecolumns are missing
-            raise KeyError(f"{col} not found in the data series provided.")
+            msg: str = f"{col} not found in the data series provided."
+            raise KeyError(msg)
 
 
 def calc_std_and_verify(
@@ -221,9 +222,8 @@ def calc_std_and_verify(
 
     if verify and (sig_3d > sigma_limit):
         # Verify sigma value, throw error if greater than gps sigma limit
-        raise ValueError(
-            f"3D Standard Deviation of {sig_3d} exceeds " f"GPS Sigma Limit of {sigma_limit}!"
-        )
+        msg = f"3D Standard Deviation of {sig_3d} exceeds " f"GPS Sigma Limit of {sigma_limit}!"
+        raise ValueError(msg)
 
     return sig_3d
 
@@ -236,7 +236,7 @@ def check_sig3d(data: pd.DataFrame, gps_sigma_limit: float):
     }
     diag_cov_columns = list(itertools.chain.from_iterable(diag_cov_cols.values()))
     # Checks for GPS Covariance Diagonal values
-    assert all([col in data.columns for col in diag_cov_columns])
+    assert all(col in data.columns for col in diag_cov_columns)
 
     # Compute 3d standard deviation
     rx_sig_3d = data[diag_cov_cols["receive"]].apply(
@@ -248,12 +248,11 @@ def check_sig3d(data: pd.DataFrame, gps_sigma_limit: float):
     tx_sig_3d = data[diag_cov_cols["transmit"]].apply(
         calc_std_and_verify, axis="columns", verify=False, data_type="transmit"
     )
-    # Filter out everything that exceeds the gps sigma limit
-    data = data[tx_sig_3d < gps_sigma_limit]
 
     # TODO: Put debug for the times that are not valid and option to save to file
     # In fortran it get sent to GPS_3drms_exceeds
     # Find a way to distinguish between transmit and reply
     # data_exceeds = data[data.sig_3d > gps_sigma_limit]
 
-    return data
+    # Filter out everything that exceeds the gps sigma limit
+    return data[tx_sig_3d < gps_sigma_limit]

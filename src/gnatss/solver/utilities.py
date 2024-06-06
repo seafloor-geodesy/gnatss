@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import warnings
-from typing import Any, Dict, List, Literal, Tuple
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -24,16 +26,17 @@ def _print_detected_outliers(outliers_df, outlier_threshold, all_epochs, residua
     message = f"There are {n_outliers} outliers found during this run.\n"
     if n_outliers > 0:
         message += f"This is {percent_outliers}% of the total number of data points.\n"
-        message += "Please re-run the program again with `--remove-outliers` flag to remove these outliers.\n"  # noqa
+        message += "Please re-run the program again with `--remove-outliers` flag to remove these outliers.\n"
         if percent_outliers > outlier_threshold:
-            raise RuntimeError(
+            msg = (
                 f"The number of outliers ({percent_outliers}%) is greater than the threshold of "
-                f"{outlier_threshold}%. Please modify your current residual limit of {residual_limit}."  # noqa
+                f"{outlier_threshold}%. Please modify your current residual limit of {residual_limit}."
             )
+            raise RuntimeError(msg)
     typer.echo(message)
 
 
-def _print_final_stats(transponders: List[SolverTransponder], process_data: Dict[str, Any]):
+def _print_final_stats(transponders: list[SolverTransponder], process_data: dict[str, Any]):
     """Print out final solution statistics and results"""
     num_transponders = len(transponders)
     # Get the latest process data
@@ -60,41 +63,35 @@ def _print_final_stats(transponders: List[SolverTransponder], process_data: Dict
         sigE, sigN, sigU = sig_enu[idx]
 
         typer.echo(
-            (
-                f"x = {np.round(x, 4)} +/- {np.format_float_scientific(sigX, 6)} m "
-                f"del_e = {np.round(e, 4)} +/- {np.format_float_scientific(sigE, 6)} m"
-            )
+            f"x = {np.round(x, 4)} +/- {np.format_float_scientific(sigX, 6)} m "
+            f"del_e = {np.round(e, 4)} +/- {np.format_float_scientific(sigE, 6)} m"
         )
         typer.echo(
-            (
-                f"y = {np.round(y, 4)} +/- {np.format_float_scientific(sigY, 6)} m "
-                f"del_n = {np.round(n, 4)} +/- {np.format_float_scientific(sigN, 6)} m"
-            )
+            f"y = {np.round(y, 4)} +/- {np.format_float_scientific(sigY, 6)} m "
+            f"del_n = {np.round(n, 4)} +/- {np.format_float_scientific(sigN, 6)} m"
         )
         typer.echo(
-            (
-                f"z = {np.round(z, 4)} +/- {np.format_float_scientific(sigZ, 6)} m "
-                f"del_u = {np.round(u, 4)} +/- {np.format_float_scientific(sigU, 6)} m"
-            )
+            f"z = {np.round(z, 4)} +/- {np.format_float_scientific(sigZ, 6)} m "
+            f"del_u = {np.round(u, 4)} +/- {np.format_float_scientific(sigU, 6)} m"
         )
         typer.echo(f"Lat. = {lat} deg, Long. = {lon}, Hgt.msl = {alt} m")
     typer.echo("------------------------")
     typer.echo()
 
 
-def _get_latest_process(process_data: Dict[str, Any]) -> Dict[str, Any]:
+def _get_latest_process(process_data: dict[str, Any]) -> dict[str, Any]:
     """Get the latest process data"""
     return process_data[max(process_data.keys())]
 
 
 def _create_process_dataset(
-    proc_d: Dict[str, Any], n_iter: int, config: Configuration
+    proc_d: dict[str, Any], n_iter: int, config: Configuration
 ) -> xr.Dataset:
     """Creates a process dataset from the process dictionary
 
     Parameters
     ----------
-    proc_d : Dict[str, Any]
+    proc_d : dict[str, Any]
         Process dictionary
     n_iter : int
         Iteration number
@@ -110,7 +107,7 @@ def _create_process_dataset(
     num_transponders = len(transponders)
     transponders_ids = [tp.pxp_id for tp in transponders]
 
-    ds = xr.Dataset(
+    return xr.Dataset(
         data_vars={
             "transponders_xyz": (
                 ("transponder", "coords"),
@@ -178,7 +175,6 @@ def _create_process_dataset(
             "iteration": (("iteration"), [n_iter], {"long_name": "Iteration number"}),
         },
     )
-    return ds
 
 
 def generate_process_xr_dataset(process_data, resdf, config) -> xr.Dataset:
@@ -243,7 +239,7 @@ def get_all_epochs(all_observations):
 
 
 def extract_latest_residuals(
-    config: Configuration, all_epochs: List[float], process_data: Dict[str, Any]
+    config: Configuration, all_epochs: list[float], process_data: dict[str, Any]
 ) -> pd.DataFrame:
     """
     Extracts the latest residuals from process data,
@@ -253,9 +249,9 @@ def extract_latest_residuals(
     ----------
     config : Configuration
         The configuration object
-    all_epochs : List[float]
+    all_epochs : list[float]
         A list of all the epoch values
-    process_data : Dict[str, Any]
+    process_data : dict[str, Any]
         The full processing data results
 
     Returns
@@ -277,7 +273,7 @@ def extract_latest_residuals(
     # Retrieve residuals data
     all_residuals_data = []
     for ep, iso, address in zip(all_epochs, iso_epochs, process_info["rescm"]):
-        all_residuals_data.append([ep, iso] + list(address))
+        all_residuals_data.append([ep, iso, *list(address)])
 
     return pd.DataFrame(
         all_residuals_data,
@@ -341,7 +337,7 @@ def extract_distance_from_center(
     )
 
     # Merge with equivalent index
-    return pd.merge(
+    return pd.merge(  # noqa: PD015
         transmit_obs[constants.DATA_SPEC.tx_time],
         enu_df,
         left_index=True,
@@ -354,7 +350,7 @@ def prepare_and_solve(
     config: Configuration,
     max_iter: int = 6,
     twtt_model: Literal["simple_twtt"] = "simple_twtt",
-) -> Tuple[Dict[int, Any], bool]:
+) -> tuple[dict[int, Any], bool]:
     """
     Prepare data inputs and perform solving algorithm
 
@@ -368,7 +364,7 @@ def prepare_and_solve(
 
     Returns
     -------
-    Dict[int, Any]
+    dict[int, Any]
         The process dictionary that contains stats and data results,
         for all of the iterations
     """
@@ -404,7 +400,8 @@ def prepare_and_solve(
     while not is_converged:
         # Max converge attempt failure
         if n_iter > max_iter:
-            warnings.warn("Exceeds the allowed number of attempt, " "please adjust your data.")
+            msg = "Exceeds the allowed number of attempt, please adjust your data."
+            warnings.warn(msg, stacklevel=1)
             break
 
         # Increase iter num
@@ -446,11 +443,9 @@ def prepare_and_solve(
         process_dict[n_iter]["rmsrescm"] = RMSRESCM
         process_dict[n_iter]["errfac"] = ERRFAC
         typer.echo(
-            (
-                f"After iteration: {n_iter}, "
-                f"rms residual = {np.round(RMSRESCM, 2)} cm, "
-                f"error factor = {np.round(ERRFAC, 3)}"
-            )
+            f"After iteration: {n_iter}, "
+            f"rms residual = {np.round(RMSRESCM, 2)} cm, "
+            f"error factor = {np.round(ERRFAC, 3)}"
         )
 
         enu_arr = []
@@ -476,9 +471,7 @@ def prepare_and_solve(
             # Find enu covariance
             latr, lonr = np.radians([lat, lon])
             R = _get_rotation_matrix(latr, lonr, False)
-            covpx = np.array(
-                [arr[:3] for arr in data["covpx"][idx * 3 : 3 * (idx + 1)]]  # noqa
-            )
+            covpx = np.array([arr[:3] for arr in data["covpx"][idx * 3 : 3 * (idx + 1)]])
             covpe = R.T @ covpx @ R
             # Retrieve diagonal and change negative values to 0
             diag = covpe.diagonal().copy()
@@ -492,22 +485,16 @@ def prepare_and_solve(
             sigX, sigY, sigZ = SIGPX[idx]
             typer.echo(pxp_id)
             typer.echo(
-                (
-                    f"D_x = {np.format_float_scientific(dX, 6)} m, "
-                    f"Sigma(x) = {np.format_float_scientific(sigX, 6)} m"
-                )
+                f"D_x = {np.format_float_scientific(dX, 6)} m, "
+                f"Sigma(x) = {np.format_float_scientific(sigX, 6)} m"
             )
             typer.echo(
-                (
-                    f"D_y = {np.format_float_scientific(dY, 6)} m, "
-                    f"Sigma(y) = {np.format_float_scientific(sigY, 6)} m"
-                )
+                f"D_y = {np.format_float_scientific(dY, 6)} m, "
+                f"Sigma(y) = {np.format_float_scientific(sigY, 6)} m"
             )
             typer.echo(
-                (
-                    f"D_z = {np.format_float_scientific(dZ, 6)} m, "
-                    f"Sigma(z) = {np.format_float_scientific(sigZ, 6)} m"
-                )
+                f"D_z = {np.format_float_scientific(dZ, 6)} m, "
+                f"Sigma(z) = {np.format_float_scientific(sigZ, 6)} m"
             )
         process_dict[n_iter]["enu"] = np.array(enu_arr)
         process_dict[n_iter]["sig_enu"] = np.array(sig_enu)

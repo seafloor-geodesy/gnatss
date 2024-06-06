@@ -1,4 +1,6 @@
-from typing import Dict, Literal
+from __future__ import annotations
+
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
@@ -14,7 +16,7 @@ class _Data:
 
 
 class DataSpec:
-    __data_version: Dict[str, BaseModel] = {
+    __data_version: ClassVar[dict[str, BaseModel]] = {
         "v1": DataV1,
     }
 
@@ -37,9 +39,8 @@ class DataSpec:
     def _setup_private_attributes(self):
         for k, v in self._data.__private_attributes__.items():
             if v.default is PydanticUndefined:
-                raise AttributeError(
-                    f"{k} must be defined within data model version {self._version}"
-                )
+                msg: str = f"{k} must be defined within data model version {self._version}"
+                raise AttributeError(msg)
             setattr(self, k.strip("_"), v.default)
 
     def _get_gnss_fields(self, fields):

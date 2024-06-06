@@ -4,8 +4,10 @@ The main configuration module containing base settings pydantic
 classes
 """
 
+from __future__ import annotations
+
 import datetime
-from typing import List, Literal, Optional, Union
+from typing import Literal
 
 import numpy as np
 import pymap3d
@@ -38,7 +40,7 @@ class ArrayCenter(BaseModel):
 
 
 class MainInputs(BaseModel):
-    travel_times: Optional[InputData] = Field(
+    travel_times: InputData | None = Field(
         None, description="Input travel times data path specification"
     )
 
@@ -48,13 +50,13 @@ class Configuration(BaseConfiguration):
 
     # General configurations
     site_id: str = Field(..., description="GNSS-A site name or code")
-    campaign: Optional[str] = Field(None, description="Observation campaign name")
-    time_origin: Optional[Union[str, datetime.datetime]] = Field(
+    campaign: str | None = Field(None, description="Observation campaign name")
+    time_origin: str | datetime.datetime | None = Field(
         None, description="Origin of time used in the file [UTC]"
     )
     ref_frame: Literal["wgs84"] = Field("wgs84", description="Reference frame used in the file")
     array_center: ArrayCenter = Field(..., description="Array center to use for calculation")
-    transponders: List[Transponder] = Field(
+    transponders: list[Transponder] = Field(
         ..., description="A list of transponders configurations"
     )
     travel_times_variance: float = Field(
@@ -69,15 +71,15 @@ class Configuration(BaseConfiguration):
     )
 
     # Processing configurations
-    solver: Optional[Solver] = Field(None, description="Solver configurations")
-    posfilter: Optional[PositionFilter] = Field(None, description="Position filter configurations")
+    solver: Solver | None = Field(None, description="Solver configurations")
+    posfilter: PositionFilter | None = Field(None, description="Position filter configurations")
 
     # File related configurations
     input_files: MainInputs = Field(..., description="Input files data path specifications.")
-    output: Optional[OutputPath] = Field(None, description="Output path configurations")
+    output: OutputPath | None = Field(None, description="Output path configurations")
 
     # Extra configurations
-    notes: Optional[str] = Field(None, description="Any other optional comments")
+    notes: str | None = Field(None, description="Any other optional comments")
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -97,7 +99,8 @@ class Configuration(BaseConfiguration):
         transponders = self.transponders
 
         if self.array_center is None:
-            raise ValueError("Array center is not set")
+            msg = "Array center is not set"
+            raise ValueError(msg)
 
         for idx in range(len(transponders)):
             # Compute azimuth and elevation

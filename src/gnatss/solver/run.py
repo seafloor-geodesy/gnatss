@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ..ops.data import ensure_monotonic_increasing
 from ..ops.validate import check_sig3d
 from .utilities import (
@@ -16,7 +18,8 @@ from .utilities import (
 def run_solver(config, data_dict, return_raw: bool = False):
     all_observations = data_dict.get("gps_solution")
     if all_observations is None:
-        raise ValueError("No GNSS-A Level-2 data found. Unable to perform solver.")
+        msg = "No GNSS-A Level-2 data found. Unable to perform solver."
+        raise ValueError(msg)
 
     # Ensure the data is sorted properly
     all_observations = ensure_monotonic_increasing(all_observations)

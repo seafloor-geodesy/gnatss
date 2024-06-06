@@ -1,4 +1,6 @@
-from typing import Any, Literal, Tuple
+from __future__ import annotations
+
+from typing import Any, Literal
 
 import numba
 import numpy as np
@@ -12,10 +14,10 @@ DEFAULT_VECTOR_NORM = np.array([2.0, 0.0, 0.0])
 
 @numba.njit(cache=True)
 def _calc_tr_vectors(
-    transponders_xyz: NDArray[Shape["*, 3"], Float64],  # noqa
-    transmit_xyz: NDArray[Shape["3"], Float64],
-    reply_xyz: NDArray[Shape["*, 3"], Float64],  # noqa
-) -> Tuple[NDArray[Shape["*, 3"], Float64], NDArray[Shape["*, 3"], Float64]]:  # noqa
+    transponders_xyz: NDArray[Shape["*, 3"], Float64],
+    transmit_xyz: NDArray[Shape[3], Float64],
+    reply_xyz: NDArray[Shape["*, 3"], Float64],
+) -> tuple[NDArray[Shape["*, 3"], Float64], NDArray[Shape["*, 3"], Float64]]:
     """
     Calculate the transmit and reply vectors
 
@@ -105,7 +107,7 @@ def _calc_partial_derivatives(
 @numba.njit(cache=True)
 def _setup_ab(
     delays: NDArray, num_transponders: int, partial_derivatives: NDArray
-) -> Tuple[NDArray[Shape["*,*"], Float64], NDArray[Shape["*,*"], Float64]]:
+) -> tuple[NDArray[Shape["*,*"], Float64], NDArray[Shape["*,*"], Float64]]:
     """
     Setup the A partial derivative matrix and B covariance matrix
 
@@ -142,7 +144,7 @@ def _setup_ab(
 @numba.njit(cache=True)
 def _calc_cov(
     transmit_uv: NDArray[Shape["*,3"], Float64],
-    gps_covariance_matrix: NDArray[Shape["3,3"], Float64],
+    gps_covariance_matrix: NDArray[Shape[3, 3], Float64],
     travel_times_variance: float,
     transponders_mean_sv: NDArray[Shape["*"], Float64],
 ) -> NDArray[Shape["*,*"], Float64]:
@@ -167,7 +169,7 @@ def _calc_cov(
     """
 
     # Calculate covariance matrix for partlp vectors (COVF) Units m^2
-    covariance_matrix = np.abs((transmit_uv @ gps_covariance_matrix @ transmit_uv.T))
+    covariance_matrix = np.abs(transmit_uv @ gps_covariance_matrix @ transmit_uv.T)
 
     # Weighting factor equal to 2/sv_mean
     weight_factor = _calc_weight_fac(transponders_mean_sv)
@@ -249,7 +251,7 @@ def __get_diagonal(array: NDArray[Shape["*, *"], Float64]) -> NDArray:
 
 
 @numba.njit(cache=True)
-def calc_uv(input_vector: NDArray[Shape["3"], Any]) -> NDArray[Shape["3"], Any]:
+def calc_uv(input_vector: NDArray[Shape[3], Any]) -> NDArray[Shape[3], Any]:
     """
     Calculate unit vector for a 1-D input vector of size 3
 
@@ -313,6 +315,8 @@ def calc_twtt_model(
     if model == "simple_twtt":
         return simple_twtt(transmit_vectors, reply_vectors, transponders_mean_sv)
 
+    return np.zeros(len(transponders_mean_sv))
+
 
 @numba.njit(cache=True)
 def calc_tt_residual(delays, transponder_delays, twtt_model) -> NDArray[Shape["*"], Float64]:
@@ -349,7 +353,7 @@ def solve_transponder_locations(
     transponders_mean_sv: NDArray,
     travel_times_variance: NDArray,
     twtt_model: Literal["simple_twtt"] = "simple_twtt",
-) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
+) -> tuple[NDArray, NDArray, NDArray, NDArray]:
     """
     Solve transponder locations by performing basic GNSS-Acoustic
     Derivation.

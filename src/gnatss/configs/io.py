@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 import fsspec
 from pydantic import BaseModel, Field, PrivateAttr
@@ -9,8 +11,6 @@ from ..utilities.io import _get_filesystem, check_file_exists
 
 class StrEnum(str, Enum):
     """A custom string enum class"""
-
-    ...
 
 
 class CSVOutput(StrEnum):
@@ -30,41 +30,38 @@ class InputData(BaseModel):
         ...,
         description="Path string to the data. Ex. s3://bucket/some_data.dat",
     )
-    storage_options: Dict[str, Any] = Field(
+    storage_options: dict[str, Any] = Field(
         {},
         description=(
             "Protocol keyword argument for specified file system. "
             "This is not needed for local paths"
         ),
     )
-    loader_kwargs: Dict[str, Any] = Field(
+    loader_kwargs: dict[str, Any] = Field(
         {},
         description="Keyword arguments for the data loader.",
     )
 
-    _files: List[str] = PrivateAttr()
+    _files: list[str] = PrivateAttr()
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
 
         # Checks the file
         if not check_file_exists(self.path, self.storage_options):
-            raise FileNotFoundError(f"{self.path} doesn't exist!")
+            msg: str = f"{self.path} doesn't exist!"
+            raise FileNotFoundError(msg)
 
         self._files = self.get_files()
 
     @property
-    def files(self) -> List[str]:
+    def files(self) -> list[str]:
         return self._files
 
-    def get_files(self) -> List[str]:
+    def get_files(self) -> list[str]:
         """Get the list of files in the directory"""
         fs = _get_filesystem(self.path, self.storage_options)
-        if "**" in self.path:
-            all_files = fs.glob(self.path)
-        else:
-            all_files = [self.path]
-        return all_files
+        return fs.glob(self.path) if "**" in self.path else [self.path]
 
 
 class OutputPath(BaseModel):
@@ -74,7 +71,7 @@ class OutputPath(BaseModel):
         ...,
         description="Path string to the output path. Ex. s3://bucket/my_output",
     )
-    storage_options: Dict[str, Any] = Field(
+    storage_options: dict[str, Any] = Field(
         {},
         description=(
             "Protocol keyword argument for specified file system. "
@@ -91,7 +88,8 @@ class OutputPath(BaseModel):
 
         # Check to ensure it's a directory
         if not self.path.endswith("/"):
-            raise NotADirectoryError(f"{self.path} is not a directory!")
+            msg: str = f"{self.path} is not a directory!"
+            raise NotADirectoryError(msg)
 
         # Always try create the directory even if it exists
         self._fsmap.fs.makedirs(self.path, exist_ok=True)

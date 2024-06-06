@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import warnings
 from functools import cached_property
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, computed_field, model_validator
@@ -22,19 +24,19 @@ class Transponder(BaseModel):
             "(determined at transdec) and any user set delay (dail-in)."
         ),
     )
-    sv_mean: Optional[float] = Field(
+    sv_mean: float | None = Field(
         None, description="Dynamically generated sound velocity mean (m/s)."
     )
-    pxp_id: Optional[str] = Field(
+    pxp_id: str | None = Field(
         None,
         description=(
             "Transponder id string. " "**This field will be computed during object creation**"
         ),
     )
-    azimuth: Optional[float] = Field(
+    azimuth: float | None = Field(
         None, description="Transponder azimuth in degrees w.r.t. array center."
     )
-    elevation: Optional[float] = Field(
+    elevation: float | None = Field(
         None, description="Transponder elevation in degrees w.r.t. array center."
     )
 

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import os
 from json import dumps
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 from pandas import DataFrame
@@ -24,7 +26,7 @@ from gnatss.posfilter import kalman_filtering, spline_interpolate
 from tests import TEST_DATA_FOLDER
 
 
-@pytest.fixture
+@pytest.fixture()
 def blank_csv_test_file() -> Path:
     with NamedTemporaryFile(suffix=".csv") as f:
         f.write(b"")
@@ -32,7 +34,7 @@ def blank_csv_test_file() -> Path:
         yield Path(f.name)
 
 
-@pytest.fixture
+@pytest.fixture()
 def blank_env(blank_csv_test_file: Path) -> None:
     blank_envs = {
         "GNATSS_SITE_ID": "test_site",
@@ -57,7 +59,7 @@ def configuration() -> Configuration:
 
 
 @pytest.fixture(scope="session")
-def all_files_dict() -> Dict[str, Any]:
+def all_files_dict() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
     return gather_files_all_procs(config)
 
@@ -81,7 +83,7 @@ def gps_positions_data(all_files_dict) -> DataFrame:
 
 
 @pytest.fixture(scope="session")
-def transponder_ids(configuration) -> List[str]:
+def transponder_ids(configuration) -> list[str]:
     transponders = configuration.solver.transponders
     return [t.pxp_id for t in transponders]
 
@@ -97,7 +99,7 @@ def travel_times_data(all_files_dict, transponder_ids) -> DataFrame:
 
 
 @pytest.fixture(scope="session")
-def all_files_dict_roll_pitch_heading() -> Dict[str, Any]:
+def all_files_dict_roll_pitch_heading() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
     config.posfilter.input_files.roll_pitch_heading = InputData(
         path="./tests/data/2022/NCL1/**/WG_*/RPH_TWTT",
@@ -145,7 +147,7 @@ def kalman_filtering_data(
 
 
 @pytest.fixture(scope="session")
-def all_files_dict_legacy_gps_solutions() -> Dict[str, Any]:
+def all_files_dict_legacy_gps_solutions() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
     config.solver.input_files.gps_solution = GPSSolutionInput(
         path="./tests/data/2022/NCL1/**/posfilter/POS_FREED_TRANS_TWTT",

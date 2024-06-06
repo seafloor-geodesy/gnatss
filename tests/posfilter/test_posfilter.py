@@ -1,19 +1,21 @@
+from __future__ import annotations
+
 import numpy as np
 import pytest
+from tests import TEST_DATA_FOLDER
 
 from gnatss import constants
 from gnatss.loaders import load_gps_solutions
 from gnatss.posfilter import rotation
-from tests import TEST_DATA_FOLDER
 
 
-@pytest.fixture
+@pytest.fixture()
 def kalman_solution_reference():
     pos_twtt_file = [(TEST_DATA_FOLDER / "2022" / "NCL1" / "POS_TWTT").absolute()]
     return load_gps_solutions(pos_twtt_file, from_legacy=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def rotation_data(kalman_filtering_data, spline_interpolate_data, configuration):
     rotation_solutions = rotation(
         kalman_filtering_data,

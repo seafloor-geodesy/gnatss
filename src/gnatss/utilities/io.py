@@ -1,17 +1,25 @@
+from __future__ import annotations
+
 import os
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import urlparse
 
 import fsspec
 
 
-def _get_filesystem(input_path: str, storage_options: Dict[str, Any] = {}) -> Any:
+def _get_filesystem(
+    input_path: str,
+    storage_options: dict[str, Any] = {},  # noqa: B006
+) -> Any:
     """Retrieves filesystem from `input_path`"""
     parsed_url = urlparse(input_path)
     return fsspec.filesystem(parsed_url.scheme, **storage_options)
 
 
-def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> bool:
+def check_file_exists(
+    input_path: str,
+    storage_options: dict[str, Any] = {},  # noqa: B006
+) -> bool:
     """
     Perform a check if either file or directory exists
     by parsing the `input_path` into a parsed url,
@@ -46,9 +54,9 @@ def check_file_exists(input_path: str, storage_options: Dict[str, Any] = {}) -> 
         if len(glob_files) == 0:
             return False
         return True
-    else:
-        check_path = input_path
-        return fs.exists(check_path)
+
+    check_path = input_path
+    return fs.exists(check_path)
 
 
 def check_permission(input_path: fsspec.FSMap) -> None:
@@ -72,13 +80,14 @@ def check_permission(input_path: fsspec.FSMap) -> None:
         If the directory is not writable
     """
     try:
-        base_dir = os.path.dirname(input_path.root)
+        base_dir = os.path.dirname(input_path.root)  # noqa: PTH120
         if not base_dir:
             base_dir = input_path.root
-        TEST_FILE = os.path.join(base_dir, ".permission_test")
+        TEST_FILE = os.path.join(base_dir, ".permission_test")  # noqa: PTH118
         with input_path.fs.open(TEST_FILE, "w") as f:
             f.write("testing\n")
-    except Exception:  # noqa
-        raise PermissionError("Writing to specified path is not permitted.")
+    except Exception:
+        msg = "Writing to specified path is not permitted."
+        raise PermissionError(msg) from None
     finally:
         input_path.fs.delete(TEST_FILE)
