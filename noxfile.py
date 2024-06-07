@@ -32,12 +32,18 @@ def tests(session: nox.Session) -> None:
     - unzip: https://linuxize.com/post/how-to-unzip-files-in-linux/
     """
     session.install(".[test]")
-    session.run(
-        "python",
-        "-c",
-        "from gnatss.utilities.testing import download_test_data; download_test_data(unzip=True)",
-    )
-    session.run("pytest", "-vvv", "tests", *session.posargs)
+    if not (DIR / "tests" / "data" / "2022").exists():
+        session.run(
+            "python",
+            "-c",
+            "from gnatss.utilities.testing import download_test_data; download_test_data(unzip=True)",
+        )
+    with session.chdir("tests/fortran"):
+        # Runs in the tests fortran directory
+        session.run("f2py", "-c", "-m", "flib", "xyz2enu.f")
+
+    # Run in original directory
+    session.run("pytest", *session.posargs)
 
 
 @nox.session

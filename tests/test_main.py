@@ -1,17 +1,17 @@
+from __future__ import annotations
+
 from pathlib import Path
 from unittest.mock import call
 
 import pytest
 
-from gnatss.main import run_gnatss
-from gnatss.configs.main import Configuration
 from gnatss.configs.io import InputData
+from gnatss.configs.main import Configuration
 from gnatss.configs.solver import SolverTransponder
+from gnatss.main import run_gnatss
 from gnatss.ops.io import gather_files
 from gnatss.solver.utilities import _get_latest_process, _print_final_stats
-
 from tests import TEST_DATA_FOLDER
-
 
 config_yaml_path = (TEST_DATA_FOLDER / "config.yaml").resolve()
 

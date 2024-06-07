@@ -1,4 +1,5 @@
-from typing import Union
+# ruff: noqa: PD901
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
@@ -41,15 +42,14 @@ def spline_interpolate(
     cov_rph = insstdeva_df[[constants.RPH_TIME, *constants.PLATFORM_COV_RPH_DIAG]]
     # Merge the two dataframes of ins_rph and cov_rph
     # since they're at the same sampling rate
-    merged_rph = pd.merge(ins_rph, cov_rph, on=constants.RPH_TIME)
+    merged_rph = ins_rph.merge(cov_rph, on=constants.RPH_TIME)
 
     # Merge the travel times data with the merged_rph data
     # with an 'outer' join, this will result in missing values
     # at points of travel times data that doesn't have corresponding
     # INS RPH data
     # TODO: Confirm why we are using TT_TIME, GPS_TIME, and RPH_TIME for merge
-    initial_df = pd.merge(
-        twtt_df[[constants.TT_TIME]],
+    initial_df = twtt_df[[constants.TT_TIME]].merge(
         merged_rph,
         left_on=constants.GPS_TIME,
         right_on=constants.RPH_TIME,
@@ -69,13 +69,13 @@ def spline_interpolate(
     if full_result:
         return result_df
 
-    return pd.merge(twtt_df, result_df, on=constants.TT_TIME, how="left")
+    return twtt_df.merge(result_df, on=constants.TT_TIME, how="left")
 
 
 def rotation(
     pos_twtt: pd.DataFrame,
     cov_rph_twtt: pd.DataFrame,
-    atd_offsets: Union[AtdOffset, NDArray[Shape["3"], Float]],
+    atd_offsets: AtdOffset | NDArray[Shape[3], Float],
     array_center: ArrayCenter,
 ) -> pd.DataFrame:
     """
@@ -101,8 +101,7 @@ def rotation(
         Modified positioning data that includes rotation
     """
     # Merge the pos_twtt and cov_rph_twtt dataframes
-    df = pd.merge(
-        pos_twtt,
+    df = pos_twtt.merge(
         cov_rph_twtt,
         on=constants.TIME_J2000,
         how="left",
@@ -131,7 +130,7 @@ def rotation(
     # Calculate enu values from ecef values, and add to td_enu_columns columns
     df[td_enu_columns] = df[constants.ANT_GPS_GEOCENTRIC].apply(
         lambda row: pymap3d.ecef2enu(
-            *row.values,
+            *row.to_numpy(),
             lat0=array_center.lat,
             lon0=array_center.lon,
             h0=array_center.alt,
@@ -142,13 +141,15 @@ def rotation(
 
     transducer_columns = constants.GPS_GEOCENTRIC
     # antenna_enu is the sum of corresponding td_enu_columns and d_enu_columns values
-    for trans_enu, td_enu, d_enu in zip(constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns):
+    for trans_enu, td_enu, d_enu in zip(
+        constants.GPS_LOCAL_TANGENT, td_enu_columns, d_enu_columns, strict=False
+    ):
         df[trans_enu] = df.loc[:, [td_enu, d_enu]].sum(axis=1)
 
     # convert to ecef coordinates
     df[transducer_columns] = df[constants.GPS_LOCAL_TANGENT].apply(
         lambda row: pymap3d.enu2ecef(
-            *row.values,
+            *row.to_numpy(),
             lat0=array_center.lat,
             lon0=array_center.lon,
             h0=array_center.alt,
@@ -158,9 +159,7 @@ def rotation(
     )
 
     # Drop temporary columns
-    df = df.drop(columns=[*d_enu_columns, *td_enu_columns, *constants.GPS_LOCAL_TANGENT])
-
-    return df
+    return df.drop(columns=[*d_enu_columns, *td_enu_columns, *constants.GPS_LOCAL_TANGENT])
 
 
 def kalman_filtering(
@@ -243,7 +242,7 @@ def kalman_filtering(
     merged_df = merged_df.merge(insstdeva_df, on=constants.GPS_TIME, how="left")
     merged_df = merged_df.sort_values(constants.GPS_TIME).reset_index(drop=True)
 
-    first_pos = merged_df[~merged_df[constants.ANT_GPS_GEOCENTRIC[0]].isnull()].iloc[0].name
+    first_pos = merged_df[~merged_df[constants.ANT_GPS_GEOCENTRIC[0]].isna()].iloc[0].name
     merged_df = merged_df.loc[first_pos:].reset_index(drop=True)
 
     merged_np_array = merged_df.to_numpy()
@@ -272,4 +271,4 @@ def kalman_filtering(
     if full_result:
         return smoothed_results
 
-    return pd.merge(twtt_df, smoothed_results, how="left")
+    return twtt_df.merge(smoothed_results, how="left")

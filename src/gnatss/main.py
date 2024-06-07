@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 import typer
 
@@ -12,9 +12,9 @@ from .solver.run import run_solver
 
 def run_gnatss(
     config_yaml: str,
-    distance_limit: Optional[float] = None,
-    residual_limit: Optional[float] = None,
-    outlier_threshold: Optional[float] = None,
+    distance_limit: float | None = None,
+    residual_limit: float | None = None,
+    outlier_threshold: float | None = None,
     from_cache: bool = False,
     return_raw: bool = False,
     remove_outliers: bool = False,

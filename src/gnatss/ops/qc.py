@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from math import ceil, floor
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,9 +13,9 @@ from ..utilities.geo import calc_enu_comp
 from ..utilities.time import AstroTime
 from .io import _to_file_fs
 
-# The 8 Colorblind from Bang Wong’s
+# The 8 Colorblind from Bang Wong's
 # Nature Methods paper https://www.nature.com/articles/nmeth.1618.pdf
-CB_COLORS: List[str] = [
+CB_COLORS: list[str] = [
     "#000000",
     "#E69F00",
     "#56B4E9",
@@ -33,7 +34,7 @@ MAX_PLOT_XAXIS_TICKS = 15
 
 def _compute_ticks_and_labels(
     data: pd.DataFrame, time_col: str = "time"
-) -> Tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], String]]:
+) -> tuple[NDArray[Shape["*"], Float64], NDArray[Shape["*"], String]]:
     """Compute ticks and labels for x-axis ensuring that number of ticks stays between 4 and 15.
     Standard intervals of 1s, 5s, 30s, 1min, 5min, 30min, 1hr, 6hr, 24hr are used whenever possible.
     Datetime formats with 1s, and 1hr precision are used accordingly.
@@ -113,7 +114,7 @@ def _compute_ticks_and_labels(
 
 def plot_residuals(
     residuals_df: pd.DataFrame,
-    outliers_df: Optional[pd.DataFrame] = None,
+    outliers_df: pd.DataFrame | None = None,
     figsize: tuple = (10, 5),
 ) -> plt.Figure:
     """Plot residuals
@@ -173,7 +174,7 @@ def plot_residuals(
 def plot_enu_comps(
     residuals_df: pd.DataFrame,
     config: Configuration,
-    figsize: Tuple[int, int] = (10, 5),
+    figsize: tuple[int, int] = (10, 5),
 ) -> plt.Figure:
     """Plot averaged ENU components
 
@@ -197,7 +198,7 @@ def plot_enu_comps(
     elevations = np.array([t.elevation for t in config.solver.transponders])
 
     # Just grab the time and transponder columns
-    cleaned_df = residuals_df[[constants.TIME_J2000] + transponders_id]
+    cleaned_df = residuals_df[[constants.TIME_J2000, *transponders_id]]
 
     # Computes the ENU components averaged over all transponders
     comps_df = pd.DataFrame.from_records(
@@ -215,7 +216,7 @@ def plot_enu_comps(
     ticks, labels = _compute_ticks_and_labels(comps_df, time_col=constants.TIME_J2000)
 
     for i, col in enumerate(constants.GPS_LOCAL_TANGENT):
-        default_kwargs = dict(
+        default_kwargs = dict(  # noqa: C408
             x="time",
             y=col,
             ax=axs[i],
@@ -228,7 +229,12 @@ def plot_enu_comps(
 
         # Set empty ticks for all subplots except for last one
         if i < n_axis - 1:
-            default_kwargs.update(dict(xticks=ticks, xlabel=""))
+            default_kwargs.update(
+                {
+                    "xticks": ticks,
+                    "xlabel": "",
+                }
+            )
             labelbottom = False
 
         # Plot components to axis

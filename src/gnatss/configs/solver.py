@@ -4,8 +4,10 @@ The solver module containing base models for
 solver configuration
 """
 
+from __future__ import annotations
+
 from functools import cached_property
-from typing import List, Literal, Optional
+from typing import Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, computed_field
@@ -21,10 +23,10 @@ class ReferenceEllipsoid(BaseModel):
     reverse_flattening: float = Field(..., description="Reverse flattening")
 
     @computed_field(
-        description="Eccentricity. **This field will be computed during object creation**"  # noqa
+        description="Eccentricity. **This field will be computed during object creation**"
     )
     @cached_property
-    def eccentricity(self) -> Optional[float]:
+    def eccentricity(self) -> float | None:
         return 2.0 / self.reverse_flattening - (1.0 / self.reverse_flattening) ** 2.0
 
 
@@ -43,20 +45,18 @@ class GPSSolutionInput(InputData):
 
 
 class SolverInputs(BaseModel):
-    sound_speed: Optional[InputData] = Field(
-        None, description="Sound speed data path specification"
-    )
+    sound_speed: InputData | None = Field(None, description="Sound speed data path specification")
     # NOTE: 3/3/2023 - These are required for now and will change in the future.
-    travel_times: Optional[InputData] = Field(
+    travel_times: InputData | None = Field(
         None, description="Travel times data path specification."
     )
-    gps_solution: Optional[GPSSolutionInput] = Field(
+    gps_solution: GPSSolutionInput | None = Field(
         None, description="GPS solution data path specification."
     )
-    deletions: Optional[InputData] = Field(
+    deletions: InputData | None = Field(
         None, description="Deletions file for unwanted data points."
     )
-    quality_controls: Optional[InputData] = Field(
+    quality_controls: InputData | None = Field(
         None,
         description="Quality control file(s) for user defined unwanted data points.",
     )
@@ -90,19 +90,19 @@ class SolverTransponder(BaseModel):
             "(determined at transdec) and any user set delay (dail-in)."
         ),
     )
-    sv_mean: Optional[float] = Field(
+    sv_mean: float | None = Field(
         None, description="Dynamically generated sound velocity mean (m/s)."
     )
-    pxp_id: Optional[str] = Field(
+    pxp_id: str | None = Field(
         None,
         description=(
             "Transponder id string. " "**This field will be computed during object creation**"
         ),
     )
-    azimuth: Optional[float] = Field(
+    azimuth: float | None = Field(
         None, description="Transponder azimuth in degrees w.r.t. array center."
     )
-    elevation: Optional[float] = Field(
+    elevation: float | None = Field(
         None, description="Transponder elevation in degrees w.r.t. array center."
     )
 
@@ -120,10 +120,10 @@ class Solver(BaseModel):
     """
 
     defaults: SolverGlobal = SolverGlobal()
-    transponders: Optional[List[Transponder]] = Field(
+    transponders: list[Transponder] | None = Field(
         None, description="A list of transponders configurations"
     )
-    reference_ellipsoid: Optional[ReferenceEllipsoid] = Field(
+    reference_ellipsoid: ReferenceEllipsoid | None = Field(
         ..., description="Reference ellipsoid configurations"
     )
     gps_sigma_limit: float = Field(
@@ -142,7 +142,7 @@ class Solver(BaseModel):
     bisection_tolerance: float = Field(
         1e-10, description="Tolerance to stop bisection during ray trace"
     )
-    array_center: Optional[ArrayCenter] = Field(
+    array_center: ArrayCenter | None = Field(
         None, description="Array center to use for calculation"
     )
     travel_times_variance: float = Field(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 import pytest
 from hypothesis import given, settings
@@ -25,6 +27,7 @@ from gnatss.solver.solve import (
 # TODO: Use real data examples for testing
 
 N_TRANSPONDERS = 3
+rng = np.random.default_rng()
 
 
 @given(
@@ -50,9 +53,9 @@ N_TRANSPONDERS = 3
 )
 @settings(deadline=None)
 def test__calc_tr_vectors(
-    transponders_xyz: NDArray[Shape["*,3"], Float64],  # noqa
-    transmit_xyz: NDArray[Shape["3"], Float64],
-    reply_xyz: NDArray[Shape["*,3"], Float64],  # noqa
+    transponders_xyz: NDArray[Shape["*,3"], Float64],
+    transmit_xyz: NDArray[Shape[3], Float64],
+    reply_xyz: NDArray[Shape["*,3"], Float64],
 ) -> None:
     """Test calculate transmit and reply vectors"""
     try:
@@ -94,9 +97,9 @@ def test__calc_unit_vectors(vectors) -> None:
 @settings(deadline=None)
 def test__calc_partial_derivatives(n_transponders) -> None:
     """Test calculate partial derivatives"""
-    transmit_uv = np.random.rand(n_transponders, 3)
-    reply_uv = np.random.rand(n_transponders, 3)
-    transponders_mean_sv = np.random.rand(n_transponders) + 1052.0
+    transmit_uv = rng.random((n_transponders, 3))
+    reply_uv = rng.random((n_transponders, 3))
+    transponders_mean_sv = rng.random(n_transponders) + 1052.0
 
     expected_res = (transmit_uv + reply_uv) / transponders_mean_sv
 
@@ -112,9 +115,9 @@ def test__calc_partial_derivatives(n_transponders) -> None:
 )
 @settings(deadline=None)
 def test__setup_ab(n_transponders) -> None:
-    delays = np.random.rand(n_transponders)
+    delays = rng.random(n_transponders)
     num_transponders = n_transponders
-    partial_derivatives = np.random.rand(n_transponders, 3)
+    partial_derivatives = rng.random((n_transponders, 3))
 
     A_partials, B_cov = _setup_ab(delays, num_transponders, partial_derivatives)
 
@@ -130,9 +133,9 @@ def test__setup_ab(n_transponders) -> None:
 @settings(deadline=None)
 def test__calc_cov(n_transponders, travel_times_variance) -> None:
     """Test calculate covariance"""
-    transmit_uv = np.random.rand(n_transponders, 3)
-    gps_covariance_matrix = np.random.rand(3, 3)
-    transponders_mean_sv = np.random.rand(n_transponders) + 1052.0
+    transmit_uv = rng.random((n_transponders, 3))
+    gps_covariance_matrix = rng.random((3, 3))
+    transponders_mean_sv = rng.random(n_transponders) + 1052.0
     covariance_matrix = _calc_cov(
         transmit_uv, gps_covariance_matrix, travel_times_variance, transponders_mean_sv
     )
@@ -278,11 +281,11 @@ def test_perform_solve():
     travel_times_variance = 1.0
 
     data_inputs = NumbaList()
-    for i in range(10):
-        transmit_xyz = np.random.rand(3)
-        reply_xyz = np.random.rand(3)
+    for _ in range(10):
+        transmit_xyz = rng.random(3)
+        reply_xyz = rng.random(3)
         gps_covariance_matrix = np.eye(3)
-        observed_delays = np.random.rand(3)
+        observed_delays = rng.random(3)
         data_inputs.append((transmit_xyz, reply_xyz, gps_covariance_matrix, observed_delays))
 
     # Call the function

@@ -3,7 +3,7 @@
 Geospatial utilities module
 """
 
-from typing import Tuple
+from __future__ import annotations
 
 import numpy as np
 from nptyping import Float64, NDArray, Shape
@@ -12,7 +12,7 @@ from pymap3d import Ellipsoid, ecef2enu
 
 def _get_rotation_matrix(
     lat_org: float, lon_org: float, to_enu: bool = True
-) -> NDArray[Shape["3, 3"], Float64]:
+) -> NDArray[Shape[3, 3], Float64]:
     """
     Get rotation matrix for converting between ECEF and ENU
 
@@ -62,7 +62,7 @@ def ecef2ae(
     h0: float,
     ell: Ellipsoid = None,
     deg: bool = True,
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Compute azimuth and elevation from ECEF coordinates
     w.r.t. a reference point

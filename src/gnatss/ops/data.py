@@ -1,4 +1,6 @@
-from typing import List, Literal, Optional
+from __future__ import annotations
+
+from typing import Literal
 
 import numba
 import numpy as np
@@ -29,8 +31,8 @@ TRANSMIT_COV_LOC_COLS = list(constants.DATA_SPEC.gnss_tx_cov_fields.keys())
 
 @numba.njit(cache=True)
 def _split_cov(
-    cov_values: NDArray[Shape["9"], Float64],
-) -> NDArray[Shape["3, 3"], Float64]:
+    cov_values: NDArray[Shape[9], Float64],
+) -> NDArray[Shape[3, 3], Float64]:
     """
     Splits an array of covariance values of shape (9,)
     to a matrix array of shape (3, 3)
@@ -50,13 +52,13 @@ def _split_cov(
     n = 3
     cov = np.zeros((n, n))
     for i in range(n):
-        cov[i] = cov_values[i * n : i * n + n]  # noqa
+        cov[i] = cov_values[i * n : i * n + n]
     return cov
 
 
 def _get_standard_columns(
-    columns: List[str], data_type: Literal["transmit", "receive"] = "receive"
-) -> List[str]:
+    columns: list[str], data_type: Literal["transmit", "receive"] = "receive"
+) -> list[str]:
     """
     Get the standard columns based on the data type
 
@@ -111,8 +113,8 @@ def _get_standard_columns(
 
 def ecef_to_enu(
     df: pd.DataFrame,
-    input_ecef_columns: List[str],
-    output_enu_columns: List[str],
+    input_ecef_columns: list[str],
+    output_enu_columns: list[str],
     array_center: ArrayCenter,
 ) -> pd.DataFrame:
     """
@@ -122,9 +124,9 @@ def ecef_to_enu(
     ----------
     df: pd.DataFrame
         The full dataset for computation
-    input_ecef_columns: List[str]
+    input_ecef_columns: list[str]
         Columns in the df that contain ENU coordinates
-    output_enu_columns: List[str]
+    output_enu_columns: list[str]
         Columns that should be created in the df for ENU coordinates
     array_center : ArrayCenter
         An object containing the center of the array
@@ -136,15 +138,14 @@ def ecef_to_enu(
     """
     enu = df[input_ecef_columns].apply(
         lambda row: ecef2enu(
-            *row.values,
+            *row.to_numpy(),
             lat0=array_center.lat,
             lon0=array_center.lon,
             h0=array_center.alt,
         ),
         axis=1,
     )
-    df = df.assign(**dict(zip(output_enu_columns, zip(*enu))))
-    return df
+    return df.assign(**dict(zip(output_enu_columns, zip(*enu, strict=False), strict=False)))
 
 
 def calc_lla_and_enu(all_observations: pd.DataFrame, array_center: ArrayCenter) -> pd.DataFrame:
@@ -163,10 +164,12 @@ def calc_lla_and_enu(all_observations: pd.DataFrame, array_center: ArrayCenter) 
     pd.DataFrame
         Modified dataset with LLA and ENU coordinates
     """
-    lla = all_observations[TRANSMIT_LOC_COLS].apply(lambda row: ecef2geodetic(*row.values), axis=1)
+    lla = all_observations[TRANSMIT_LOC_COLS].apply(
+        lambda row: ecef2geodetic(*row.to_numpy()), axis=1
+    )
     enu = all_observations[TRANSMIT_LOC_COLS].apply(
         lambda row: ecef2enu(
-            *row.values,
+            *row.to_numpy(),
             lat0=array_center.lat,
             lon0=array_center.lon,
             h0=array_center.alt,
@@ -174,12 +177,13 @@ def calc_lla_and_enu(all_observations: pd.DataFrame, array_center: ArrayCenter) 
         axis=1,
     )
     all_observations = all_observations.assign(
-        **dict(zip(_prep_col_names(constants.GPS_GEODETIC), zip(*lla)))
+        **dict(zip(_prep_col_names(constants.GPS_GEODETIC), zip(*lla, strict=False), strict=False))
     )
-    all_observations = all_observations.assign(
-        **dict(zip(_prep_col_names(constants.GPS_LOCAL_TANGENT), zip(*enu)))
+    return all_observations.assign(
+        **dict(
+            zip(_prep_col_names(constants.GPS_LOCAL_TANGENT), zip(*enu, strict=False), strict=False)
+        )
     )
-    return all_observations
 
 
 def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
@@ -220,14 +224,16 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
     gps_covariance_matrices = [_split_cov(row.to_numpy()) for _, row in cov_vals_df.iterrows()]
 
     # Merge all inputs
-    for data in zip(transmit_xyz, reply_xyz_list, gps_covariance_matrices, observed_delay_list):
+    for data in zip(
+        transmit_xyz, reply_xyz_list, gps_covariance_matrices, observed_delay_list, strict=False
+    ):
         data_inputs.append(data)
     return data_inputs
 
 
 def clean_tt(
     travel_times: pd.DataFrame,
-    transponder_ids: List[str],
+    transponder_ids: list[str],
     travel_times_correction: float,
     transducer_delay_time: float,
 ) -> pd.DataFrame:
@@ -240,7 +246,7 @@ def clean_tt(
     ----------
     travel_times : pd.DataFrame
         The original travel times data
-    transponder_ids : List[str]
+    transponder_ids : list[str]
         A list of the transponder ids that matches the order
         with travel_times data
     travel_times_correction : float
@@ -303,7 +309,7 @@ def filter_tt(
             cut_ids = travel_times[
                 (travel_times[time_column] >= cut.starttime)
                 & (travel_times[time_column] <= cut.endtime)
-            ].index.values
+            ].index.to_numpy()
             cut_ids_all = cut_ids_all + cut_ids.tolist()
         cut_ids_all = list(set(cut_ids_all))
         return travel_times.loc[~travel_times.index.isin(cut_ids_all)]
@@ -361,14 +367,14 @@ def standardize_data(pos_freed_trans_twtt: pd.DataFrame, data_precision: int = 8
     )
     transmit_df.columns = _get_standard_columns(transmit_df.columns, "transmit")
 
-    return pd.merge(receive_df, transmit_df, on=constants.DATA_SPEC.tx_time).round(data_precision)
+    return receive_df.merge(transmit_df, on=constants.DATA_SPEC.tx_time).round(data_precision)
 
 
 def data_loading(
     config_yaml: str,
-    distance_limit: Optional[float] = None,
-    residual_limit: Optional[float] = None,
-    outlier_threshold: Optional[float] = None,
+    distance_limit: float | None = None,
+    residual_limit: float | None = None,
+    outlier_threshold: float | None = None,
     from_cache: bool = False,
     remove_outliers: bool = False,
     skip_posfilter: bool = False,
@@ -418,7 +424,7 @@ def preprocess_travel_times(pxp_df, config: Configuration):
 
 def compute_harmonic_mean(
     config: Configuration,
-    svdf: Optional[pd.DataFrame] = None,
+    svdf: pd.DataFrame | None = None,
 ):
     # Compute harmonic mean of each transponder
     if svdf is not None and config.solver:

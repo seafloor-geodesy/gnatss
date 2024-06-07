@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 import numba
@@ -34,7 +36,7 @@ def _compute_hm(svdf: pd.DataFrame, start_depth: float, end_depth: float) -> flo
     end_depth : float
         The end depth for calculation
 
-    """  # noqa: E501
+    """
     filtdf = svdf[(svdf[SP_DEPTH].round() >= start_depth) & (svdf[SP_DEPTH].round() <= end_depth)]
 
     # Get weights
@@ -81,7 +83,7 @@ def _sv_harmon_mean(
     zi = zs
     sum = 0.0
 
-    for i in range(0, dd.shape[0]):
+    for i in range(dd.shape[0]):
         z1, c_z1 = dd[i], sv[i]
         z2, c_z2 = dd[i + 1], sv[i + 1]
 
@@ -105,9 +107,7 @@ def _sv_harmon_mean(
         wf = np.log((zf - z1) * b + c_z1) / b
         w_d = wf - wi
         sum += w_d
-    svhm = (ze - zs) / sum
-
-    return svhm
+    return (ze - zs) / sum
 
 
 def sv_harmonic_mean(
@@ -142,13 +142,15 @@ def sv_harmonic_mean(
         The sound speed harmonic mean value
     """
     if svdf.empty:
-        raise ValueError("Dataframe is empty! Please check your data inputs.")
+        msg: str = "Dataframe is empty! Please check your data inputs."
+        raise ValueError(msg)
     # Clean up the sound speed value, ensuring that there's no negative value
     svdf = svdf[svdf[SP_SOUND_SPEED] > 0].reset_index(drop=True)
 
     for col in [SP_DEPTH, SP_SOUND_SPEED]:
         if col not in svdf.columns:
-            raise ValueError(f"{col} column must exist in the input dataframe!")
+            msg: str = f"{col} column must exist in the input dataframe!"
+            raise ValueError(msg)
 
     # lower the strings to normalize input
     method = method.lower()
@@ -165,9 +167,8 @@ def sv_harmonic_mean(
         end_depth = -np.abs(end_depth)
 
         if start_depth < end_depth:
-            raise ValueError(
-                f"Start depth {start_depth} must be greater than end depth {end_depth}!"
-            )
+            msg: str = f"Start depth {start_depth} must be greater than end depth {end_depth}!"
+            raise ValueError(msg)
 
         svdf = svdf[(svdf[SP_DEPTH].round() <= start_depth)]
         # Extract the numpy arrays for depth and sound speed
@@ -178,6 +179,7 @@ def sv_harmonic_mean(
 
         svhm = _sv_harmon_mean(dd, sv, start_depth, end_depth)
     else:
-        raise NotImplementedError(f"Method {method} is not implemented!")
+        msg = f"Method {method} is not implemented!"
+        raise NotImplementedError(msg)
 
     return svhm

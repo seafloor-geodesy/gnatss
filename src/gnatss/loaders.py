@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from pathlib import Path
 from re import compile
-from typing import List, Literal, Optional, Union
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -14,26 +16,26 @@ from .configs.main import Configuration
 from .utilities.time import gps_ws_time_to_astrotime
 
 
-def load_configuration(config_yaml: Optional[str] = None) -> Configuration:
+def load_configuration(config_yaml: str | None = None) -> Configuration:
     """
     Loads configuration yaml file into a Config object
     to be used throughout the pre-processing
     """
     if config_yaml is None or not Path(config_yaml).exists():
-        raise FileNotFoundError("Configuration file not found. Unable to create configuration")
+        msg: str = "Configuration file not found. Unable to create configuration"
+        raise FileNotFoundError(msg)
 
     yaml_dict = yaml.safe_load(Path(config_yaml).read_text("utf-8"))
-    config = Configuration(**yaml_dict)
-    return config
+    return Configuration(**yaml_dict)
 
 
-def load_sound_speed(sv_files: List[str]) -> pd.DataFrame:
+def load_sound_speed(sv_files: list[str]) -> pd.DataFrame:
     """
     Loads sound speed file data into pandas dataframe
 
     Parameters
     ----------
-    sv_files : List[str]
+    sv_files : list[str]
         The list of path string to the sound speed files to be loaded
 
     Returns
@@ -54,8 +56,8 @@ def load_sound_speed(sv_files: List[str]) -> pd.DataFrame:
 
 
 def load_travel_times(
-    files: List[str],
-    transponder_ids: List[str],
+    files: list[str],
+    transponder_ids: list[str],
     is_j2k: bool = False,
     time_scale: str = "tt",
 ) -> pd.DataFrame:
@@ -163,14 +165,14 @@ def load_travel_times(
 
 
 def load_roll_pitch_heading(
-    files: List[str],
+    files: list[str],
 ) -> pd.DataFrame:
     """
     Loads roll pitch heading data into a pandas dataframe from a list of files.
 
     Parameters
     ----------
-    files : List[str]
+    files : list[str]
         The list of path string to files to load.
 
     Returns
@@ -178,7 +180,7 @@ def load_roll_pitch_heading(
     pd.DataFrame
         Pandas DataFrame containing all of the roll pitch heading data.
         Expected columns will have 'time' and the 'roll', 'pitch', 'heading' values.
-        Optional roll, pitch, heading covariance columns will be dropped from the dataframe.
+        Union roll, pitch, heading covariance columns will be dropped from the dataframe.
         Return empty Dataframe if files is empty string.
     """
     required_columns = [
@@ -201,27 +203,26 @@ def load_roll_pitch_heading(
             for i in files
         ]
         # Remove optional columns from all_rph df
-        all_rph = pd.concat(rph_dfs)[required_columns].reset_index(drop=True)
-        return all_rph
-    else:
-        return pd.DataFrame(columns=required_columns)
+        return pd.concat(rph_dfs)[required_columns].reset_index(drop=True)
+
+    return pd.DataFrame(columns=required_columns)
 
 
-def get_atd_offsets(config: Configuration) -> Union[NDArray[Shape["3"], Float], None]:
+def get_atd_offsets(config: Configuration) -> NDArray[Shape[3], Float] | None:
     """
-        Retrieves the Antenna Transducer Offset values from configuration and turn them
-        into a numpy array. Returns None if atd_offsets not present in configuration.
+    Retrieves the Antenna Transducer Offset values from configuration and turn them
+    into a numpy array. Returns None if atd_offsets not present in configuration.
 
-        Parameters
-        ----------
-        config : Configuration
-        The configuration object
+    Parameters
+    ----------
+    config : Configuration
+    The configuration object
 
-        Returns
+    Returns
     -------
-        Union[NDArray[Shape["3"], Float], None]
-             Numpy array containing the forward, rightward and downward
-             antenna transducer offsets. Return None if atd_offsets not present in configuration.
+    NDArray[Shape["3"], Float] or None
+        Numpy array containing the forward, rightward and downward
+        antenna transducer offsets. Return None if atd_offsets not present in configuration.
     """
     if config.posfilter and config.posfilter.atd_offsets:
         return np.array(
@@ -241,7 +242,7 @@ def _round_time_precision(gps_data, time_round):
     return gps_data
 
 
-def load_gps_positions(files: List[str], time_round: int = constants.DELAY_TIME_PRECISION):
+def load_gps_positions(files: list[str], time_round: int = constants.DELAY_TIME_PRECISION):
     """
     Loads gps positions into a pandas dataframe from a list of files.
     Usually named `GPS_POS_FREED`.
@@ -278,7 +279,7 @@ def load_gps_positions(files: List[str], time_round: int = constants.DELAY_TIME_
 
 
 def load_gps_solutions(
-    files: List[str],
+    files: list[str],
     time_round: int = constants.DELAY_TIME_PRECISION,
     from_legacy: bool = False,
 ) -> pd.DataFrame:
@@ -312,21 +313,22 @@ def load_gps_solutions(
 
         # Round to match the delays precision
         return _round_time_precision(all_gps_solutions, time_round)
-    else:
-        # The new format of the GPS solutions
-        # the column names are included in csv file(s)
-        gps_solutions = [pd.read_csv(i) for i in files]
-        all_gps_positions = pd.concat(gps_solutions).reset_index(drop=True)
 
-        if any(len(sol.columns) <= 1 for sol in gps_solutions):
-            raise ValueError("Legacy GPS solutions file detected but not in legacy mode")
+    # The new format of the GPS solutions
+    # the column names are included in csv file(s)
+    gps_solutions = [pd.read_csv(i) for i in files]
+    all_gps_positions = pd.concat(gps_solutions).reset_index(drop=True)
 
-        return all_gps_positions
+    if any(len(sol.columns) <= 1 for sol in gps_solutions):
+        msg: str = "Legacy GPS solutions file detected but not in legacy mode"
+        raise ValueError(msg)
+
+    return all_gps_positions
 
 
 def load_deletions(
     config: Configuration,
-    file_paths: Optional[List[str]] = None,
+    file_paths: list[str] | None = None,
     time_scale="tt",
     remove_outliers: bool = False,
 ) -> pd.DataFrame:
@@ -335,7 +337,7 @@ def load_deletions(
 
     Parameters
     ----------
-    file_paths : List[str]
+    file_paths : list[str]
         Path to the deletion file to be loaded
     config : Configuration
         The configuration object
@@ -370,7 +372,7 @@ def load_deletions(
         # Got rid of the other columns
         # TODO: Parse the other columns
         cut_columns = cut_df.columns[0:-2]
-        cut_df.drop(columns=cut_columns, inplace=True)
+        cut_df = cut_df.drop(columns=cut_columns)
 
         # Convert time string to j2000,
         # assuming that they're in Terrestrial Time (TT) scale
@@ -390,17 +392,16 @@ def load_deletions(
     outliers_csv = output_path / CSVOutput.outliers.value
     if remove_outliers:
         if not outliers_csv.exists():
-            raise FileNotFoundError(
-                (
-                    "Outliers file not found. "
-                    "Please remove `--remove_outliers` flag "
-                    "and rerun the solver."
-                )
+            msg: str = (
+                "Outliers file not found. "
+                "Please remove `--remove_outliers` flag "
+                "and rerun the solver."
             )
+            raise FileNotFoundError(msg)
 
         import typer
 
-        typer.echo(f"Found {str(outliers_csv.absolute())} file. Including into cuts...")
+        typer.echo(f"Found {outliers_csv.absolute()!s} file. Including into cuts...")
         outliers_df = pd.read_csv(outliers_csv)
         outlier_cut = pd.DataFrame.from_records(
             outliers_df[constants.TT_TIME].apply(lambda row: (row, row)).to_numpy(),
@@ -417,13 +418,13 @@ def load_deletions(
     return cut_df
 
 
-def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
+def load_quality_control(qc_files: list[str], time_scale="tt") -> pd.DataFrame:
     """
     Loads the quality controls csv files into a pandas dataframe
 
     Parameters
     ----------
-    qc_files : List[str]
+    qc_files : list[str]
         Path to the quality control files to be loaded
     time_scale : str
         The time scale of the datetime string input.
@@ -480,7 +481,7 @@ def load_quality_control(qc_files: List[str], time_scale="tt") -> pd.DataFrame:
     return qc_df
 
 
-def load_novatel(data_files: List[str]) -> pd.DataFrame:
+def load_novatel(data_files: list[str]) -> pd.DataFrame:
     """
     Read from Novatel Level-1 data files and return its dataframe representation.
     Link to data format specifications:
@@ -495,11 +496,11 @@ def load_novatel(data_files: List[str]) -> pd.DataFrame:
     -------
     pd.DataFrame
         Parsed Novatel Level-1 data in a pandas dataframe
-    """  # noqa
+    """
     return _read_novatel_L1_data_files(data_files, data_format="INSPVAA")
 
 
-def load_novatel_std(data_files: List[str]) -> pd.DataFrame:
+def load_novatel_std(data_files: list[str]) -> pd.DataFrame:
     """
     Read from Novatel Level-1 data files and return its dataframe representation.
     Link to data format specifications:
@@ -514,7 +515,7 @@ def load_novatel_std(data_files: List[str]) -> pd.DataFrame:
     -------
     pd.DataFrame
         Parsed Novatel Level-1 data in a pandas dataframe
-    """  # noqa
+    """
     return _read_novatel_L1_data_files(data_files, data_format="INSSTDEVA")
 
 
@@ -542,9 +543,10 @@ def _read_novatel_L1_data_files(
     -------
     pd.DataFrame
 
-    """  # noqa
-    if data_format not in constants.L1_DATA_FORMAT.keys():
-        raise Exception("Unsupported data_format value")
+    """
+    if data_format not in constants.L1_DATA_FORMAT:
+        msg: str = "Unsupported data_format value"
+        raise Exception(msg)
 
     # Read Novatel's INSPVAA/INSSTDEVA Level-1 data format including regex, fields, and dtypes
     l1_data_config = constants.L1_DATA_FORMAT.get(data_format)
@@ -561,15 +563,16 @@ def _read_novatel_L1_data_files(
         data_fields_dtypes = zip(
             l1_data_config.get("data_fields"),
             l1_data_config.get("data_fields_dtypes"),
+            strict=False,
         )
 
         data_file_array = np.array(all_groups, dtype=list(data_fields_dtypes))
         data_file_arrays.append(data_file_array)
     all_data_array = np.concatenate(data_file_arrays, axis=0, casting="no")
 
-    df = pd.DataFrame(all_data_array)
+    data_df = pd.DataFrame(all_data_array)
     # New pd column to convert GNSS Week and Seconds to J2000 Seconds
-    df[constants.TIME_J2000] = pd.Series(
+    data_df[constants.TIME_J2000] = pd.Series(
         gps_ws_time_to_astrotime(all_data_array["week"], all_data_array["seconds"]).unix_j2000
     )
-    return df
+    return data_df

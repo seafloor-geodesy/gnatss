@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import platform
 import re
 import subprocess
@@ -51,7 +53,7 @@ def coordinates(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture()
 def array_center():
     return (45.3023, -124.9656, 0.0)
 
@@ -59,13 +61,14 @@ def array_center():
 def test_plh2xyz(coordinates):
     """Test for geodetic to geocentric conversion, comparing to fortran code"""
     (lat, lon, alt), _, _ = coordinates
-    input_data = f"{AE} {RF}\n{lat} {lon} {alt}".encode("utf-8")
+    input_data = f"{AE} {RF}\n{lat} {lon} {alt}".encode()
     fortran_program = f"plh2xyz-{platform.machine().lower()}"
     # Calls on fortran code
     result = subprocess.run(
         [str((HERE.parent / "fortran" / fortran_program).absolute())],
         input=input_data,
         capture_output=True,
+        check=False,
     )
     # Parse the string exported from the fortran code
     fx, fy, fz = np.round(
@@ -102,7 +105,7 @@ def test_xyz2enu(coordinates, array_center):
         (False, np.array([[-0.0, -0.0, 1.0], [1.0, -0.0, 0.0], [0.0, 1.0, 0.0]])),
     ],
 )
-def test__get_rotation_matrix(to_enu: bool, expected: NDArray[Shape["3, 3"], Float64]) -> None:
+def test__get_rotation_matrix(to_enu: bool, expected: NDArray[Shape[3, 3], Float64]) -> None:
     lat, lon = 0.0, 0.0
     res_array = _get_rotation_matrix(lat, lon, to_enu)
     assert np.array_equal(res_array, expected)

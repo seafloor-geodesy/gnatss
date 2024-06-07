@@ -3,6 +3,8 @@
 Module for storing constants used in package
 """
 
+from __future__ import annotations
+
 from .dataspec import DataSpec
 
 # Config constants

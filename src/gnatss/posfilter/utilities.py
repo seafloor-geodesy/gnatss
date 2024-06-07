@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typer
 
 from .. import constants
@@ -19,7 +21,7 @@ def filter_columns(data_dict):
         partial_obs = partial_obs.drop(
             [
                 name
-                for name in constants.DATA_SPEC.gnss_rx_fields.keys()
+                for name in constants.DATA_SPEC.gnss_rx_fields
                 if name not in constants.DATA_SPEC.gnss_rx_cov_fields
             ],
             axis="columns",
@@ -27,7 +29,7 @@ def filter_columns(data_dict):
         partial_obs = partial_obs.drop(
             [
                 name
-                for name in constants.DATA_SPEC.gnss_tx_fields.keys()
+                for name in constants.DATA_SPEC.gnss_tx_fields
                 if name not in constants.DATA_SPEC.gnss_tx_cov_fields
             ],
             axis="columns",

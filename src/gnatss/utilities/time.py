@@ -3,9 +3,11 @@
 Time utilities module utilizing astropy
 """
 
+from __future__ import annotations
+
 import numpy as np
 from astropy import units as u
-from astropy.time import Time as AstroTime  # noqa
+from astropy.time import Time as AstroTime
 from astropy.time import TimeDelta
 from astropy.time.formats import TimeFromEpoch, erfa
 from nptyping import Float, Int, NDArray, Shape
@@ -58,6 +60,4 @@ def gps_ws_time_to_astrotime(
     week_start = AstroTime(week_time.strftime("%Y-%m-%d"), format="iso", scale="tt")
 
     # Add seconds to beginning of week
-    final_time = week_start[unique_index] + TimeDelta(seconds, format="sec")
-
-    return final_time
+    return week_start[unique_index] + TimeDelta(seconds, format="sec")

@@ -1,4 +1,6 @@
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -35,8 +37,8 @@ from gnatss.ops.io import gather_files_all_procs
 from tests import TEST_DATA_FOLDER
 
 
-@pytest.fixture
-def all_files_dict_j2k_travel_times() -> Dict[str, Any]:
+@pytest.fixture()
+def all_files_dict_j2k_travel_times() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
     config.input_files.travel_times = InputData(path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k")
     return gather_files_all_procs(config)
@@ -390,7 +392,7 @@ def test_load_novatel(all_files_dict, novatel_data):
     missing_rows_threshold_percent = 1
     data_files_rows = 0
     for data_file in data_files:
-        with open(data_file, "r") as f:
+        with open(data_file) as f:
             data_files_rows += len(f.read().split("\n"))
     minimum_expected_rows = int(((100 - missing_rows_threshold_percent) * data_files_rows) / 100)
     assert l1_df.shape[0] >= minimum_expected_rows
@@ -428,7 +430,7 @@ def test_load_novatel_std(
     missing_rows_threshold_percent = 1
     data_files_rows = 0
     for data_file in data_files:
-        with open(data_file, "r") as f:
+        with open(data_file) as f:
             data_files_rows += len(f.read().split("\n"))
     minimum_expected_rows = int(((100 - missing_rows_threshold_percent) * data_files_rows) / 100)
     assert l1_df.shape[0] >= minimum_expected_rows
@@ -466,7 +468,7 @@ def test_load_novatel_std_v2(
     missing_rows_threshold_percent = 1
     data_files_rows = 0
     for data_file in data_files:
-        with open(data_file, "r") as f:
+        with open(data_file) as f:
             data_files_rows += len(f.read().split("\n"))
     minimum_expected_rows = int(((100 - missing_rows_threshold_percent) * data_files_rows) / 100)
     assert l1_df.shape[0] >= minimum_expected_rows

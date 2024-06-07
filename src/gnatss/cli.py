@@ -1,6 +1,6 @@
 """The main command line interface for gnatss"""
 
-from typing import Optional
+from __future__ import annotations
 
 import typer
 
@@ -22,8 +22,8 @@ def version_callback(value: bool):
 
 @app.callback()
 def callback(
-    version: Optional[bool] = typer.Option(
-        None,
+    version: bool = typer.Option(
+        False,
         "--version",
         help="Show version and exit.",
         callback=version_callback,
@@ -41,44 +41,40 @@ def run(
         ...,
         help="Custom path to configuration yaml file. **Currently only support local files!**",
     ),
-    extract_dist_center: Optional[bool] = typer.Option(
+    extract_dist_center: bool = typer.Option(
         True, help="Flag to extract distance from center from run."
     ),
-    extract_process_dataset: Optional[bool] = typer.Option(
-        True, help="Flag to extract process results."
-    ),
-    outlier_threshold: Optional[float] = typer.Option(
+    extract_process_dataset: bool = typer.Option(True, help="Flag to extract process results."),
+    outlier_threshold: float = typer.Option(
         None,
         help=("Threshold for allowable percentage of outliers " "before raising a runtime error."),
     ),
-    distance_limit: Optional[float] = typer.Option(
+    distance_limit: float = typer.Option(
         None,
         help=(f"{Solver.model_fields.get('distance_limit').description}" f". {OVERRIDE_MESSAGE}"),
     ),
-    residual_limit: Optional[float] = typer.Option(
+    residual_limit: float = typer.Option(
         None,
         help=(f"{Solver.model_fields.get('residual_limit').description}" f". {OVERRIDE_MESSAGE}"),
     ),
-    qc: Optional[bool] = typer.Option(
+    qc: bool = typer.Option(
         True, help="Flag to plot residuals from run and store in output folder."
     ),
-    from_cache: Optional[bool] = typer.Option(
-        False, help="Flag to load the GNSS-A Level-2 Data from cache."
-    ),
-    remove_outliers: Optional[bool] = typer.Option(
+    from_cache: bool = typer.Option(False, help="Flag to load the GNSS-A Level-2 Data from cache."),
+    remove_outliers: bool = typer.Option(
         False,
         help=(
             "Flag to execute removing outliers from the GNSS-A Level-2 Data "
             "before running the solver process."
         ),
     ),
-    run_all: Optional[bool] = typer.Option(
+    run_all: bool = typer.Option(
         True, help="Flag to run the full end-to-end GNSS-A processing routine."
     ),
-    solver: Optional[bool] = typer.Option(
+    solver: bool = typer.Option(
         False, help="Flag to run the solver process only. Requires GNSS-A Level-2 Data."
     ),
-    posfilter: Optional[bool] = typer.Option(
+    posfilter: bool = typer.Option(
         False,
         help="Flag to run the posfilter process only. Requires GNSS-A Level-1 Data Inputs.",
     ),
@@ -88,9 +84,12 @@ def run(
     Note: Currently only supports 3 transponders
     """
     if all([run_all, solver, posfilter]):
-        raise ValueError("Cannot run all and solver or posfilter at the same time.")
-    elif all([not x for x in [run_all, solver, posfilter]]):
-        raise ValueError("Must specify either all, solver, or posfilter.")
+        msg: str = "Cannot run all and solver or posfilter at the same time."
+        raise ValueError(msg)
+
+    if all(not x for x in [run_all, solver, posfilter]):
+        msg: str = "Must specify either all, solver, or posfilter."
+        raise ValueError(msg)
 
     skip_posfilter = False
     skip_solver = False
