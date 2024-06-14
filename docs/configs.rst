@@ -8,6 +8,8 @@ Pydantic models documentation for application configurations.
 * `Main`_
 * `I/O`_
 * `Solver`_
+* `Posfilter`_
+* `Transponders`_
 
 Main
 ----
@@ -24,4 +26,16 @@ Solver
 ------
 
 .. automodule:: gnatss.configs.solver
+   :members:
+
+Posfilter
+---------
+
+.. automodule:: gnatss.configs.posfilter
+   :members:
+
+Transponders
+------------
+
+.. automodule:: gnatss.configs.transponders
    :members:
