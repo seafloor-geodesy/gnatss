@@ -3,6 +3,7 @@ from __future__ import annotations
 import typer
 
 from .configs.io import CSVOutput
+from .configs.main import Configuration
 from .ops.data import data_loading, preprocess_data
 from .ops.io import to_file
 from .ops.qc import export_qc_plots
@@ -23,7 +24,68 @@ def run_gnatss(
     qc: bool = True,
     skip_posfilter: bool = False,
     skip_solver: bool = False,
-):
+) -> tuple[Configuration, dict[str, any]]:
+    """
+    The main function to run GNATSS from end-to-end.
+
+    Parameters
+    ----------
+    config_yaml : str
+        Path to the configuration yaml file
+
+    distance_limit : float | None, optional
+        Distance in meters from center beyond
+        which points will be excluded from solution
+
+        *Setting this argument will override the value set in the configuration.*
+
+    residual_limit : float | None, optional
+        Maximum residual in centimeters beyond
+        which data points will be excluded from solution
+
+        *Setting this argument will override the value set in the configuration.*
+
+    outlier_threshold : float | None, optional
+        Residual outliers threshold acceptable before throwing an error in percent
+
+        *Setting this argument will override the value set in the configuration.*
+
+    from_cache : bool, optional
+        Flag to load the GNSS-A Level-2 Data from cache.
+
+        *Setting this to ``True`` will load the data from the cache output directory
+        set in the configuration*
+
+    return_raw : bool, optional
+        Flag to return raw processing data as
+        part of the result dictionary, by default False
+
+    remove_outliers : bool, optional
+        Flag to execute removing outliers from the GNSS-A Level-2 Data
+        before running the solver process, by default False
+
+    extract_process_dataset : bool, optional
+        Flag to extract the process dataset as a netCDF file, by default True
+
+    extract_dist_center : bool, optional
+        Flag to extract the distance from center as a CSV file, by default True
+
+    qc : bool, optional
+        Flag to plot residuals from run and store in output folder, by default True
+
+    skip_posfilter : bool, optional
+        Flag to skip the posfilter step, by default False
+
+    skip_solver : bool, optional
+        Flag to skip the solver step, by default False
+
+    Returns
+    -------
+    config : Configuration
+        Configuration object containing all the configuration values
+    data_dict : dict
+        Dictionary containing the results of the GNATSS run
+    """
     typer.echo("Starting GNATSS ...")
     if from_cache:
         typer.echo(
