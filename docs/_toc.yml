@@ -17,4 +17,5 @@ parts:
   - caption: Help & reference
     chapters:
       - file: configs
+      - file: dataspec
       - file: api

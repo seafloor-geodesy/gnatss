@@ -7,46 +7,7 @@ API components that are currently available.
 
 **NOTE: This package is still under heavy development, so API listed below will change**
 
-Harmonic Mean module
-====================
-.. automodapi:: gnatss.ops.harmonic_mean
-   :no-inheritance-diagram:
-   :no-heading:
+.. toctree::
+   :maxdepth: 4
 
-Loaders module
-==============
-.. automodapi:: gnatss.loaders
-   :no-inheritance-diagram:
-   :no-heading:
-
-Operations modules
-==================
-Data
-----
-.. automodapi:: gnatss.ops.data
-   :no-inheritance-diagram:
-   :no-heading:
-
-Quality Control
----------------
-.. automodapi:: gnatss.ops.qc
-   :no-inheritance-diagram:
-   :no-heading:
-
-Posfilter
----------
-.. automodapi:: gnatss.posfilter.posfilter
-   :no-inheritance-diagram:
-   :no-heading:
-
-Solve
------
-.. automodapi:: gnatss.solver.solve
-   :no-inheritance-diagram:
-   :no-heading:
-
-Validate
---------
-.. automodapi:: gnatss.ops.validate
-   :no-inheritance-diagram:
-   :no-heading:
+   api/gnatss
