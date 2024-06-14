@@ -10,6 +10,7 @@
 <br>
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
 [![CodeFactor](https://www.codefactor.io/repository/github/seafloor-geodesy/gnatss/badge)](https://www.codefactor.io/repository/github/seafloor-geodesy/gnatss)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/seafloor-geodesy/gnatss/main.svg)](https://results.pre-commit.ci/latest/github/seafloor-geodesy/gnatss/main)
 
