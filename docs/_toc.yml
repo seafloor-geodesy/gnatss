@@ -8,6 +8,7 @@ parts:
     chapters:
       - file: install
       - file: gnssa
+      - file: gnssa_preprocessing
   - caption: User Guide
     chapters:
       - file: input
