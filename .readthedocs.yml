@@ -26,9 +26,7 @@ formats: []
 python:
   install:
     - method: pip
-      path: nox
-    - method: pip
       path: .
       extra_requirements:
-        - docs
+        - all
 #   system_packages: true
