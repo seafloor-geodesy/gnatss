@@ -93,6 +93,37 @@ raw two-way travel times. This delay must be removed prior to GNATSS positioning
 because there is not an acoustic pulse physically traveling through the water
 column during this time.
 
+**Surface Platform Positions**
+
+There are two positions on a GNSS-Acoustic surface platform relevant for array
+positioning, the positioning of the GNSS antenna and the position of the
+transducer. While GNATSS requires positions for the transducer for array
+positioning, raw positioning data in the form of RINEX files track the GNSS
+antenna. Thus, the user must provide GNATSS with a time series of antenna
+positions from which GNATSS will derive the transducer positions during the
+posfilter operation.
+
+The antenna positions may be calculated with a GNSS processing software of the
+user's preference. However, in order for GNATSS to ingest the antenna positions
+they must be converted into a custom format. This format is a text column file
+of the form:
+
+```console
+   712497600.0000000    GPSPOS       -2605855.7990    -3707733.0210     4472994.7430    0.0100    0.0100    0.0100
+   712497601.0000000    GPSPOS       -2605855.2850    -3707733.4330     4472995.0110    0.0100    0.0100    0.0100
+   712497602.0000000    GPSPOS       -2605855.1770    -3707734.0660     4472995.1420    0.0100    0.0100    0.0100
+   712497603.0000000    GPSPOS       -2605854.7550    -3707734.4340     4472994.8080    0.0100    0.0100    0.0100
+```
+
+The columns of this file are as follows:
+
+- The first column is time in J2000 seconds, relative to 2000-01-01 12:00:00.
+- The second column is a text flag.
+- Columns 3-5 are the antenna positions in ECEF XYZ coordinates with units of
+  meters.
+- Columns 6-8 are the standard deviations of the antenna positions, also in
+  meters.
+
 **Velocities and Roll, Pitch, Heading values**
 
 GNATSS is currently equipped to ingest raw orientation data collected by the
