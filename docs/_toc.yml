@@ -7,8 +7,13 @@ parts:
   - caption: Getting Started
     chapters:
       - file: install
+  - caption: GNSS-Acoustic Theory
+    chapters:
       - file: gnssa
-      - file: gnssa_preprocessing
+        sections:
+          - file: travel_time_delays
+          - file: gnssa_preprocessing
+          - file: gnssa_derivation
   - caption: User Guide
     chapters:
       - file: input
