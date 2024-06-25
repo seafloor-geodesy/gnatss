@@ -1,19 +1,19 @@
 # GNATSS Config File
 
 The GNSS-Acoustic positioning performed by GNATSS is governed by a configuration
-file named "config.yaml". This is a text file with a YAML format that defines
-the _a priori_ geometry of the GNSS-Acoustic array.
+file. This is a text file with a YAML format that defines the _a priori_
+geometry of the GNSS-Acoustic array.
 
-The config file is divided into multiple sections, but not all of the sections
-are required depending on your processing needs. In general, GNATSS operates in
-two modes, a posfilter mode which performs pre-processing on wave glider data to
-generate input required for array positioning, and a solver mode that perms the
-array positioning using the data computed by the posfilter. These modes are
-defined separately in the config file. It is possible to run only one of these
-two modes at a time, or to run both in sequence, so it is optional to include
-their information in the config file.
+The configuration file is divided into multiple sections, but not all of the
+sections are required depending on your processing needs. In general, GNATSS
+operates in two modes, a posfilter mode which performs pre-processing on wave
+glider data to generate input required for array positioning, and a solver mode
+that perms the array positioning using the data computed by the posfilter. These
+modes are defined separately in the config file. It is possible to run only one
+of these two modes at a time, or to run both in sequence, so it is optional to
+include their information in the config file.
 
-At a high level, the sections of the config file are:
+At a high level, the sections of the configuration file are:
 
 - Metadata _(required)_: Information about the array
 - Main Input files _(required for posfilter)_: Travel time files
@@ -24,7 +24,7 @@ At a high level, the sections of the config file are:
 Further information on the input data formats may be found on the
 [Required Input Data](./input.md) page.
 
-A template of the config.yaml file is:
+A template of the configuration file is:
 
 ```
 # Metadata

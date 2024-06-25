@@ -11,9 +11,9 @@ you may skip the posfilter mode and immediately run the solver.
 
 The basic step-by-step guide to position a GNSS-Acoustic array using GNATSS is:
 
-Step 1: Gather the required input files
+Step 1: Gather the [required input files](#required-input-data)
 
-Step 2: Create working directory and configuration file
+Step 2: Create working directory and [configuration file](./config_yaml.md)
 
 Step 3 _(optional)_: Run the posfilter module to generate transducer positions
 at the interrogation/reply times of the GNSS-Acoustic survey
