@@ -144,3 +144,7 @@ version.py
 
 # Notebook dev folder
 notebooks
+
+# Testing
+test-output/
+tests/data/2022.zip

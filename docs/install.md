@@ -14,3 +14,9 @@ installed via pip:
 ```
 pip install gnatss
 ```
+
+In order to update GNATSS to the most current version, use the command:
+
+```
+pip install --upgrade gnatss
+```

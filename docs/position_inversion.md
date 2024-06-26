@@ -9,38 +9,51 @@ the Seafloor Geodesy Community experiment.
 
 The first step is to prepare all of the input files required to calculate a
 position, including the _pxp_tt_ file with acoustic two-way travel times, the
-_POS_FREED_TRANS_TWTT_ file with transducer positions, and the sound velocity
-profile. Create a working directory and place a configuration file named
-_config.yaml_ inside of it. Edit _config.yaml_ to reflect the a priori site
-information and locations of the input data files. Once you have done this, run
-GNATSS in the working directory with the following command on the command line
-interface:
+_gps_positions_ file with antenna positions, the Novatel files with #INSPVA and
+#INSSTDEVA strings, and the sound velocity profile. Create a working directory
+and place a configuration file inside of it. This configuration file may be
+edited from the template available on the [GNATSS Config File](./config_yaml.md)
+page or the [GNATSS GitHub](https://github.com/seafloor-geodesy/gnatss). You may
+name this file whatever you like, but for the purposes of this example, we will
+name the configuration file _NDP1_2022.yaml_. Edit _NDP1_2022.yaml_ to reflect
+the a priori site information and locations of the input data files. Once you
+have done this, run GNATSS in the working directory with the following command
+on the command line interface:
 
 ```
-gnatss run --extract-dist-center --extract-process-dataset --qc --distance-limit 150
+gnatss run --distance-limit 150 NDP1_2022.yaml
 ```
 
-After a successful run, GNATSS will generate an _output_ folder with the
-following files:
+After a successful run, GNATSS will generate an _output_ directory defined in
+the configuration file, by default _./output_. The output directory will contain
+the following files:
 
-- _process_dataset.nc_: NetCDF file with array offsets.
-- _residuals.csv_: File with the GNSS-Acoustic residuals, the difference between
+- `gps_solution.csv`: Input data file in the Community Standard GNSS-A format.
+  This file is only generated when the user runs the _posfilter_ mode of GNATSS.
+- `process_dataset.nc`: NetCDF file with array offsets.
+- `residuals.csv`: File with the GNSS-Acoustic residuals, the difference between
   the measured and modelled two-way travel times for each ping. Residual values
   are converted to centimeters from seconds with the mean sound velocity.
-- _deletions.csv_: File with a list of residuals with poor data quality, to be
+- `deletions.csv`: File with a list of residuals with poor data quality, to be
   removed the next time gnatss is executed.
-- _dist_center.csv_: File with the distances between the transducer and the
+- `dist_center.csv`: File with the distances between the transducer and the
   center of the array for each ping.
-- _outliers.csv_: File with residuals that fall outside a user-defined
+- `outliers.csv`: File with residuals that fall outside a user-defined
   threshold. Concatenated to _deletions.csv_ the next time gnatss is executed.
-- _residuals.png_: A plot of the acoustic residuals. There is one time series
+- `residuals.png`: A plot of the acoustic residuals. There is one time series
   for each transponder in the array.
-- _residuals_enu_components.png_: A plot of the acoustic residuals averaged
+- `residuals_enu_components.png`: A plot of the acoustic residuals averaged
   together over space to estimate the apparent offset of the array center during
   each ping.
 
+The above run executed both the posfilter and solver modes of GNATSS by default
+since we did not specify an individual mode. Because of this, a
+_gps_solution.csv_ file was generated in addition to the array position. If we
+want to repeat the array positioning executed by the solver, we can skip the
+posfilter mode by using this _gps_solution.csv_ file as input data.
+
 A good way to assess the quality of the solution is to evaluate the
-_residuals.png_ file. After running gnatss the first time with the above
+_residuals.png_ file. After running GNATSS the first time with the above
 command, this plot shows the following:
 
 ![residuals_1](./residuals_1.png)
@@ -56,11 +69,16 @@ significantly biasing the solution.
 
 One of the strengths of GNATSS is that it can identify and flag outlier
 residuals according to a user-defined threshold. Since the first run showed that
-the vast majority of residuals were <500 cm from the mean, we run gnatss again
-while setting the outlier threshold to 500:
+the vast majority of residuals were <500 cm from the mean, we will run GNATSS
+again while setting the outlier threshold to 500. In this run, we no longer need
+to run the posfilter mode since the _gps_solution.csv_ file was generated
+previously. To take advantage of this, we can use the "--from-cache" flag, which
+will direct GNATSS to skip the posfilter mode and look for the
+_gps_solution.csv_ file in the output directory. We don't even need to update
+the configuration file!
 
 ```
-gnatss run --extract-dist-center --extract-process-dataset --qc --distance-limit 150 --residual-limit 500
+gnatss run --from-cache --distance-limit 150 --residual-limit 500 NDP1_2022.yaml
 ```
 
 After doing this, you will notice that the solution itself has not changed.
@@ -69,33 +87,36 @@ spkies due to the GNSS cycle slips have been flagged.
 
 ![residuals_2](./residuals_2.png)
 
-All of the flagged residuals have been stored in the file _outliers.csv_. The
-next time we run gnatss, this file will be concatenated to the _deletions.csv_
-and the residuals removed from the inversion. If for some reason you feel that
-too many residuals have been flagged, you can delete _outliers.csv_ in order to
-unflag those residuals so that you can run gnatss again with a loser outlier
-threshold. Note that no data has been actually removed from the input files, so
-if you feel that too much data has been concatenated to the _deletions.csv_
-file, you can delete it to start a fresh inversion.
+All of the flagged residuals have been stored in the file _outliers.csv_. If we
+run GNATSS with the "--remove-outliers" flag, this file will be concatenated to
+the _deletions.csv_ file and the residuals removed from the inversion. If for
+some reason you feel that too many residuals have been flagged, you can delete
+_outliers.csv_ in order to unflag those residuals, or simply run GNATSS again
+with a looser outlier threshold. Note that no data has been actually removed
+from the input files, so if you feel that too much data has been concatenated to
+the _deletions.csv_ file, you can delete it to start a fresh inversion.
 
-In any case, now that we have some outliers flagged, we can now run gnatss again
-to remove them:
+In any case, now that we have some outliers flagged, we can now run GNATSS with
+the "--remove-outliers" flag, which will direct it to automatically remove any
+flagged residuals:
 
 ```
-gnatss run --extract-dist-center --extract-process-dataset --qc --distance-limit 150 --residual-limit 500
+gnatss run --from-cache --distance-limit 150 --remove-outliers NDP1_2022.yaml
 ```
 
-Even though we have used the exact same command, gnatss will now generate a new
-solution since it has now removed the residuals that had been flagged during the
-previous run.
+GNATSS has now removed the residuals that had been flagged during the previous
+run.
 
 ![residuals_3](./residuals_3.png)
 
 There are still some outlier residuals, so let's try tightening the outlier
-threshold. In this case, I choose a threshold of 30 cm.
+threshold. The strategy used to flag and remove residuals is up to the user's
+discretion. In this case, there is a fairly consistent band of residuals near 0
+cm that I interpret as the primary geodetic signal within the time series. I
+choose a strict outlier threshold of 30 cm in order to isolate that signal.
 
 ```
-gnatss run --extract-dist-center --extract-process-dataset --qc --distance-limit 150 --residual-limit 30
+gnatss run --from-cache --distance-limit 150 --residual-limit 30 NDP1_2022.yaml
 ```
 
 This flags the following residuals:
@@ -103,8 +124,15 @@ This flags the following residuals:
 ![residuals_4](./residuals_4.png)
 
 Since I am satisfied that only outliers from the main time series are being
-flagged, I lock in the deletions by running gnatss again and arrive at the
-following:
+flagged, I lock in the deletions by running GNATSS again. In this case I'll call
+both the "--remove-outliers" flag and the "--residual-limit" flag, although I
+won't change the residual limit.
+
+```
+gnatss run --from-cache --distance-limit 150 --residual-limit 30 --remove-outliers NDP1_2022.yaml
+```
+
+This generates the following residual plot:
 
 ![residuals_5](./residuals_5.png)
 
@@ -112,9 +140,18 @@ Notice how new residuals have been flagged! Since the final position is
 generated by averaging all of the residuals in the time series, outliers can
 bias the result. Because of this, when we removed the previous outliers, the
 mean position shifted enough that residuals just below the threshold were pushed
-beyond it. I choose to run gnatss a few more times in order to remove all of
-these residuals right at the threshold until no new residuals are flagged. The
-final residual plot looks like this:
+beyond it. However, although it is possible to direct GNATSS to remove outliers
+and flag new residuals in a single run, we do not recommend doing so since it
+increases the risk of the user accidentally flagging good data. In the case that
+you flag residuals you do not want to discard, you may either manually delete
+the _outliers.csv_ file or run gnatss again with a new "--residual-limit flag"
+to update _outliers.csv_. As long as you do not execute GNATSS with the
+"--remove-outliers" flag, any flagged residuals will not be removed from the
+positioning.
+
+I choose to run GNATSS a few more times in order to remove all of the residuals
+right at the 30 cm threshold until no new residuals are flagged. The final
+residual plot looks like this:
 
 ![residuals_6](./residuals_6.png)
 
