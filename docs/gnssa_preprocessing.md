@@ -64,11 +64,11 @@ based upon an estimated state $Y_{(k-1|k-1)}$ at a previous time $k-1$.
 The forward filter first uses the previous measurement update, $Y_{(k-1|k-1)}$
 and $P_{(k-1|k-1)}$, to predict the state vector and covariance:
 
-$$ Y*{(k|k-1)} = \Phi*{(k|k-1)} \cdot Y\_{(k-1|k-1)} $$
+$$ Y_{(k|k-1)} = \Phi_{(k|k-1)} \cdot Y_{(k-1|k-1)} $$
 
 $$
-P*{(k|k-1)} = \Phi*{(k|k-1)} \cdot P*{(k-1|k-1)} \cdot \Phi^T*{(k|k-1)} +
-Q\_{(k|k-1)}
+P_{(k|k-1)} = \Phi_{(k|k-1)} \cdot P_{(k-1|k-1)} \cdot \Phi^T_{(k|k-1)} +
+Q_{(k|k-1)}
 $$
 
 In the above equations, $\Phi_{(k|k-1)}$ describes the physics of the system
@@ -77,8 +77,8 @@ and $t_{k-1}$) and $Q_{(k|k-1)}$ is a noise parameter associated with
 $\Phi_{(k|k-1)}$. Based upon this prediction, we calculate the Kalman gain:
 
 $$
-K*{(k|k)} = P*{(k|k-1)} \cdot H^T*{(k|k)} \cdot \left( H*{(k|k)} \cdot
-P*{(k|k-1)} \cdot H^T*{(k|k)} + V\_{(k|k)} \right)^{-1}
+K_{(k|k)} = P_{(k|k-1)} \cdot H^T_{(k|k)} \cdot \left( H_{(k|k)} \cdot
+P_{(k|k-1)} \cdot H^T_{(k|k)} + V_{(k|k)} \right)^{-1}
 $$
 
 $V_{(k|k)}$ is the measurement covariance at time $t_k$ and $H_{(k|k)}$ is a
@@ -87,11 +87,11 @@ measurements $z_k$ at time $t_k$. From this, the measurement update of $Y$ and
 $P$ is calculated as:
 
 $$
-Y*{(k|k)} = Y*{(k|k-1)} + K*{(k|k)} \cdot \left( z*{(k|k)} - H*{(k|k)} \cdot
-Y*{(k|k-1)} \right)
+Y_{(k|k)} = Y_{(k|k-1)} + K_{(k|k)} \cdot \left( z_{(k|k)} - H_{(k|k)} \cdot
+Y_{(k|k-1)} \right)
 $$
 
-$$ P*{(k|k)} = \left( I - K*{(k|k)} \cdot H*{(k|k)} \right) \cdot P*{(k|k-1)} $$
+$$ P_{(k|k)} = \left( I - K_{(k|k)} \cdot H_{(k|k)} \right) \cdot P_{(k|k-1)} $$
 
 Note that $H_{(k|k)}=0$ during ping reply epochs since no new positions or
 velocities are collected at those times. Thus, there is no measurement update at
@@ -101,16 +101,16 @@ The back-smoother is a Rauch-Tung-Striebel smoother (Rauch et al., 1965) that
 uses a smoothing gain $A_{(k)}$ to update $Y$ and $P$ based upon future
 measurement updates calculated by the forward filter:
 
-$$ A*{(k)} = P*{(k|k)} \cdot \Phi^T*{(k+1|k)} \cdot P^{-1}*{(k+1|k)} $$
+$$ A_{(k)} = P_{(k|k)} \cdot \Phi^T_{(k+1|k)} \cdot P^{-1}_{(k+1|k)} $$
 
 $$
-Y*{(k|N)} = Y*{(k|k)} + A*{(k)} \cdot \left( Y*{(k+1|N)} - Y\_{(k+1|k)}
+Y_{(k|N)} = Y_{(k|k)} + A_{(k)} \cdot \left( Y_{(k+1|N)} - Y_{(k+1|k)}
 \right)
 $$
 
 $$
-P*{(k|N)} = P*{(k|k)} + A*{(k)} \cdot \left( P*{(k+1|N)} - P*{(k+1|k)}
-\right) \cdot A*{(k)}^T
+P_{(k|N)} = P_{(k|k)} + A_{(k)} \cdot \left( P_{(k+1|N)} - P_{(k+1|k)}
+\right) \cdot A_{(k)}^T
 $$
 
 ## Antenna-Transducer Rotation
@@ -141,7 +141,7 @@ transducer position may be computed by rotating $X_{body}$ about the three
 body-frame axes:
 
 $$
-X*{trans} = X*{ant} + \mathbf{R}_3(h-360) \mathbf{R}\_2(-p) \mathbf{R}\_1(-r)
+X_{trans} = X_{ant} + \mathbf{R}_3(h-360) \mathbf{R}_2(-p) \mathbf{R}_1(-r)
 X_{body}
 $$
 

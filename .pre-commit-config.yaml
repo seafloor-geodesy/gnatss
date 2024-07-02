@@ -2,7 +2,8 @@ exclude: |
   (?x)^(
     docs/conf.py |
     .devcontainer/ |
-    tests/ops_data.py
+    tests/ops_data.py |
+    docs/gnssa_preprocessing.md
   )
 
 ci:
