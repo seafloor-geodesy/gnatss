@@ -9,8 +9,9 @@ import numpy as np
 import pytest
 from nptyping import Float64, NDArray, Shape
 from pymap3d import ecef2enu, geodetic2ecef
+from pymap3d.ellipsoid import Ellipsoid
 
-from gnatss.utilities.geo import _get_rotation_matrix
+from gnatss.utilities.geo import _get_rotation_matrix, ecef2ae
 
 from ..fortran import flib
 
@@ -109,3 +110,23 @@ def test__get_rotation_matrix(to_enu: bool, expected: NDArray[Shape[3, 3], Float
     lat, lon = 0.0, 0.0
     res_array = _get_rotation_matrix(lat, lon, to_enu)
     assert np.array_equal(res_array, expected)
+
+@pytest.mark.parametrize(
+    "x, y, z, lat0, lon0, h0, ell, deg, expected_az, expected_elev",
+    [
+        (0.0, 0.0,0.0, 0.0, 0.0, 0.0, None, True, 0.0, -0.0),
+        (0.0, 0.0,0.0, 0.0, 0.0, 0.0, None, False, 0.0, -0.0),
+        (0.0, 0.0,0.0, 0.0, 0.0, 0.0, Ellipsoid.from_name("wgs84"), True, 0.0, -0.0),
+        (0.0, 0.0,0.0, 0.0, 0.0, 0.0, Ellipsoid.from_name("wgs84"), False, 0.0, -0.0),
+        (1000, 2000, 3000, 45.0, 45.0, 0.0, None, True, 88.15957722814431, -0.1982288649307167),
+        (1000, 2000, 3000, 45.0, 45.0, 0.0, None, False, 1.5601796347021417, -0.0029586874870229027),
+        (1000, 2000, 3000, 45.0, 45.0, 0.0, Ellipsoid.from_name("wgs84"), True, 88.15957722814431, -0.19822886493071679),
+        (1000, 2000, 3000, 45.0, 45.0, 0.0, Ellipsoid.from_name("wgs84"), False, 1.5601796347021417, -0.0029586874870229027),
+        (1000, 2000, 3000, 45.0, 45.0, 0.0, Ellipsoid.from_name("wgs84_mean"),False, -1.011523019254236, -5.912466294237895e-05),
+        (1000, 2000, 3000, 45.0, 45.0, 0.0, Ellipsoid.from_name("wgs84_mean"), True, 41.30511509801039, -0.008470084903298258)
+    ]
+)
+def test_ecef2ae(x, y, z, lat0, lon0, h0, ell, deg, expected_az, expected_elev):
+    az, elev = ecef2ae(x, y, z, lat0, lon0, h0, ell, deg)
+    assert np.isclose(az, expected_az, atol=1e-5)
+    assert np.isclose(elev, expected_elev, atol=1e-5)
