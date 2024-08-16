@@ -391,6 +391,7 @@ def prepare_and_solve(
     num_transponders = len(transponders)
 
     typer.echo("Preparing data inputs...")
+    typer.echo(f"Pre-filtering data with fewer than {num_transponders} replies...")
     reduced_observations = prefilter_replies(all_observations, num_transponders)
     data_inputs = get_data_inputs(reduced_observations)
 
