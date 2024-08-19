@@ -214,7 +214,7 @@ def load_datasets(
     all_files_dict.update(gather_files(config, proc="main", mode=mode))
 
     # Gather posfilter
-    if not skip_posfilter:
+    if not skip_posfilter and not from_cache:
         all_files_dict.update(gather_files(config, proc="posfilter", mode=mode))
 
     # Gather solver
