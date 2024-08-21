@@ -213,8 +213,8 @@ def load_datasets(
     # Gather main
     all_files_dict.update(gather_files(config, proc="main", mode=mode))
 
-    # Gather posfilter
-    if not skip_posfilter:
+    # Gather posfilter (Skip if from_cache set)
+    if not skip_posfilter and not from_cache:
         all_files_dict.update(gather_files(config, proc="posfilter", mode=mode))
 
     # Gather solver
