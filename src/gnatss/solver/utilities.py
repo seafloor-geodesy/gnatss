@@ -12,7 +12,7 @@ from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 from .. import constants
 from ..configs.main import Configuration
 from ..configs.solver import SolverTransponder
-from ..ops.data import filter_tt, get_data_inputs
+from ..ops.data import filter_tt, get_data_inputs, prefilter_replies
 from ..ops.validate import check_solutions
 from ..utilities.geo import _get_rotation_matrix
 from ..utilities.time import AstroTime
@@ -387,15 +387,19 @@ def prepare_and_solve(
     # Store original xyz
     original_positions = transponders_xyz.copy()
 
+    # Store number of transponders
+    num_transponders = len(transponders)
+
     typer.echo("Preparing data inputs...")
-    data_inputs = get_data_inputs(all_observations)
+    typer.echo(f"Pre-filtering data with fewer than {num_transponders} replies...")
+    reduced_observations = prefilter_replies(all_observations, num_transponders)
+    data_inputs = get_data_inputs(reduced_observations)
 
     typer.echo("Perform solve...")
     is_converged = False
     n_iter = 0
-    num_transponders = len(transponders)
     process_dict = {}
-    num_data = len(all_observations)
+    num_data = len(reduced_observations)
     typer.echo(f"--- {len(data_inputs)} epochs, {num_data} measurements ---")
     while not is_converged:
         # Max converge attempt failure
