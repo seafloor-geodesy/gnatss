@@ -15,6 +15,7 @@ def run_gnatss(
     config_yaml: str,
     distance_limit: float | None = None,
     residual_limit: float | None = None,
+    residual_range_limit: float | None = None,
     outlier_threshold: float | None = None,
     from_cache: bool = False,
     return_raw: bool = False,
@@ -42,6 +43,12 @@ def run_gnatss(
     residual_limit : float | None, optional
         Maximum residual in centimeters beyond
         which data points will be excluded from solution
+
+        *Setting this argument will override the value set in the configuration.*
+
+    residual_range_limit : float | None, optional
+        Maximum residual range (maximum - minimum) in centimeters for
+        a given epoch, beyond which data points will be excluded from solution
 
         *Setting this argument will override the value set in the configuration.*
 
@@ -95,6 +102,7 @@ def run_gnatss(
         config_yaml,
         distance_limit=distance_limit,
         residual_limit=residual_limit,
+        residual_range_limit=residual_range_limit,
         outlier_threshold=outlier_threshold,
         from_cache=from_cache,
         remove_outliers=remove_outliers,

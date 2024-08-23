@@ -95,6 +95,7 @@ def set_limits(
     config,
     distance_limit: float | None = None,
     residual_limit: float | None = None,
+    residual_range_limit: float | None = None,
     residual_outliers_threshold: float | None = None,
 ):
     # Override the distance and residual limits if provided
@@ -107,6 +108,9 @@ def set_limits(
 
     if residual_outliers_threshold is not None:
         config.solver.residual_outliers_threshold = residual_outliers_threshold
+
+    if residual_range_limit is not None:
+        config.solver.residual_range_limit = residual_range_limit
 
     return config
 
@@ -189,6 +193,7 @@ def load_config(
     config_yaml: str,
     distance_limit: float | None = None,
     residual_limit: float | None = None,
+    residual_range_limit: float | None = None,
     outlier_threshold: float | None = None,
 ):
     config = load_configuration(config_yaml)
@@ -196,6 +201,7 @@ def load_config(
         config,
         distance_limit=distance_limit,
         residual_limit=residual_limit,
+        residual_range_limit=residual_range_limit,
         residual_outliers_threshold=outlier_threshold,
     )
 
