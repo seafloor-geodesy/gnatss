@@ -101,7 +101,6 @@ testpaths = [
 ]
 
 [tool.ruff]
-src = ["src"]
 exclude = ["tests/**", "testing.py"]
 line-length = 100
 
