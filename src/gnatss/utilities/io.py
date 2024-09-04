@@ -51,9 +51,7 @@ def check_file_exists(
         # Check that glob can find files
         # as specified in the input string
         glob_files = fs.glob(input_path)
-        if len(glob_files) == 0:
-            return False
-        return True
+        return len(glob_files) != 0
 
     check_path = input_path
     return fs.exists(check_path)
