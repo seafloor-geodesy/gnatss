@@ -46,7 +46,7 @@ jobs:
           FORCE_COLOR: 3
         run: |
           set -o pipefail
-          nox -s tests -- --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/ |& tee unit_test_log${{ matrix.python-version }}.log
+          nox --verbose -s tests -- --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/ |& tee unit_test_log${{ matrix.python-version }}.log
       - name: Upload unit test log
         if: ${{ success() || failure() }}
         uses: actions/upload-artifact@v4
