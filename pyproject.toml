@@ -24,7 +24,11 @@ dependencies = [
     "fsspec>=2024.5.0,<2025",
     "matplotlib>=3.8.0,<4",
     "numba>=0.56.4,<1",
-    "numpy>=1.23.5,<2",
+    # numpy/f2py/f2py2e.py:719
+    # VisibleDeprecationWarning: distutils has been deprecated since NumPy 1.26.x
+    # Use the Meson backend instead, 
+    # or generate wrapperswithout -c and use a custom build script
+    "numpy>=1.23.5,<1.26",
     "nptyping>=2.5.0,<3",
     "cftime>=1.6.2,<2",
     "pandas>=2.0.3,<3",
