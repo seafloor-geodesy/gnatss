@@ -78,6 +78,9 @@ def tests(session: nox.Session) -> None:
     - git-lfs: https://github.com/git-lfs/git-lfs
     - unzip: https://linuxize.com/post/how-to-unzip-files-in-linux/
     """
+    # Specify the setuptools version
+    # https://numpy.org/doc/stable/reference/distutils_status_migration.html#distutils-status-migration
+    session.install("setuptools<60")
     session.install(".[test]")
     if not (DIR / "tests" / "data" / "2022").exists():
         session.run(
