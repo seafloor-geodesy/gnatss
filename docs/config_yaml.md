@@ -114,8 +114,8 @@ The information that should be defined in the config.yaml file is as follows:
 - **Array Center** The approximate center of the array.
 - **Transponders** A priori information for each transponder in the array.
   GNATSS is currently configured to operate on arrays of 3 transponders. GNATSS
-  will assign names to the transponders based upn the order they are included in
-  the configuration file. The first entry will be named "SITE-1", the second
+  will assign names to the transponders based upon the order they are included
+  in the configuration file. The first entry will be named "SITE-1", the second
   entry "SITE-2", etc. The following information must be provided:
   - lat: The latitude of the transponder in decimal degrees
   - lon: The longitude of the transponder in decimal degrees

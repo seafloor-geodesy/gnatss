@@ -172,7 +172,7 @@ class Solver(BaseModel):
         ),
     )
     residual_range_limit: float = Field(
-        10000.0,
+        20000.0,
         ge=0.0,
         description=(
             "Maximum residual range (maximum - minimum) "

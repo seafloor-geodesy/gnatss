@@ -2,7 +2,7 @@
 
 In general, a GNSS-Acoustic Two-Way Travel Time (TWTT) measurement will include
 two additional timing delays in addition to the time when the acoustic pulse is
-travelling gthrough the water column. We refer to these as:
+traveling through the water column. We refer to these as:
 
 - **The Transducer Delay Time** The delay time of the surface platform between
   an interrogate command being sent to the transducer and the interrogation ping
@@ -31,7 +31,7 @@ phases:
 In GNSS-Acoustic processing, the critical transducer positions that must be
 known are the position at ping send (Phase 3) and ping reply (Phase 9) since
 these positions are when the acoustic pulse physically starts and finishes
-travelling through the water column to and from the transducer. Consistent with
+traveling through the water column to and from the transducer. Consistent with
 this, by convention the TAT is thus included in the TWTT measurement while the
 transducer delay is excluded from the TWTT measurement. GNATSS requires the
 TWTTs submitted in the _pxp_tt_ file to adhere to this convention, in which case
