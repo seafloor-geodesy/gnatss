@@ -405,6 +405,7 @@ def data_loading(
     config_yaml: str,
     distance_limit: float | None = None,
     residual_limit: float | None = None,
+    residual_range_limit: float | None = None,
     outlier_threshold: float | None = None,
     from_cache: bool = False,
     remove_outliers: bool = False,
@@ -415,6 +416,7 @@ def data_loading(
         config_yaml,
         distance_limit=distance_limit,
         residual_limit=residual_limit,
+        residual_range_limit=residual_range_limit,
         outlier_threshold=outlier_threshold,
     )
     # Switch off cache if gps solution does not exist

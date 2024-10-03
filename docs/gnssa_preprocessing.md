@@ -19,11 +19,11 @@ Furthermore, there is a discrepancy in the time sampling of these instruments
 and the epochs when the transducer receives an acoustic reply since the two-way
 travel times are of arbitrary length dependent on the state of the ocean at any
 particular moment. GNATSS is tuned to process data collected by the Sonardyne
-GNSS-Acoutic payload mounted on an LRI model SV-3 wave glider, as currently
+GNSS-Acoustic payload mounted on an LRI model SV-3 wave glider, as currently
 employed in the Near Trench Community Geodetic Experiment. This instrument
 collects the following data:
 
-- Psuedorange data at a 10 Hz sampling rate, which the user may choose to
+- Pseudorange data at a 10 Hz sampling rate, which the user may choose to
   process at 1 or 10 HZ for GNSS antenna positions
 - Wave glider velocities and roll, pitch, heading values at a 20 Hz sampling
   rate

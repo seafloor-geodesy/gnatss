@@ -171,6 +171,15 @@ class Solver(BaseModel):
             "which data points will be excluded from solution"
         ),
     )
+    residual_range_limit: float = Field(
+        20000.0,
+        ge=0.0,
+        description=(
+            "Maximum residual range (maximum - minimum) "
+            "in centimeters for a given epoch, beyond which "
+            "data points will be excluded from solution"
+        ),
+    )
     residual_outliers_threshold: float = Field(
         25.0,
         ge=0.0,

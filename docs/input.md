@@ -5,7 +5,7 @@
 GNATSS has two processing modes, a "posfilter" mode and a "solver" mode, which
 are used at different phases of the processing chain. It is possible to run both
 processing modes in sequence or individually. The posfilter module outputs
-GNSS-Acosutic travel times and transducer positions in the community standard
+GNSS-Acoustic travel times and transducer positions in the community standard
 GNSS-Acoustic data format, so if you have obtained data already in that format
 you may skip the posfilter mode and immediately run the solver.
 
@@ -28,10 +28,17 @@ Step 4: Run the solver to calculate an array position
 gnatss run --solver --distance-limit 150 --residual-limit 10000 config.yaml
 ```
 
-Step 5: Repeat Step 4, reducing the residual limit as desired in each successive
-iteration in order to remove erroneous residuals
+Step 5: Run the solver again to with the _--remove-outliers_ option to remove
+flagged residuals.
 
-Step 6: Array positions, offsets, and statistics are stored in the
+```bash
+gnatss run --solver --distance-limit 150 --remove-outliers config.yaml
+```
+
+Step 6: Repeat Steps 4-5, reducing the residual limit as desired in each
+successive iteration in order to remove erroneous residuals.
+
+Step 7: Array positions, offsets, and statistics are stored in the
 process_dataset.nc file.
 
 _Alternative_: GNATSS supports end-to-end processing, so you may execute Steps 3
@@ -42,8 +49,9 @@ to skip the posfilter and immediately load gps solutions from your output
 directory.
 
 ```bash
-gnatss run --distance-limit 150 --residual-limit 10000 config.yaml
+gnatss run --distance-limit 150 config.yaml
 gnatss run --from-cache --distance-limit 150 --residual-limit 10000 config.yaml
+gnatss run --from-cache --distance-limit 150 --remove-outliers config.yaml
 ```
 
 ## Required Input Data

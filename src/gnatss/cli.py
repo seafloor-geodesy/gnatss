@@ -57,6 +57,12 @@ def run(
         None,
         help=(f"{Solver.model_fields.get('residual_limit').description}" f". {OVERRIDE_MESSAGE}"),
     ),
+    residual_range_limit: float = typer.Option(
+        None,
+        help=(
+            f"{Solver.model_fields.get('residual_range_limit').description}" f". {OVERRIDE_MESSAGE}"
+        ),
+    ),
     qc: bool = typer.Option(
         True, help="Flag to plot residuals from run and store in output folder."
     ),
@@ -101,6 +107,7 @@ def run(
         config_yaml=config_yaml,
         distance_limit=distance_limit,
         residual_limit=residual_limit,
+        residual_range_limit=residual_range_limit,
         outlier_threshold=outlier_threshold,
         from_cache=from_cache,
         remove_outliers=remove_outliers,

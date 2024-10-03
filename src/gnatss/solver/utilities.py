@@ -195,13 +195,35 @@ def generate_process_xr_dataset(process_data, resdf, config) -> xr.Dataset:
 
 
 def get_residual_outliers(config, resdf):
+    # Get data that fall outside various quality metrics
+
+    # Get data that fall outside the residual limit
+    truthy_limit = get_residuals_by_limit(config, resdf)
+
+    # Get data outside of the residual range limit
+    # (Epoch-wise Max - Min)
+    truthy_range = get_residuals_by_range_limit(config, resdf)
+
+    return resdf[truthy_limit | truthy_range]
+
+
+def get_residuals_by_limit(config, resdf):
     # Get data outside of the residual limit
-    truthy_df = (
+    truthy_limit = (
         resdf[[t.pxp_id for t in config.solver.transponders]].apply(np.abs)
         > config.solver.residual_limit
     )
-    truthy_series = truthy_df.apply(np.any, axis=1)
-    return resdf[truthy_series]
+    return truthy_limit.apply(np.any, axis=1)
+
+
+def get_residuals_by_range_limit(config, resdf):
+    # Get data outside of the residual range limit
+    # (Epoch-wise Max - Min)
+    return (
+        resdf[[t.pxp_id for t in config.solver.transponders]].max(axis=1)
+        - resdf[[t.pxp_id for t in config.solver.transponders]].min(axis=1)
+        > config.solver.residual_range_limit
+    )
 
 
 def filter_by_distance_limit(all_observations, config):
