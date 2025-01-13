@@ -47,21 +47,19 @@ def run(
     extract_process_dataset: bool = typer.Option(True, help="Flag to extract process results."),
     outlier_threshold: float = typer.Option(
         None,
-        help=("Threshold for allowable percentage of outliers " "before raising a runtime error."),
+        help=("Threshold for allowable percentage of outliers before raising a runtime error."),
     ),
     distance_limit: float = typer.Option(
         None,
-        help=(f"{Solver.model_fields.get('distance_limit').description}" f". {OVERRIDE_MESSAGE}"),
+        help=(f"{Solver.model_fields.get('distance_limit').description}. {OVERRIDE_MESSAGE}"),
     ),
     residual_limit: float = typer.Option(
         None,
-        help=(f"{Solver.model_fields.get('residual_limit').description}" f". {OVERRIDE_MESSAGE}"),
+        help=(f"{Solver.model_fields.get('residual_limit').description}. {OVERRIDE_MESSAGE}"),
     ),
     residual_range_limit: float = typer.Option(
         None,
-        help=(
-            f"{Solver.model_fields.get('residual_range_limit').description}" f". {OVERRIDE_MESSAGE}"
-        ),
+        help=(f"{Solver.model_fields.get('residual_range_limit').description}. {OVERRIDE_MESSAGE}"),
     ),
     qc: bool = typer.Option(
         True, help="Flag to plot residuals from run and store in output folder."

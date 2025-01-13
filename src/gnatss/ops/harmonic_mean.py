@@ -76,9 +76,9 @@ def _sv_harmon_mean(
     """
     # Ensure that depth and sound speed arrays
     # are the same shape
-    assert (
-        dd.shape == sv.shape
-    ), f"dd and sv should have the same shape. dd:{dd.shape} != sv:{sv.shape}"
+    assert dd.shape == sv.shape, (
+        f"dd and sv should have the same shape. dd:{dd.shape} != sv:{sv.shape}"
+    )
 
     zi = zs
     sum = 0.0
