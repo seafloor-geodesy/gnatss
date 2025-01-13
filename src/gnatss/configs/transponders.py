@@ -30,7 +30,7 @@ class Transponder(BaseModel):
     pxp_id: str | None = Field(
         None,
         description=(
-            "Transponder id string. " "**This field will be computed during object creation**"
+            "Transponder id string. **This field will be computed during object creation**"
         ),
     )
     azimuth: float | None = Field(
