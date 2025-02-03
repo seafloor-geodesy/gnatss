@@ -144,9 +144,9 @@ def calc_enu_comp(
     assert residuals.ndim == 1, "Residuals must be 1D"
     assert az.ndim == 1, "Azimuth must be 1D"
     assert el.ndim == 1, "Elevation must be 1D"
-    assert (
-        az.shape == el.shape == residuals.shape
-    ), "Azimuth, elevation, and residuals must have same shape"
+    assert az.shape == el.shape == residuals.shape, (
+        "Azimuth, elevation, and residuals must have same shape"
+    )
 
     # Compute north, east, and vertical components
     res_north = np.mean(residuals * np.sin(np.radians(az)) * np.sin(np.radians(el)))

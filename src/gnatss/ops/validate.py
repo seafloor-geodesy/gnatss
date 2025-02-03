@@ -222,7 +222,7 @@ def calc_std_and_verify(
 
     if verify and (sig_3d > sigma_limit):
         # Verify sigma value, throw error if greater than gps sigma limit
-        msg = f"3D Standard Deviation of {sig_3d} exceeds " f"GPS Sigma Limit of {sigma_limit}!"
+        msg = f"3D Standard Deviation of {sig_3d} exceeds GPS Sigma Limit of {sigma_limit}!"
         raise ValueError(msg)
 
     return sig_3d
