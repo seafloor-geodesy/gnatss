@@ -96,7 +96,7 @@ class SolverTransponder(BaseModel):
     pxp_id: str | None = Field(
         None,
         description=(
-            "Transponder id string. " "**This field will be computed during object creation**"
+            "Transponder id string. **This field will be computed during object creation**"
         ),
     )
     azimuth: float | None = Field(
@@ -160,7 +160,7 @@ class Solver(BaseModel):
         150.0,
         ge=0.0,
         description=(
-            "Distance in meters from center beyond " "which points will be excluded from solution"
+            "Distance in meters from center beyond which points will be excluded from solution"
         ),
     )
     residual_limit: float = Field(
