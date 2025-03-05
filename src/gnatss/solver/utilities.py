@@ -12,7 +12,7 @@ from pymap3d import ecef2enu, ecef2geodetic, geodetic2ecef
 from .. import constants
 from ..configs.main import Configuration
 from ..configs.solver import SolverTransponder
-from ..ops.data import filter_tt, get_data_inputs, prefilter_replies
+from ..ops.data import filter_tt, get_data_inputs
 from ..ops.validate import check_solutions
 from ..utilities.geo import _get_rotation_matrix
 from ..utilities.time import AstroTime
@@ -245,6 +245,39 @@ def filter_by_distance_limit(all_observations, config):
     return all_observations, dist_center_df
 
 
+def prefilter_replies(
+    all_observations: pd.DataFrame,
+    num_transponders: int,
+) -> pd.DataFrame:
+    """
+    Remove pings that do receive replies from each
+    transponder in the array.
+
+    Parameters
+    ----------
+    all_observations : pd.DataFrame
+        The original observations that include every ping and reply
+    num_transponders : int
+        The number of transponders in the array
+
+    Returns
+    -------
+    pd.DataFrame
+        The observations where the number of replies equal the
+        number of transponders
+    """
+    # Get value counts for transmit times
+    time_counts = all_observations[constants.DATA_SPEC.tx_time].value_counts()
+
+    typer.echo(f"Pre-filtering data with fewer than {num_transponders} replies...")
+
+    return all_observations[
+        all_observations[constants.DATA_SPEC.tx_time].isin(
+            time_counts[time_counts == num_transponders].index
+        )
+    ]
+
+
 def filter_deletions_and_qc(all_observations, data_dict):
     cut_df = data_dict.get("deletions")
     qc_df = data_dict.get("quality_controls")
@@ -413,15 +446,13 @@ def prepare_and_solve(
     num_transponders = len(transponders)
 
     typer.echo("Preparing data inputs...")
-    typer.echo(f"Pre-filtering data with fewer than {num_transponders} replies...")
-    reduced_observations = prefilter_replies(all_observations, num_transponders)
-    data_inputs = get_data_inputs(reduced_observations)
+    data_inputs = get_data_inputs(all_observations)
 
     typer.echo("Perform solve...")
     is_converged = False
     n_iter = 0
     process_dict = {}
-    num_data = len(reduced_observations)
+    num_data = len(all_observations)
     typer.echo(f"--- {len(data_inputs)} epochs, {num_data} measurements ---")
     while not is_converged:
         # Max converge attempt failure

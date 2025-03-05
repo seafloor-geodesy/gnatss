@@ -231,37 +231,6 @@ def get_data_inputs(all_observations: pd.DataFrame) -> NumbaList:
     return data_inputs
 
 
-def prefilter_replies(
-    all_observations: pd.DataFrame,
-    num_transponders: int,
-) -> pd.DataFrame:
-    """
-    Remove pings that do receive replies from each
-    transponder in the array.
-
-    Parameters
-    ----------
-    all_observations : pd.DataFrame
-        The original observations that include every ping and reply
-    num_transponders : int
-        The number of transponders in the array
-
-    Returns
-    -------
-    pd.DataFrame
-        The observations where the number of replies equal the
-        number of transponders
-    """
-    # Get value counts for transmit times
-    time_counts = all_observations[constants.DATA_SPEC.tx_time].value_counts()
-
-    return all_observations[
-        all_observations[constants.DATA_SPEC.tx_time].isin(
-            time_counts[time_counts == num_transponders].index
-        )
-    ]
-
-
 def clean_tt(
     travel_times: pd.DataFrame,
     transponder_ids: list[str],
