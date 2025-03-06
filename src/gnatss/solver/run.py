@@ -42,13 +42,13 @@ def run_solver(config, data_dict, return_raw: bool = False):
     # Extract the latest run residuals
     resdf = extract_latest_residuals(config, all_epochs, process_data)
 
-    if len(all_epochs) != len(resdf):
+    if len(all_epochs) != len(resdf):  # pragma: no cover
         msg = (
             f"Warning! There is a mismatch between the number of observations ({len(all_epochs)})\n"
         )
         msg += f"    and the number of residuals ({len(resdf)}).\n"
         msg += "Residuals have likely been assigned erroneous timestamps."
-        raise RuntimeWarning(msg)
+        raise ValueError(msg)
 
     # Get the outliers
     outliers_df = get_residual_outliers(config, resdf)
