@@ -43,9 +43,7 @@ def run_solver(config, data_dict, return_raw: bool = False):
     resdf = extract_latest_residuals(config, all_epochs, process_data)
 
     if len(all_epochs) != len(resdf):  # pragma: no cover
-        msg = (
-            f"Warning! There is a mismatch between the number of observations ({len(all_epochs)})\n"
-        )
+        msg = f"Error: There is a mismatch between the number of observations ({len(all_epochs)})\n"
         msg += f"    and the number of residuals ({len(resdf)}).\n"
         msg += "Residuals have likely been assigned erroneous timestamps."
         raise ValueError(msg)
