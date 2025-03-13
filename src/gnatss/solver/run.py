@@ -11,6 +11,7 @@ from .utilities import (
     generate_process_xr_dataset,
     get_all_epochs,
     get_residual_outliers,
+    prefilter_replies,
     prepare_and_solve,
 )
 
@@ -27,6 +28,9 @@ def run_solver(config, data_dict, return_raw: bool = False):
     all_observations = filter_deletions_and_qc(all_observations, data_dict)
     all_observations = check_sig3d(all_observations, config.solver.gps_sigma_limit)
     all_observations, dist_center_df = filter_by_distance_limit(all_observations, config)
+    # Pre-filter observations for reply number
+    all_observations = prefilter_replies(all_observations, len(config.transponders))
+
     all_epochs = get_all_epochs(all_observations)
 
     twtt_model = config.solver.twtt_model
@@ -37,6 +41,12 @@ def run_solver(config, data_dict, return_raw: bool = False):
 
     # Extract the latest run residuals
     resdf = extract_latest_residuals(config, all_epochs, process_data)
+
+    if len(all_epochs) != len(resdf):  # pragma: no cover
+        msg = f"Error: There is a mismatch between the number of observations ({len(all_epochs)})\n"
+        msg += f"    and the number of residuals ({len(resdf)}).\n"
+        msg += "Residuals have likely been assigned erroneous timestamps."
+        raise ValueError(msg)
 
     # Get the outliers
     outliers_df = get_residual_outliers(config, resdf)
