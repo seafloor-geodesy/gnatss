@@ -87,7 +87,7 @@ def tests(session: nox.Session) -> None:
         )
     with session.chdir("tests/fortran"):
         # Runs in the tests fortran directory
-        session.run("f2py", "-c", "-m", "flib", "xyz2enu.f")
+        session.run("f2py", "-c", "--backend=meson", "-m", "flib", "xyz2enu.f")
 
     # Run in original directory
     session.run("pytest", *session.posargs)
