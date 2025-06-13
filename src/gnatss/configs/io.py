@@ -30,7 +30,7 @@ class InputData(BaseModel):
         ...,
         description="Path string to the data. Ex. s3://bucket/some_data.dat",
     )
-    format: str | None = Field(..., default=None, description="File format of the data.")
+    format: str | None = Field(..., description="File format of the data.")
     storage_options: dict[str, Any] = Field(
         {},
         description=(
