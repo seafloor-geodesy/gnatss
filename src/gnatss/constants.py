@@ -8,7 +8,7 @@ from __future__ import annotations
 from .dataspec import DataSpec
 
 # Config constants
-DEFAULT_CONFIG_PROCS = ("main", "solver", "posfilter")
+DEFAULT_CONFIG_PROCS = ("solver", "posfilter")
 
 DATA_SPEC = DataSpec(version="v1")
 
