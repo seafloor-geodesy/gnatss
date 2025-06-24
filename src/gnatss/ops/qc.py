@@ -255,8 +255,6 @@ def plot_enu_comps(
 
 
 def export_qc_plots(config, result_dict):
-    from gnatss.ops.qc import plot_enu_comps, plot_residuals
-
     output_path = config.output.path
     resdf = result_dict.get("residuals")
     outliers_df = result_dict.get("outliers")
