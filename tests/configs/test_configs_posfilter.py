@@ -15,13 +15,15 @@ def test_valid_position_filter_input(blank_csv_test_file: Path) -> None:
     See root/conftest.py for fixture definition.
     """
     test_path = str(blank_csv_test_file)
+    test_format = "RPH"
 
     # Test initialization of PositionFilter
-    input_files = PositionFilterInputs(roll_pitch_heading=InputData(path=test_path))
+    input_files = PositionFilterInputs(roll_pitch_heading=InputData(path=test_path,format=test_format))
     atdoffsets = AtdOffset(forward=0.0, rightward=-1.2, downward=3.2)
 
     pos_filter = PositionFilter(input_files=input_files, atd_offsets=atdoffsets)
     assert pos_filter.input_files.roll_pitch_heading.path == test_path
+    assert pos_filter.input_files.roll_pitch_heading.format == test_format
     assert pos_filter.atd_offsets.forward == 0.0
     assert pos_filter.atd_offsets.rightward == -1.2
     assert pos_filter.atd_offsets.downward == 3.2

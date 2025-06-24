@@ -117,7 +117,7 @@ def set_limits(
 
 def gather_files(
     config: Configuration,
-    proc: Literal["main", "solver", "posfilter"] = "solver",
+    proc: Literal["solver", "posfilter"] = "solver",
     mode: Literal["files", "object"] = "files",
 ) -> dict[str, list[str | InputData]]:
     """Gather file paths for the various dataset files defined in proc config.
@@ -135,14 +135,12 @@ def gather_files(
         A dictionary containing the various datasets file paths
     """
     all_files_dict = {}
-    if proc == "main":
-        proc_config = config
-    else:
-        # Check for process type first
-        if not hasattr(config, proc):
-            msg: str = f"Unknown process type: {proc}"
-            raise AttributeError(msg)
-        proc_config = getattr(config, proc)
+
+    # Check for process type first
+    if not hasattr(config, proc):
+        msg: str = f"Unknown process type: {proc}"
+        raise AttributeError(msg)
+    proc_config = getattr(config, proc)
 
     if proc_config:
         input_files = proc_config.input_files
@@ -184,7 +182,7 @@ def gather_files_all_procs(
             # if we are loading solution from cache
             continue
 
-        if proc == "main" or hasattr(config, proc):
+        if proc == hasattr(config, proc):
             all_files_dict.update(gather_files(config, proc, mode))
     return all_files_dict
 
@@ -215,9 +213,6 @@ def load_datasets(
 ):
     all_files_dict = {}
     mode = "object"
-
-    # Gather main
-    all_files_dict.update(gather_files(config, proc="main", mode=mode))
 
     # Gather posfilter (Skip if from_cache set)
     if not skip_posfilter and not from_cache:

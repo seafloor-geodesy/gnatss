@@ -27,7 +27,7 @@ collects the following data:
   process at 1 or 10 HZ for GNSS antenna positions
 - Wave glider velocities and roll, pitch, heading values at a 20 Hz sampling
   rate
-- Acoustic interrogation and rely times. The interrogation times have a sampling
+- Acoustic interrogation and reply times. The interrogation times have a sampling
   rate of 1 ping every 15 seconds, and there is one reply for each transponder
   in the array at arbitrary times after interrogation dependent on the ray path
   length.

@@ -40,7 +40,7 @@ from tests import TEST_DATA_FOLDER
 @pytest.fixture()
 def all_files_dict_j2k_travel_times() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
-    config.input_files.travel_times = InputData(path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k")
+    config.posfilter.input_files.travel_times = InputData(path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k")
     return gather_files_all_procs(config)
 
 
