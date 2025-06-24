@@ -82,6 +82,10 @@ this command by running `gnatss run --help`.
 │ --residual-limit                                             FLOAT  Maximum residual in centimeters beyond which data points will be excluded from solution.    │
 │                                                                     Note that this will override the value set as configuration.                                │
 │                                                                     [default: None]                                                                             │
+│ --residual-range-limit                                       FLOAT  Maximum residual range (maximum - minimum) in centimeters for a given epoch, beyond         │
+│                                                                     which data points will be excluded from solution. Note that this will override the          │
+│                                                                     value set as configuration.                                                                 │
+│                                                                     [default: None]                                                                             │
 │ --qc                         --no-qc                                Flag to plot residuals from run and store in output folder. [default: qc]                   │
 │ --from-cache                 --no-from-cache                        Flag to load the GNSS-A Level-2 Data from cache. [default: no-from-cache]                   │
 │ --remove-outliers            --no-remove-outliers                   Flag to execute removing outliers from the GNSS-A Level-2 Data before running the solver    │
@@ -133,11 +137,6 @@ travel_times_variance: 1e-10 #Default value
 travel_times_correction: 0.0 #Default value
 transducer_delay_time: 0.0 #Default value
 
-# Main input files
-input_files:
-  travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
-    path: /path/to/pxp_tt
-
 # Posfilter configuration
 posfilter:
   export:
@@ -153,6 +152,8 @@ posfilter:
       path: /path/to/file #File with INSSTDEVA strings
     gps_positions: #Assume Chadwell format, (j2000 seconds, "GPSPOS" string, ECEF XYZ coordinates (m), XYZ Standard Deviations)
       path: /path/to/GPS_POS_FREED #File path to antenna positions, use wildcards ** for day-separated data
+    travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
+      path: /path/to/pxp_tt
 
 # Solver configuration
 solver:

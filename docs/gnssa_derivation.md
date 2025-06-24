@@ -5,7 +5,8 @@ a transducer at the sea surface at some known position $X_G$. Let the
 line-of-sight distance between the transponder and transducer be denoted by
 $\vec{D}_1=X_1-X_G$, and assume the water column consists of a single layer with
 sound velocity $c$. Under such conditions, the one-way travel time of an
-acoustic pulse a1 between the transponder and the transducer may be written as
+acoustic pulse $a_1$ between the transponder and the transducer may be written
+as
 
 $$\frac{||\vec{D}_1||}{c}=a+1,$$
 
@@ -95,14 +96,14 @@ although in practice there are some more steps we must take when interpreting
 some data.
 
 The observations used in this inversion are not perfect, so it is a good idea to
-construct a weighting matrix W which depends on the uncertainties of the travel
-time residuals. The travel time residuals have uncertainties dependent on three
-sources: the acoustic measurement uncertainty of the transducer, the position
-uncertainty of the transducer when the acoustic pulse is sent, and the position
-uncertainty of the transducer when the return acoustic pulse is received. Let
-$\sigma_a^2$ be the variance of an acoustic measurement, $C_S$ be the
-$3 \times 3$ covariance matrix of the transducer position $X_S$, and $C_R$ be
-the $3 \times 3$ covariance matrix of the transducer position $X_R$. Assuming
+construct a weighting matrix $W$ which depends on the uncertainties of the
+travel time residuals. The travel time residuals have uncertainties dependent on
+three sources: the acoustic measurement uncertainty of the transducer, the
+position uncertainty of the transducer when the acoustic pulse is sent, and the
+position uncertainty of the transducer when the return acoustic pulse is
+received. Let $\sigma_a^2$ be the variance of an acoustic measurement, $C_S$ be
+the $3 \times 3$ covariance matrix of the transducer position $X_S$, and $C_R$
+be the $3 \times 3$ covariance matrix of the transducer position $X_R$. Assuming
 that $\Delta a$ is a stochastic variable, the error propagation to derive the
 $i \times i$ matrix $W$ may be written out as:
 
@@ -113,11 +114,11 @@ $$
 Note that in the above formulation, the partial derivatives simplify to:
 
 $$
-\frac{\partial \Delta \vec{a}}{\partial X_S} = \left( \frac{\hat{D}_{1S}}{c_1}, \frac{\hat{D}_{2S}}{c2}, \cdots , \frac{\hat{D}_{iS}}{ci} \right),
+\frac{\partial \Delta \vec{a}}{\partial X_S} = \left( \frac{\hat{D}_{1S}}{c_1}, \frac{\hat{D}_{2S}}{c_2}, \cdots , \frac{\hat{D}_{iS}}{c_i} \right),
 $$
 
 $$
-\frac{\partial \Delta \vec{a}}{\partial X_R} = \left( \frac{\hat{D}_{1R}}{c_1}, \frac{\hat{D}_{2R}}{c2}, \cdots , \frac{\hat{D}_{iR}}{ci} \right)
+\frac{\partial \Delta \vec{a}}{\partial X_R} = \left( \frac{\hat{D}_{1R}}{c_1}, \frac{\hat{D}_{2R}}{c_2}, \cdots , \frac{\hat{D}_{iR}}{c_i} \right)
 $$
 
 As another unit check, the elements in the partial derivatives above all have

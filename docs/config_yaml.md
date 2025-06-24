@@ -8,15 +8,14 @@ The configuration file is divided into multiple sections, but not all of the
 sections are required depending on your processing needs. In general, GNATSS
 operates in two modes, a posfilter mode which performs pre-processing on wave
 glider data to generate input required for array positioning, and a solver mode
-that perms the array positioning using the data computed by the posfilter. These
-modes are defined separately in the config file. It is possible to run only one
-of these two modes at a time, or to run both in sequence, so it is optional to
-include their information in the config file.
+that performs the array positioning using the data computed by the posfilter.
+These modes are defined separately in the config file. It is possible to run
+only one of these two modes at a time, or to run both in sequence, so it is
+optional to include their information in the config file.
 
 At a high level, the sections of the configuration file are:
 
 - Metadata _(required)_: Information about the array
-- Main Input files _(required for posfilter)_: Travel time files
 - Posfilter configuration _(optional)_: Pre-processing configuration
 - Solver _(optional)_: Array positioning configuration
 - Output configuration _(required)_: Destination for output files
@@ -54,11 +53,6 @@ travel_times_variance: 1e-10 #Default value
 travel_times_correction: 0.0 #Default value
 transducer_delay_time: 0.0 #Default value
 
-# Main input files
-input_files:
-  travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
-    path: /path/to/pxp_tt
-
 # Posfilter configuration
 posfilter:
   export:
@@ -74,6 +68,8 @@ posfilter:
       path: /path/to/file #File with INSSTDEVA strings
     gps_positions: #Assume Chadwell format, (j2000 seconds, "GPSPOS" string, ECEF XYZ coordinates (m), XYZ Standard Deviations)
       path: /path/to/GPS_POS_FREED #File path to antenna positions, use wildcards ** for day-separated data
+    travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
+      path: /path/to/pxp_tt
 
 # Solver configuration
 solver:
@@ -141,14 +137,6 @@ The information that should be defined in the config.yaml file is as follows:
   delay from the TWTT measurements before running GNATSS or else the TWTT
   measurements will be systematically inflated by the delay.
 
-### Main input files
-
-- **Travel Times** The TWTT input file is required for the posfilter mode.
-  GNATSS assumes this file is in the legacy Chadwell format (See
-  [_Required Input Data_](./input.md)).
-  - The user may input a file path to a single input file or use the UNIX "\*\*"
-    wildcard to point to multiple input files, such as day-separated data.
-
 ### Posfilter configuration
 
 - **Export** The _full_ parameter determines whether to include roll, pitch, and
@@ -171,6 +159,11 @@ The information that should be defined in the config.yaml file is as follows:
     processing software of their choice, such as PRIDE PPP-AR, GAMIT, or GipsyX.
     Regardless of the GNSS software used, GNATSS assumes that the solution has
     been converted into a legacy Chadwell format (See
+    [_Required Input Data_](./input.md)).
+  - The TWTT input file contains the ranges collected by the surface platform to
+    every transponder in the array. These ranges should include the internal
+    delay of the transponders but exclude the transducer delay time. GNATSS
+    assumes this file is in the legacy Chadwell format (See
     [_Required Input Data_](./input.md)).
 
 ### Solver configuration
@@ -200,10 +193,10 @@ The information that should be defined in the config.yaml file is as follows:
   - GPS Solution file, containing the transducer positions and TWTTs in the
     [GNSS-Acoustic Standard Data Format](https://hal.science/hal-04319233/).
     Only required if not running the posfilter mode. If running end-to-end
-    processing by calling the posfilter and solver module, the gps*solution.csv
-    file will be generated in the output path and can be automatically loaded by
-    calling the *--from-cache\_ flag when running GNATSS, in which case a file
-    path does not need to be designated.
+    processing by calling the posfilter and solver module, the
+    _gps_solution.csv_ file will be generated in the output path and can be
+    automatically loaded by calling the _--from-cache_ flag when running GNATSS,
+    in which case a file path does not need to be designated.
   - Quality Control file
 
 ### Output configuration
