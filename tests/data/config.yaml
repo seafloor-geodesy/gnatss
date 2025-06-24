@@ -25,9 +25,9 @@ travel_times_correction: 0.0
 transducer_delay_time: 0.0
 
 # Main input files
-input_files:
-  travel_times:
-    path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
+# input_files:
+#   travel_times:
+#     path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
 
 # Posfilter configuration
 posfilter:
@@ -44,6 +44,8 @@ posfilter:
       path: ./tests/data/2022/NCL1/NOV/NCL1_INSSTDEVA.dat
     gps_positions:
       path: ./tests/data/2022/NCL1/**/GPS_PPP/GPS_POS_FREED
+    travel_times:
+      path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
 
 # Solver configuration
 solver:
