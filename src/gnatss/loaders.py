@@ -6,6 +6,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+import typer
 import yaml
 from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
@@ -13,7 +14,7 @@ from pandas.api.types import is_integer_dtype, is_string_dtype
 from . import constants
 from .configs.io import CSVOutput
 from .configs.main import Configuration
-from .utilities.time import gps_ws_time_to_astrotime
+from .utilities.time import AstroTime, gps_ws_time_to_astrotime
 
 
 def load_configuration(config_yaml: str | None = None) -> Configuration:
@@ -141,8 +142,6 @@ def load_travel_times(
 
     # Skip time conversion if it's already j2000 time
     if not is_j2k:
-        from .utilities.time import AstroTime
-
         # Determine j2000 time from date and time string,
         # assuming that they're in Terrestrial Time (TT) scale
         all_travel_times[constants.TIME_ASTRO] = all_travel_times.apply(
@@ -357,8 +356,6 @@ def load_deletions(
     # TODO: Add additional files to be used for deletions
     default_deletions = output_path / CSVOutput.deletions.value
     if file_paths:
-        from .utilities.time import AstroTime
-
         cut_dfs = [pd.read_fwf(file_path, header=None) for file_path in file_paths]
         cut_df = pd.concat(cut_dfs).reset_index(drop=True)
 
@@ -398,8 +395,6 @@ def load_deletions(
                 "and rerun the solver."
             )
             raise FileNotFoundError(msg)
-
-        import typer
 
         typer.echo(f"Found {outliers_csv.absolute()!s} file. Including into cuts...")
         outliers_df = pd.read_csv(outliers_csv)
@@ -451,8 +446,6 @@ def load_quality_control(qc_files: list[str], time_scale="tt") -> pd.DataFrame:
         if is_string_dtype(qc_df[constants.QC_STARTTIME]) and is_string_dtype(
             qc_df[constants.QC_ENDTIME]
         ):
-            from .utilities.time import AstroTime
-
             qc_df[constants.QC_STARTTIME] = qc_df[constants.QC_STARTTIME].apply(
                 lambda row: AstroTime(row, scale=time_scale, format="isot").unix_j2000
             )
