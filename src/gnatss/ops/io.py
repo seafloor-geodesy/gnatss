@@ -182,7 +182,7 @@ def gather_files_all_procs(
             # if we are loading solution from cache
             continue
 
-        if proc == hasattr(config, proc):
+        if hasattr(config, proc):
             all_files_dict.update(gather_files(config, proc, mode))
     return all_files_dict
 
