@@ -184,6 +184,11 @@ def gather_files_all_procs(
 
         if hasattr(config, proc):
             all_files_dict.update(gather_files(config, proc, mode))
+
+    if not all_files_dict:
+        msg = "Error: gather_files_all_procs() failed to parse input data."
+        raise ValueError(msg)
+
     return all_files_dict
 
 

@@ -24,11 +24,6 @@ travel_times_variance: 1e-10
 travel_times_correction: 0.0
 transducer_delay_time: 0.0
 
-# Main input files
-# input_files:
-#   travel_times:
-#     path: ./tests/data/2022/NCL1/**/WG_*/pxp_tt
-
 # Posfilter configuration
 posfilter:
   export:
