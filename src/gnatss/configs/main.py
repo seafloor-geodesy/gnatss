@@ -71,7 +71,6 @@ class Configuration(BaseConfiguration):
     posfilter: PositionFilter | None = Field(None, description="Position filter configurations")
 
     # File related configurations
-    # input_files: MainInputs = Field(..., description="Input files data path specifications.")
     output: OutputPath | None = Field(None, description="Output path configurations")
 
     # Extra configurations
