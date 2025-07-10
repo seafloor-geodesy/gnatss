@@ -39,10 +39,6 @@ class ArrayCenter(BaseModel):
     alt: float = Field(0.0, description="Altitude")
 
 
-# class MainInputs(BaseModel):
-#     travel_times: InputData | None = Field(
-#         None, description="Input travel times data path specification"
-#     )
 
 
 class Configuration(BaseConfiguration):
