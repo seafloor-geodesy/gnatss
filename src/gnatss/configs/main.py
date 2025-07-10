@@ -39,8 +39,6 @@ class ArrayCenter(BaseModel):
     alt: float = Field(0.0, description="Altitude")
 
 
-
-
 class Configuration(BaseConfiguration):
     """Configuration class to generate config object"""
 
