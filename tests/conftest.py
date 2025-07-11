@@ -52,6 +52,11 @@ def blank_env(blank_csv_test_file: Path) -> None:
         os.environ.pop(k)
 
 
+@pytest.fixture()
+def config_yaml_path():
+    return TEST_DATA_FOLDER / "config.yaml"
+
+
 @pytest.fixture(scope="session")
 def configuration() -> Configuration:
     return load_configuration(TEST_DATA_FOLDER / "config.yaml")
