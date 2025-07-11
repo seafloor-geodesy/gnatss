@@ -186,7 +186,7 @@ def gather_files_all_procs(
             all_files_dict.update(gather_files(config, proc, mode))
 
     if not all_files_dict:
-        avail_procs = ', '.join(constants.DEFAULT_CONFIG_PROCS)
+        avail_procs = ", ".join(constants.DEFAULT_CONFIG_PROCS)
         msg = f"Could not find valid process in configuration. Valid options: {avail_procs}."
         raise ValueError(msg)
 
