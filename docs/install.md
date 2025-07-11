@@ -1,8 +1,7 @@
 # Installation Guide
 
-GNATSS requires Python v3.10 or v3.11 to run. It is not currently compatible
-with Python 3.12. If you have a conda installation, we recommend creating a
-fresh environment to install GNATSS in.
+GNATSS is compatible with Python versions 3.10-3.11. If you have a conda
+installation, we recommend creating a fresh environment to install GNATSS in.
 
 ```
 conda create -n gnatss -c conda-forge --yes python=3.10 ipykernel
