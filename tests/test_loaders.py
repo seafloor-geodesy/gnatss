@@ -55,18 +55,12 @@ def test_load_configuration_invalid_path(invalid_config_yaml_path):
             load_configuration(invalid_config_yaml_path)
 
 
-# @pytest.mark.parametrize(
-#     "config_yaml_path",
-#     [TEST_DATA_FOLDER / "config.yaml"],
-# )
+
 def test_load_configuration_valid_path(config_yaml_path):
     config = load_configuration(config_yaml_path)
     assert isinstance(config, Configuration)
 
-# @pytest.mark.parametrize(
-#     "config_yaml_path",
-#     [TEST_DATA_FOLDER / "config.yaml"],
-# )
+
 def test_gather_files_no_procs(config_yaml_path):
     config = load_configuration(config_yaml_path)
     for proc in DEFAULT_CONFIG_PROCS:
