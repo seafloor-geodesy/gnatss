@@ -10,6 +10,7 @@ from pandas.api.types import is_float_dtype, is_integer_dtype, is_object_dtype
 from gnatss.configs.io import CSVOutput, InputData
 from gnatss.configs.main import Configuration
 from gnatss.constants import (
+    DEFAULT_CONFIG_PROCS,
     DEL_ENDTIME,
     DEL_STARTTIME,
     GPS_COV,
@@ -62,6 +63,17 @@ def test_load_configuration_valid_path(config_yaml_path):
     config = load_configuration(config_yaml_path)
     assert isinstance(config, Configuration)
 
+@pytest.mark.parametrize(
+    "config_yaml_path",
+    [TEST_DATA_FOLDER / "config.yaml"],
+)
+def test_gather_files_no_procs(config_yaml_path):
+    config = load_configuration(config_yaml_path)
+    for proc in DEFAULT_CONFIG_PROCS:
+        if hasattr(config, proc):
+            delattr(config, proc)
+    with pytest.raises(ValueError):
+        gather_files_all_procs(config)
 
 def test_load_sound_speed(all_files_dict):
     svdf = load_sound_speed(all_files_dict["sound_speed"])
