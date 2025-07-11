@@ -1,6 +1,6 @@
 # Installation Guide
 
-GNATSS is compatible with Python versions 3.10-3.13. If you have a conda
+GNATSS is compatible with Python versions 3.10-3.11. If you have a conda
 installation, we recommend creating a fresh environment to install GNATSS in.
 
 ```
