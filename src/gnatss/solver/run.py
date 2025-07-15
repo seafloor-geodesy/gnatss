@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..ops.data import ensure_monotonic_increasing
+from ..ops.data import compute_harmonic_mean, ensure_monotonic_increasing
 from ..ops.validate import check_sig3d
 from .utilities import (
     _print_detected_outliers,
@@ -34,6 +34,8 @@ def run_solver(config, data_dict, return_raw: bool = False):
     all_epochs = get_all_epochs(all_observations)
 
     twtt_model = config.solver.twtt_model
+    # Calculate harmonic mean sound velocity
+    config = compute_harmonic_mean(config, svdf=data_dict.get("sound_speed", None))
     process_data, is_converged = prepare_and_solve(all_observations, config, twtt_model=twtt_model)
 
     if is_converged:
