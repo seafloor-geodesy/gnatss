@@ -3,12 +3,13 @@ from __future__ import annotations
 import typer
 
 from .. import constants
-from ..ops.data import ensure_monotonic_increasing, standardize_data
+from ..ops.data import ensure_monotonic_increasing, preprocess_data, standardize_data
 from .posfilter import kalman_filtering, rotation, spline_interpolate
 from .utilities import export_gps_solution, filter_columns
 
 
 def run_posfilter(config, data_dict):
+    config, data_dict = preprocess_data(config, data_dict)
     typer.echo("Performing Kalman filtering ...")
     # These are antenna positions and covariances
     pos_twtt = kalman_filtering(

@@ -28,6 +28,9 @@ class PositionFilterInputs(BaseModel):
     gps_positions: InputData | None = Field(
         None, description="GPS positions data path specification."
     )
+    travel_times: InputData | None = Field(
+        None, description="Input travel times data path specification"
+    )
 
 
 class ExportObs(BaseModel):

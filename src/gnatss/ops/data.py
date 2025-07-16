@@ -397,7 +397,6 @@ def data_loading(
 
 def preprocess_data(config, data_dict):
     twtt_df = preprocess_travel_times(data_dict.get("travel_times"), config)
-    config = compute_harmonic_mean(config, svdf=data_dict.get("sound_speed", None))
     data_dict.update({"travel_times": twtt_df})
     return config, data_dict
 

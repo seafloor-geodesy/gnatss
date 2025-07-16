@@ -4,7 +4,7 @@ import typer
 
 from .configs.io import CSVOutput
 from .configs.main import Configuration
-from .ops.data import data_loading, preprocess_data
+from .ops.data import data_loading
 from .ops.io import to_file
 from .ops.qc import export_qc_plots
 from .posfilter.run import run_posfilter
@@ -109,13 +109,14 @@ def run_gnatss(
         skip_posfilter=skip_posfilter,
         skip_solver=skip_solver,
     )
-    config, data_dict = preprocess_data(config, data_dict)
 
     if config.posfilter and not from_cache and not skip_posfilter:
         data_dict = run_posfilter(config, data_dict)
 
     if config.solver and not skip_solver:
+        # Run solver
         data_dict = run_solver(config, data_dict, return_raw=return_raw)
+
         # Write out to residuals.csv file
         to_file(config, data_dict, "residuals", CSVOutput.residuals)
 

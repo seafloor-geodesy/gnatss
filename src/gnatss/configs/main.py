@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ..utilities.geo import ecef2ae
-from .io import InputData, OutputPath
+from .io import OutputPath
 from .posfilter import PositionFilter
 from .solver import Solver
 from .transponders import Transponder
@@ -37,12 +37,6 @@ class ArrayCenter(BaseModel):
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
     alt: float = Field(0.0, description="Altitude")
-
-
-class MainInputs(BaseModel):
-    travel_times: InputData | None = Field(
-        None, description="Input travel times data path specification"
-    )
 
 
 class Configuration(BaseConfiguration):
@@ -75,7 +69,6 @@ class Configuration(BaseConfiguration):
     posfilter: PositionFilter | None = Field(None, description="Position filter configurations")
 
     # File related configurations
-    input_files: MainInputs = Field(..., description="Input files data path specifications.")
     output: OutputPath | None = Field(None, description="Output path configurations")
 
     # Extra configurations
