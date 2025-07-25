@@ -8,7 +8,7 @@ sound velocity $c$. Under such conditions, the one-way travel time of an
 acoustic pulse $a_1$ between the transponder and the transducer may be written
 as
 
-$$\frac{||\vec{D}_1||}{c}=a+1,$$
+$$\frac{||\vec{D}_1||}{c}=a_1,$$
 
 $$\frac{\hat{D}_1}{c} \cdot \vec{D}_1=a_1$$
 
