@@ -15,7 +15,6 @@ DIR = Path(__file__).parent.resolve()
 
 nox.needs_version = ">=2025.10.14"
 nox.options.default_venv_backend = "uv|virtualenv"
-# nox.options.sessions = ["lint", "tests", "build", "docs"]
 
 
 @nox.session
