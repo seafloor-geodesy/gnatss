@@ -1,3 +1,9 @@
+#!/usr/bin/env -S uv run --script
+
+# /// script
+# dependencies = ["nox"]
+# ///
+
 from __future__ import annotations
 
 import shutil
@@ -7,7 +13,8 @@ import nox
 
 DIR = Path(__file__).parent.resolve()
 
-nox.options.sessions = ["lint", "tests", "build", "docs"]
+nox.needs_version = ">=2025.10.14"
+nox.options.default_venv_backend = "uv|virtualenv"
 
 
 @nox.session
@@ -29,7 +36,7 @@ def docs(session: nox.Session) -> None:
 
 
 @nox.session
-def setup_docs(session: nox.Session) -> None:
+def setup_docs(session: nox.Session, default=False) -> None:
     """
     Setup the documentation.
     """
@@ -59,7 +66,7 @@ def setup_docs(session: nox.Session) -> None:
 
 
 @nox.session
-def build_docs(session: nox.Session) -> None:
+def build_docs(session: nox.Session, default=False) -> None:
     """
     Build the documentation. This session depends on the `setup_docs` session.
     """
@@ -105,3 +112,7 @@ def build(session: nox.Session) -> None:
 
     session.install("build")
     session.run("python", "-m", "build")
+
+
+if __name__ == "__main__":
+    nox.main()
