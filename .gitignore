@@ -148,3 +148,6 @@ notebooks
 # Testing
 test-output/
 tests/data/2022.zip
+# pixi environments
+.pixi/*
+!.pixi/config.toml

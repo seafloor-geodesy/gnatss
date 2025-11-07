@@ -60,7 +60,7 @@ repos:
       - id: codespell
         # Checks spelling in `docs/source` and `gnatss` dirs ONLY
         # Ignores `.ipynb` files and `_build` folders
-        args: ["--skip=*.ipynb,docs/_build", "-w", "docs", "gnatss"]
+        args: ["--skip=*.ipynb,docs/_build,pixi.lock", "-w", "docs", "gnatss"]
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: "v0.11.0.1"
