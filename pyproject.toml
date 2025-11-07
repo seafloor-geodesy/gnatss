@@ -149,7 +149,7 @@ isort.required-imports = ["from __future__ import annotations"]
 ignore = [ "PP309", "PC140", "MY100" ]
 
 [tool.pixi.workspace]
-channels = ["conda-forge"]
+channels = ["https://prefix.dev/conda-forge"]
 platforms = ["osx-arm64","linux-64"]
 
 [tool.pixi.pypi-dependencies]
