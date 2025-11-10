@@ -147,3 +147,54 @@ isort.required-imports = ["from __future__ import annotations"]
 
 [tool.repo-review]
 ignore = [ "PP309", "PC140", "MY100" ]
+
+[tool.pixi.workspace]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["osx-arm64","linux-64"]
+
+[tool.pixi.pypi-dependencies]
+gnatss = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { features = ["all"], solve-group = "default" }
+all = { features = ["all"], solve-group = "default" }
+docs = { features = ["docs"], solve-group = "default" }
+test = { features = ["test"], solve-group = "default" }
+# Currently doesn't resolve
+# numpy2 = { features = ["numpy2", "py311"], no-default-feature = true }
+
+[tool.pixi.tasks]
+lint = { cmd = ["pre-commit", "run", "--all-files", "--show-diff-on-failure"] }
+
+[tool.pixi.dependencies]
+pyproj = ">=3.7.2,<4"
+python = "==3.11"
+
+[tool.pixi.feature.py311.dependencies]
+python = "==3.11"
+
+# Experimental feature to test numpy v2 dependencies
+
+[tool.pixi.feature.numpy2.pypi-dependencies]
+numpy = ">=2"
+astropy = ">=6.1.7,<8"
+fsspec = ">=2024.5.0,<2025"
+matplotlib = ">=3.8.0,<4"
+numba = ">=0.56.4,<1"
+# numpy/f2py/f2py2e.py:719
+# VisibleDeprecationWarning: distutils has been deprecated since NumPy 1.26.x
+# Use the Meson backend instead,
+# or generate wrapperswithout -c and use a custom build script
+# numpy>1.26,<2",
+nptyping = ">=2.5.0,<3"
+cftime = ">=1.6.2,<2"
+pandas = ">=2.0.3,<3"
+pydantic = "==2.8.2"
+pydantic-settings = ">=2.0.3,<3"
+pyyaml = ">=6.0.1,<7"
+pymap3d = ">=3.0.1,<4"
+pluggy = ">=1.2.0,<2"
+pyproj = ">=3.5.0,<4"
+scipy = ">=1.10.1,<2"
+typer = ">=0.7.0,<1"
+xarray = ">=2024.5.0,<2025"
