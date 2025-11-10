@@ -48,7 +48,7 @@ repos:
         args: [--prose-wrap=always]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.14.3"
+    rev: "v0.14.4"
     hooks:
       - id: ruff-check
         args: ["--fix", "--show-fixes"]
@@ -81,6 +81,6 @@ repos:
       - id: check-readthedocs
 
   - repo: https://github.com/scientific-python/cookie
-    rev: "2025.10.20"
+    rev: "2025.11.10"
     hooks:
       - id: sp-repo-review
