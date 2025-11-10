@@ -71,6 +71,10 @@ all = [
     "gnatss[docs,test]",
 ]
 
+[dependency-groups]
+dev = [ { include-group = "test" } ]
+test = [ "pytest" ]
+
 [project.license]
 file = "LICENSE"
 
