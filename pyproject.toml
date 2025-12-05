@@ -29,7 +29,7 @@ dependencies = [
     # Use the Meson backend instead,
     # or generate wrapperswithout -c and use a custom build script
     "numpy>1.26,<2",
-    "nptyping>=2.5.0,<3",
+    "np2typing>=2.5.0,<3",
     "cftime>=1.6.2,<2",
     "pandas>=2.0.3,<3",
     "pydantic==2.8.2",
@@ -165,10 +165,39 @@ all = { features = ["all"], solve-group = "default" }
 docs = { features = ["docs"], solve-group = "default" }
 test = { features = ["test"], solve-group = "default" }
 # Currently doesn't resolve
-# numpy2 = { features = ["numpy2", "py311"], no-default-feature = true }
+numpy2 = { features = ["numpy2", "py311", "test"], no-default-feature = true }
 
 [tool.pixi.tasks]
 lint = { cmd = ["pre-commit", "run", "--all-files", "--show-diff-on-failure"] }
+
+[tool.pixi.feature.test.dependencies]
+meson = "*"
+ninja = ">1.8.2"
+pre-commit = "*"
+hypothesis = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-flake8 = "*"
+pytest-mock = "*"
+pytest-xdist = "*"
+pytest-benchmark = "*"
+pygithub = "*"
+
+[tool.pixi.feature.test.tasks.download-test-data]
+cmd = [
+  "python",
+  "-c",
+  "from gnatss.utilities.testing import download_test_data; download_test_data(unzip=True)"
+  ]
+outputs = ["tests/data/2022.zip"]
+
+[tool.pixi.feature.test.tasks.compile-fortran]
+cmd = ["f2py", "-c", "--backend=meson", "-m", "flib", "xyz2enu.f"]
+cwd = "tests/fortran"
+
+[tool.pixi.feature.test.tasks.run-test]
+cmd = ["pytest"]
+depends-on = ["compile-fortran"]
 
 [tool.pixi.dependencies]
 pyproj = ">=3.7.2,<4"
@@ -180,25 +209,32 @@ python = "==3.11"
 # Experimental feature to test numpy v2 dependencies
 
 [tool.pixi.feature.numpy2.pypi-dependencies]
-numpy = ">=2"
-astropy = ">=6.1.7,<8"
-fsspec = ">=2024.5.0,<2025"
-matplotlib = ">=3.8.0,<4"
-numba = ">=0.56.4,<1"
-# numpy/f2py/f2py2e.py:719
-# VisibleDeprecationWarning: distutils has been deprecated since NumPy 1.26.x
-# Use the Meson backend instead,
-# or generate wrapperswithout -c and use a custom build script
-# numpy>1.26,<2",
-nptyping = ">=2.5.0,<3"
-cftime = ">=1.6.2,<2"
-pandas = ">=2.0.3,<3"
-pydantic = "==2.8.2"
-pydantic-settings = ">=2.0.3,<3"
-pyyaml = ">=6.0.1,<7"
-pymap3d = ">=3.0.1,<4"
-pluggy = ">=1.2.0,<2"
-pyproj = ">=3.5.0,<4"
-scipy = ">=1.10.1,<2"
-typer = ">=0.7.0,<1"
-xarray = ">=2024.5.0,<2025"
+gnatss = { path = ".", editable = true }
+# numpy = ">=2"
+# astropy = ">=6.1.7,<8"
+# fsspec = ">=2024.5.0,<2025"
+# matplotlib = ">=3.8.0,<4"
+# numba = ">=0.56.4,<1"
+# # numpy/f2py/f2py2e.py:719
+# # VisibleDeprecationWarning: distutils has been deprecated since NumPy 1.26.x
+# # Use the Meson backend instead,
+# # or generate wrapperswithout -c and use a custom build script
+# # numpy>1.26,<2",
+# nptyping = "*"
+# cftime = ">=1.6.2,<2"
+# pandas = ">=2.0.3,<3"
+# pydantic = "==2.8.2"
+# pydantic-settings = ">=2.0.3,<3"
+# pyyaml = ">=6.0.1,<7"
+# pymap3d = ">=3.0.1,<4"
+# pluggy = ">=1.2.0,<2"
+# pyproj = ">=3.5.0,<4"
+# scipy = ">=1.10.1,<2"
+# typer = ">=0.7.0,<1"
+# xarray = ">=2024.5.0,<2025"
+
+[tool.pixi.feature.numpy2.dependencies]
+pyproj = ">=3.7.2,<4"
+
+[tool.pixi.feature.numpy2.pypi-options.dependency-overrides]
+numpy = "*"
