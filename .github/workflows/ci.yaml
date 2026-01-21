@@ -49,7 +49,7 @@ jobs:
           nox --verbose -s tests -- --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/ |& tee unit_test_log${{ matrix.python-version }}.log
       - name: Upload unit test log
         if: ${{ success() || failure() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: unit_test_log${{ matrix.python-version }}
           path: unit_test_log${{ matrix.python-version }}.log
