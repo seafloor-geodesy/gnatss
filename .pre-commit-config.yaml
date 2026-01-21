@@ -9,6 +9,7 @@ exclude: |
 ci:
   autoupdate_commit_msg: "chore: update pre-commit hooks"
   autofix_commit_msg: "style: pre-commit fixes"
+  autoupdate_schedule: weekly
 
 repos:
   - repo: https://github.com/adamchainz/blacken-docs
