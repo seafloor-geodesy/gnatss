@@ -169,10 +169,14 @@ test = { features = ["test"], solve-group = "default" }
 
 [tool.pixi.tasks]
 lint = { cmd = ["pre-commit", "run", "--all-files", "--show-diff-on-failure"] }
+install_test = { cmd = "python tests/install_test_directory.py" }
+test_fortran = { cmd = "f2py -c --backend=meson -m flib xyz2enu.f", cwd = "tests/fortran"}
+test = { cmd = "pytest", depends_on = ["install_test", "test_fortran"]}
 
 [tool.pixi.dependencies]
 pyproj = ">=3.7.2,<4"
 python = "==3.11"
+gfortran = "*"
 
 [tool.pixi.feature.py311.dependencies]
 python = "==3.11"
