@@ -10,6 +10,7 @@ import typer
 import yaml
 from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
+from pymap3d import geodetic2ecef
 
 from . import constants
 from .configs.io import CSVOutput
@@ -275,6 +276,169 @@ def load_gps_positions(files: list[str], time_round: int = constants.DELAY_TIME_
     all_gps_positions = all_gps_positions.drop(columns="dtype")
     # Round to match the delays precision
     return _round_time_precision(all_gps_positions, time_round)
+
+
+def load_csrs_positions(files: list[str], time_round: int = constants.DELAY_TIME_PRECISION):
+    """
+    Loads gps positions into a pandas dataframe from a list of files.
+    This assumes input data in a .pos format from CSRS processing.
+
+    The .pos format features a header of variable length that must be skipped.
+    Furthermore, positions are in lat/lon/ellp and time is in string format.
+    Thus, these must be converted to XYZ and J2000 seconds.
+
+    Parameters
+    ----------
+    files : list of str
+        The list of path string to files to load
+    time_round : int
+        The precision value to round the time values
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing all of the gps positions data.
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Geocentric x in meters
+        3: Geocentric y in meters
+        4: Geocentric z in meters
+        5 - 7: Standard deviations std_x, std_y, std_z
+    """
+    columns = [
+        "YMD",
+        "hms",
+        "SDLAT",
+        "SDLON",
+        "SDHGT",
+        "LATDD",
+        "LATMN",
+        "LATSS",
+        "LONDD",
+        "LONMN",
+        "LONSS",
+        "HGT",
+    ]
+
+    gnss_positions = []
+
+    for file in files:
+        # Skip past the CSRS header
+        f = Path.open(file)
+        line = f.readline()
+        while line.split()[0] == "HDR" or line.split()[0] == "NOTE:":
+            line = f.readline()
+        # Read file as pandas dataframe
+        gnss_positions.append(
+            pd.read_csv(
+                f,
+                sep=r"\s+",
+                header=None,
+                names=columns,
+                usecols=(4, 5, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22),
+            )
+        )
+        all_gnss_positions = pd.concat(gnss_positions).reset_index(drop=True)
+        f.close()
+
+    # Calculate timestamps as j2000 seconds
+
+    DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+
+    # Determine j2000 time from date and time string,
+    # assuming that they're in Terrestrial Time (TT) scale
+    all_gnss_positions[constants.TIME_ASTRO] = all_gnss_positions.apply(
+        lambda row: AstroTime.strptime(
+            f"{row['YMD']} {row['hms']}",
+            DATETIME_FORMAT,
+            scale="tt",
+        ),
+        axis=1,
+    )
+    # Replace time to j2000 rather than time string
+    all_gnss_positions[constants.TT_TIME] = all_gnss_positions.apply(
+        lambda row: row[constants.TIME_ASTRO].unix_j2000, axis=1
+    )
+
+    # Calculate positions as XYZ
+
+    # Estimate decimal Lat and Lon
+    lat_sgn = np.sign(all_gnss_positions["LATDD"])
+    lon_sgn = np.sign(all_gnss_positions["LONDD"])
+
+    all_gnss_positions["LAT"] = (
+        all_gnss_positions["LATDD"]
+        + lat_sgn * all_gnss_positions["LATMN"] / 60
+        + lat_sgn * all_gnss_positions["LATSS"] / 3600
+    )
+    all_gnss_positions["LON"] = (
+        all_gnss_positions["LONDD"]
+        + lon_sgn * all_gnss_positions["LONMN"] / 60
+        + lon_sgn * all_gnss_positions["LONSS"] / 3600
+    )
+
+    [all_gnss_positions["ant_x"], all_gnss_positions["ant_y"], all_gnss_positions["ant_z"]] = (
+        geodetic2ecef(
+            all_gnss_positions["LAT"].values,
+            all_gnss_positions["LON"].values,
+            all_gnss_positions["HGT"].values,
+        )
+    )
+
+    # Calculate the standard deviations of positions in XYZ
+    #
+    # This requires a matrix rotation. Define the rotation matrix as
+    #
+    #        [-sin(lat)*cos(lon),    -sin(lon),  cos(lat)*cos(lon)]
+    #  R =   [-sin(lat)*sin(lon),     cos(lon),  cos(lat)*sin(lon)]
+    #        [cos(lat),               0,         sin(lat)         ]
+    #
+    # The matrix of given variances in an NEU frame is
+    #
+    #            [Var_N,     0,          0    ]
+    #  Vneu =    [0,         Var_E,      0    ]
+    #            [0,         0,          Var_U]
+    #
+    # The rotation is calculated with the operation
+    #
+    #  Vxyz = R * Vneu * R^T
+    #
+    # We specifically want to calculate the diagonal of Vxyz, so we can save
+    # some computation by foregoing the entire matrix operation. However,
+    # we are strictly losing information here.
+
+    # Calculate cosine and sine values of lat/lon
+    clat = np.cos(all_gnss_positions["LAT"] * np.pi / 180.0)
+    clon = np.cos(all_gnss_positions["LON"] * np.pi / 180.0)
+    slat = np.sin(all_gnss_positions["LAT"] * np.pi / 180.0)
+    slon = np.sin(all_gnss_positions["LON"] * np.pi / 180.0)
+
+    # Calculate XYZ standard deviations
+    # Note the extra factor of 0.5 since the default CSRS NEU uncertainties are 2-sigma STDs
+
+    all_gnss_positions["ant_sigx"] = np.sqrt(
+        (slat * clon * 0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + (slon * 0.5 * all_gnss_positions["SDLON"]) ** 2
+        + (clat * clon * 0.5 * all_gnss_positions["SDHGT"]) ** 2
+    )
+    all_gnss_positions["ant_sigy"] = np.sqrt(
+        (slat * slon * 0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + (clon * 0.5 * all_gnss_positions["SDLON"]) ** 2
+        + (clat * slon * 0.5 * all_gnss_positions["SDHGT"]) ** 2
+    )
+    all_gnss_positions["ant_sigz"] = np.sqrt(
+        (clat * 0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + (slat * 0.5 * all_gnss_positions["SDHGT"]) ** 2
+    )
+
+    columns_out = [
+        constants.GPS_TIME,
+        *constants.ANT_GPS_GEOCENTRIC,
+        *constants.ANT_GPS_GEOCENTRIC_STD,
+    ]
+
+    # Round to match the delays precision
+    return _round_time_precision(all_gnss_positions[columns_out], time_round)
 
 
 def load_gps_solutions(
