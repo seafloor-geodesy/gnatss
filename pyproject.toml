@@ -176,7 +176,6 @@ test = { cmd = "pytest", depends_on = ["install_test", "test_fortran"]}
 [tool.pixi.dependencies]
 pyproj = ">=3.7.2,<4"
 python = "==3.11"
-gfortran = "*"
 
 [tool.pixi.feature.py311.dependencies]
 python = "==3.11"
