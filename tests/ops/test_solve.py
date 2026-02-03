@@ -164,7 +164,7 @@ def test__calc_weight_fac(transponders_mean_sv):
 )
 @settings(deadline=None)
 def test__calc_weight_mat(covariance_std):
-    if np.linalg.det(covariance_std) == 0:
+    if np.round(np.linalg.det(covariance_std)) == 0:
         return
     expected_result = np.linalg.inv(covariance_std)
     assert_allclose(_calc_weight_mat(covariance_std), expected_result)
