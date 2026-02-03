@@ -7,7 +7,7 @@ name = "gnatss"
 dynamic = ["version"]
 description = "Community Seafloor Global Navigation Satellite Systems - Acoustic (GNSS-A) Transponder Surveying Software"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10.19"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -15,32 +15,34 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Build Tools",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "astropy>=6.1.7,<8",
-    "fsspec>=2024.5.0,<2025",
-    "matplotlib>=3.8.0,<4",
-    "numba>=0.56.4,<1",
+    "fsspec>=2024.12.0,<2025",
+    "matplotlib>=3.10.7,<4",
+    "numba>=0.62.1,<1",
     # numpy/f2py/f2py2e.py:719
     # VisibleDeprecationWarning: distutils has been deprecated since NumPy 1.26.x
     # Use the Meson backend instead,
     # or generate wrapperswithout -c and use a custom build script
-    "numpy>1.26,<2",
-    "np2typing>=2.5.0,<3",
-    "cftime>=1.6.2,<2",
-    "pandas>=2.0.3,<3",
+    "numpy>=2.2.6",
+    "np2typing>=2.6.3,<3",
+    "cftime>=1.6.5,<2",
+    "pandas>=2.3.3,<3",
     "pydantic==2.8.2",
-    "pydantic-settings>=2.0.3,<3",
-    "pyyaml>=6.0.1,<7",
-    "pymap3d>=3.0.1,<4",
-    "pluggy>=1.2.0,<2",
-    "pyproj>=3.5.0,<4",
-    "scipy>=1.10.1,<2",
-    "typer>=0.7.0,<1",
-    "xarray>=2024.5.0,<2025",
+    "pydantic-settings>=2.12.0,<3",
+    "pyyaml>=6.0.3,<7",
+    "pymap3d>=3.2.0,<4",
+    "pluggy>=1.6.0,<2",
+    "pyproj>=3.7.0,<4",
+    "scipy>=1.15.3,<2",
+    "typer>=0.20.0,<1",
+    "xarray>=2024.11.0,<2025",
 ]
 
 [project.optional-dependencies]
@@ -165,7 +167,7 @@ all = { features = ["all"], solve-group = "default" }
 docs = { features = ["docs"], solve-group = "default" }
 test = { features = ["test"], solve-group = "default" }
 # Currently doesn't resolve
-numpy2 = { features = ["numpy2", "py311", "test"], no-default-feature = true }
+# numpy2 = { features = ["numpy2", "py311", "test"], no-default-feature = true }
 
 [tool.pixi.tasks]
 lint = { cmd = ["pre-commit", "run", "--all-files", "--show-diff-on-failure"] }
@@ -200,16 +202,16 @@ cmd = ["pytest"]
 depends-on = ["compile-fortran"]
 
 [tool.pixi.dependencies]
-pyproj = ">=3.7.2,<4"
+pyproj = ">=3.7.1,<4"
 python = "==3.11"
 
-[tool.pixi.feature.py311.dependencies]
-python = "==3.11"
+# [tool.pixi.feature.py311.dependencies]
+# python = "==3.10.19"
 
 # Experimental feature to test numpy v2 dependencies
 
-[tool.pixi.feature.numpy2.pypi-dependencies]
-gnatss = { path = ".", editable = true }
+# [tool.pixi.feature.numpy2.pypi-dependencies]
+# gnatss = { path = ".", editable = true }
 # numpy = ">=2"
 # astropy = ">=6.1.7,<8"
 # fsspec = ">=2024.5.0,<2025"
@@ -233,8 +235,8 @@ gnatss = { path = ".", editable = true }
 # typer = ">=0.7.0,<1"
 # xarray = ">=2024.5.0,<2025"
 
-[tool.pixi.feature.numpy2.dependencies]
-pyproj = ">=3.7.2,<4"
+# [tool.pixi.feature.numpy2.dependencies]
+# pyproj = ">=3.5.0,<4"
 
-[tool.pixi.feature.numpy2.pypi-options.dependency-overrides]
-numpy = "*"
+# [tool.pixi.feature.numpy2.pypi-options.dependency-overrides]
+# numpy = "*"
