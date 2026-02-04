@@ -107,7 +107,7 @@ exclude = [
 minversion = "6.0"
 addopts = ["-vvv", "-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = false
-log_cli_level = "INFO"
+log_level = "INFO"
 testpaths = [
   "tests",
 ]
