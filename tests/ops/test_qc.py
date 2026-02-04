@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from nptyping import Float64, NDArray, Shape, Str0
+from nptyping import Float64, NDArray, Shape
+from typing import Any
 from numpy import array_equal
 from pandas import DataFrame
 
@@ -208,5 +209,5 @@ def test__compute_ticks_and_labels(data, time_col, expected_ticks, expected_labe
     ticks, labels = _compute_ticks_and_labels(DataFrame({time_col: data}))
     assert isinstance(ticks, NDArray[Shape[f"{len(expected_ticks)}"], Float64])
     assert array_equal(ticks, expected_ticks)
-    assert isinstance(labels, NDArray[Shape[f"{len(expected_labels)}"], Str0])
+    assert isinstance(labels, NDArray[Shape[f"{len(expected_labels)}"], Any])
     assert array_equal(labels, expected_labels)
