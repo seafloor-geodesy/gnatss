@@ -10,6 +10,8 @@ from pandas.api.types import is_float_dtype, is_integer_dtype, is_object_dtype
 from gnatss.configs.io import CSVOutput, InputData
 from gnatss.configs.main import Configuration
 from gnatss.constants import (
+    ANT_GPS_GEOCENTRIC,
+    ANT_GPS_GEOCENTRIC_STD,
     DEFAULT_CONFIG_PROCS,
     DEL_ENDTIME,
     DEL_STARTTIME,
@@ -28,6 +30,7 @@ from gnatss.constants import (
 from gnatss.loaders import (
     Path,
     load_configuration,
+    load_csrs_positions,
     load_deletions,
     load_gps_solutions,
     load_roll_pitch_heading,
@@ -53,7 +56,6 @@ def test_load_configuration_invalid_path(invalid_config_yaml_path):
     if invalid_config_yaml_path is None:
         with pytest.raises(FileNotFoundError):
             load_configuration(invalid_config_yaml_path)
-
 
 
 def test_load_configuration_valid_path(config_yaml_path):
@@ -197,6 +199,24 @@ def test_legacy_load_gps_solutions(all_files_dict_legacy_gps_solutions, time_rou
     # Verify rounding decimal precision of GPS_TIME column
     raw_gps_solutions[GPS_TIME] = raw_gps_solutions[GPS_TIME].round(time_round)
     assert loaded_gps_solutions[GPS_TIME].equals(raw_gps_solutions[GPS_TIME])
+
+
+@pytest.mark.parametrize(
+    "time_round",
+    [3, 6],
+)
+def test_legacy_load_csrs_solutions(all_files_dict_csrs_solutions, time_round):
+    loaded_gps_positions = load_csrs_positions(
+        all_files_dict_csrs_solutions["gps_positions"],
+        time_round
+    )
+    expected_columns = [GPS_TIME, *ANT_GPS_GEOCENTRIC, *ANT_GPS_GEOCENTRIC_STD]
+
+    assert isinstance(loaded_gps_positions, DataFrame)
+    assert set(expected_columns) == set(loaded_gps_positions.columns.values.tolist())
+    assert all(
+        is_float_dtype(loaded_gps_positions[column]) for column in loaded_gps_positions.columns
+    )
 
 
 def test_load_roll_pitch_heading(all_files_dict_roll_pitch_heading):
