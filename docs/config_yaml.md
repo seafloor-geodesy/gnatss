@@ -158,9 +158,11 @@ The information that should be defined in the config.yaml file is as follows:
     orientation, and standard deviations of the surface platform.
   - The GPS positions are assumed to be computed by the user with a GNSS
     processing software of their choice, such as PRIDE PPP-AR, GAMIT, or GipsyX.
-    By default GNATSS assumes that the solution has
-    been converted into a legacy Chadwell format, but other supported formats can be provided by designating an optional `format` key in the configuration file (See
-    [_Required Input Data_](./input.md) for the list of supported file formats and keys).
+    By default GNATSS assumes that the solution has been converted into a legacy
+    Chadwell format, but other supported formats can be provided by designating
+    an optional `format` key in the configuration file (See
+    [_Required Input Data_](./input.md) for the list of supported file formats
+    and keys).
   - The TWTT input file contains the ranges collected by the surface platform to
     every transponder in the array. These ranges should include the internal
     delay of the transponders but exclude the transducer delay time. GNATSS

@@ -37,7 +37,7 @@ from gnatss.loaders import (
     load_sound_speed,
     load_travel_times,
 )
-from gnatss.ops.io import gather_files_all_procs
+from gnatss.ops.io import gather_files, gather_files_all_procs, load_files_to_dataframe
 from tests import TEST_DATA_FOLDER
 
 
@@ -70,6 +70,15 @@ def test_gather_files_no_procs(config_yaml_path):
             delattr(config, proc)
     with pytest.raises(ValueError):
         gather_files_all_procs(config)
+
+
+def test_load_posfilter_bad_format(configuration):
+    bad_config = configuration
+    bad_config.posfilter.input_files.gps_positions.format = 'bad_format'
+    bad_dict = gather_files(bad_config,'posfilter',"object")
+    with pytest.raises(ValueError):
+        load_files_to_dataframe('gps_positions',bad_dict['gps_positions'],bad_config)
+
 
 def test_load_sound_speed(all_files_dict):
     svdf = load_sound_speed(all_files_dict["sound_speed"])
