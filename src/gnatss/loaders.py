@@ -458,7 +458,7 @@ def load_quality_control(qc_files: list[str], time_scale="tt") -> pd.DataFrame:
         elif is_integer_dtype(qc_df[constants.QC_STARTTIME]) and is_integer_dtype(
             qc_df[constants.QC_ENDTIME]
         ):
-            qc_df[constants.QC_ENDTIME] = qc_df[constants.QC_ENDTIME].apply(lambda row: float(row))
+            qc_df[constants.QC_ENDTIME] = qc_df[constants.QC_ENDTIME].apply(float)
 
         else:
             msg = (
