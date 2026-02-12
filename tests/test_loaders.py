@@ -214,7 +214,7 @@ def test_legacy_load_gps_solutions(all_files_dict_legacy_gps_solutions, time_rou
     "time_round",
     [3, 6],
 )
-def test_legacy_load_csrs_solutions(all_files_dict_csrs_solutions, time_round):
+def test_load_csrs_solutions(all_files_dict_csrs_solutions, time_round):
     loaded_gps_positions = load_csrs_positions(
         all_files_dict_csrs_solutions["gps_positions"],
         time_round

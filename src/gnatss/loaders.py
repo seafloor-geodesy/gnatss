@@ -324,22 +324,23 @@ def load_csrs_positions(files: list[str], time_round: int = constants.DELAY_TIME
 
     for file in files:
         # Skip past the CSRS header
-        f = Path.open(file)
-        line = f.readline()
-        while line.split()[0] == "HDR" or line.split()[0] == "NOTE:":
+        with Path(file).open() as f:
+            # f.open()
             line = f.readline()
-        # Read file as pandas dataframe
-        gnss_positions.append(
-            pd.read_csv(
-                f,
-                sep=r"\s+",
-                header=None,
-                names=columns,
-                usecols=(4, 5, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22),
+            while line.split()[0] == "HDR" or line.split()[0] == "NOTE:":
+                line = f.readline()
+            # Read file as pandas dataframe
+            gnss_positions.append(
+                pd.read_csv(
+                    f,
+                    sep=r"\s+",
+                    header=None,
+                    names=columns,
+                    usecols=(4, 5, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22),
+                )
             )
-        )
-        all_gnss_positions = pd.concat(gnss_positions).reset_index(drop=True)
-        f.close()
+            all_gnss_positions = pd.concat(gnss_positions).reset_index(drop=True)
+            f.close()
 
     # Calculate timestamps as j2000 seconds
 
