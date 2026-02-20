@@ -23,6 +23,7 @@ def run_gnatss(
     extract_process_dataset: bool = True,
     extract_dist_center: bool = True,
     qc: bool = True,
+    skip_parsed: bool = True,
     skip_posfilter: bool = False,
     skip_solver: bool = False,
 ) -> tuple[Configuration, dict[str, any]]:
@@ -80,6 +81,9 @@ def run_gnatss(
     qc : bool, optional
         Flag to plot residuals from run and store in output folder, by default True
 
+    skip_parsed : bool, optional
+        Flag to skip the parsed step, by default True
+
     skip_posfilter : bool, optional
         Flag to skip the posfilter step, by default False
 
@@ -106,6 +110,7 @@ def run_gnatss(
         outlier_threshold=outlier_threshold,
         from_cache=from_cache,
         remove_outliers=remove_outliers,
+        skip_parsed=skip_parsed,
         skip_posfilter=skip_posfilter,
         skip_solver=skip_solver,
     )

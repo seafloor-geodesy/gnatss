@@ -82,22 +82,32 @@ def run(
         False,
         help="Flag to run the posfilter process only. Requires GNSS-A Level-1 Data Inputs.",
     ),
+    parsed: bool = typer.Option(
+        False,
+        help="Flag to run the parsed qc process only. Requires Wave Glider QC Data Inputs.",
+    ),
 ) -> None:
     """Runs the full pre-processing routine for GNSS-A
 
     Note: Currently only supports 3 transponders
     """
-    if all([run_all, solver, posfilter]):
-        msg: str = "Cannot run all and solver or posfilter at the same time."
+    if all([run_all, solver, posfilter, parsed]):
+        msg: str = "Cannot run all at the same time as solver, posfilter or parsed."
         raise ValueError(msg)
 
-    if all(not x for x in [run_all, solver, posfilter]):
-        msg: str = "Must specify either all, solver, or posfilter."
+    if all([posfilter, parsed]):
+        msg: str = "Cannot run posfilter and parsed at the same time."
         raise ValueError(msg)
 
+    if all(not x for x in [run_all, solver, posfilter, parsed]):
+        msg: str = "Must specify either all, solver, posfilter, or parsed."
+        raise ValueError(msg)
+
+    skip_parsed = True
     skip_posfilter = False
     skip_solver = False
-    if solver or posfilter:
+    if solver or posfilter or parsed:
+        skip_parsed = not parsed
         skip_posfilter = not posfilter
         skip_solver = not solver
 
@@ -112,6 +122,7 @@ def run(
         extract_dist_center=extract_dist_center,
         extract_process_dataset=extract_process_dataset,
         qc=qc,
+        skip_parsed=skip_parsed,
         skip_posfilter=skip_posfilter,
         skip_solver=skip_solver,
     )

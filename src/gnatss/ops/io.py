@@ -214,11 +214,16 @@ def load_datasets(
     config: Configuration,
     from_cache: bool = False,
     remove_outliers: bool = False,
+    skip_parsed: bool = True,
     skip_posfilter: bool = False,
     skip_solver: bool = False,
 ):
     all_files_dict = {}
     mode = "object"
+
+    # Gather parsed (Skip if from_cache set)
+    if not skip_parsed and not from_cache:
+        all_files_dict.update(gather_files(config, proc="parsed", mode=mode))
 
     # Gather posfilter (Skip if from_cache set)
     if not skip_posfilter and not from_cache:
