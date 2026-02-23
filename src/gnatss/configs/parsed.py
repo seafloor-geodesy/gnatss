@@ -1,7 +1,7 @@
 """parsed.py
 
 The parsed module containing base models for
-position filtering configuration when only 
+position filtering configuration when only
 2-minute parsed data is available, generally
 during data collection.
 """
@@ -11,14 +11,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from .io import InputData
-
-
-class AtdOffset(BaseModel):
-    """Antenna Transducer Offset base model."""
-
-    forward: float = Field(..., description="forward offset")
-    rightward: float = Field(..., description="rightward offset")
-    downward: float = Field(..., description="downward offset")
+from .posfilter import AtdOffset
 
 
 class ParsedInputs(BaseModel):
@@ -41,7 +34,7 @@ class ExportObs(BaseModel):
 
 class Parsed(BaseModel):
     """
-    Position filter base model for position filtering routine
+    Parsed base model for 2-minute parsed position filtering routine
     """
 
     export: ExportObs | None = Field(None, description="Export observation data after filtering.")

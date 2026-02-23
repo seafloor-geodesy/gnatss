@@ -91,8 +91,8 @@ def run(
 
     Note: Currently only supports 3 transponders
     """
-    if all([run_all, solver, posfilter, parsed]):
-        msg: str = "Cannot run all at the same time as solver, posfilter or parsed."
+    if all([run_all, solver, posfilter]):
+        msg: str = "Cannot run all at the same time as solver or posfilter."
         raise ValueError(msg)
 
     if all([posfilter, parsed]):
