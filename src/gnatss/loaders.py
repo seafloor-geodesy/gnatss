@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import tarfile
+import tempfile
 from pathlib import Path
 from re import compile
 from typing import Literal
@@ -10,6 +13,7 @@ import typer
 import yaml
 from nptyping import Float, NDArray, Shape
 from pandas.api.types import is_integer_dtype, is_string_dtype
+from pymap3d import geodetic2ecef
 
 from . import constants
 from .configs.io import CSVOutput
@@ -239,6 +243,221 @@ def _round_time_precision(gps_data, time_round):
     if isinstance(time_round, int) and time_round > 0:
         gps_data.loc[:, constants.GPS_TIME] = gps_data[constants.GPS_TIME].round(time_round)
     return gps_data
+
+
+def load_sv3_targz(
+    config: Configuration, file_paths: list[str], time_round: int = constants.DELAY_TIME_PRECISION
+):
+    """
+    Loads SV-3 parsed raw data into a pandas dataframe from a list of files.
+    These files should be zipped binary files containing .pin files.
+    Each .pin file contains a json structure with an interrogation event
+    and events for each reply. These events should contain the timing and
+    position data at ping transmit and reply, but the specific structure
+    has been modified over time. This function also aims to accommodate these
+    variations.
+
+    Parameters
+    ----------
+    config : Configuration
+        The configuration object
+    files : list of str
+        The list of path string to files to load
+    time_round : int
+        The precision value to round the time values
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing all of the raw data required for parsed pre-processing.
+        The numbers are column number.
+        1: Transponder ID
+        2: Time unit seconds in J2000 epoch
+        3: Transmit Time
+        4: Two-way Travel Time
+        5-7: Antenna positions (Geocentric x,y,z in meters)
+        8: Roll
+        9: Pitch
+        10: Heading
+        11-13: Antenna positions at Transmit (Geocentric x,y,z in meters)
+    """
+
+    # Get Site ID from config
+    SITE = config.site_id
+
+    temp_list = []
+
+    # Open a temporary directory to store the unzipped .pin files
+    with tempfile.TemporaryDirectory() as temp_dir_path:
+        # Iterate through targz files and extract .pin files to temp directory
+        for file_list in file_paths:
+            with tarfile.open(file_list) as zipfile:
+                zipfile.extractall(temp_dir_path)
+
+        # Read through .pin files and extract data
+        for file in list(Path(temp_dir_path).rglob("*.pin")):
+            if Path.stat(temp_dir_path + "/" + file.name).st_size != 0:
+                with Path(temp_dir_path + "/" + file.name).open() as pin_file:
+                    for line_pin in pin_file:
+                        pin_json = json.loads(line_pin)
+
+                        # Read transmit values
+                        T_transmit = AstroTime(
+                            pin_json["interrogation"]["observations"]["GNSS"]["time"]["common"],
+                            format="unix",
+                            scale="tt",
+                        ).rangea_j2000
+                        # Check to see if lat/lon is in INS records
+                        if "latitude" in pin_json["interrogation"]["observations"]["NOV_INS"]:
+                            Lat_Transmit = pin_json["interrogation"]["observations"]["NOV_INS"][
+                                "latitude"
+                            ]
+                            Lon_Transmit = pin_json["interrogation"]["observations"]["NOV_INS"][
+                                "longitude"
+                            ]
+                            Hae_Transmit = pin_json["interrogation"]["observations"]["NOV_INS"][
+                                "hae"
+                            ]
+                        else:
+                            # Read lat/lon from GNSS record and get velocities to infer change in position for repliles
+                            Lat_Transmit = pin_json["interrogation"]["observations"]["GNSS"][
+                                "latitude"
+                            ]
+                            Lon_Transmit = pin_json["interrogation"]["observations"]["GNSS"][
+                                "longitude"
+                            ]
+                            Hae_Transmit = pin_json["interrogation"]["observations"]["GNSS"]["hae"]
+                        # Grab velocity data in case replies don't log positions
+                        Vx0 = pin_json["interrogation"]["observations"]["NOV_INS"]["vx"]
+                        Vy0 = pin_json["interrogation"]["observations"]["NOV_INS"]["vy"]
+                        Vz0 = pin_json["interrogation"]["observations"]["NOV_INS"]["vz"]
+                        [ant_X0, ant_Y0, ant_Z0] = geodetic2ecef(
+                            Lat_Transmit, Lon_Transmit, Hae_Transmit
+                        )
+
+                        # Gather reply values and write to list
+                        for pin_event in pin_json:
+                            # Log event designation
+                            event = pin_json[pin_event]["event"]
+
+                            # Record RPH values
+                            roll1 = pin_json[pin_event]["observations"]["NOV_INS"]["r"]
+                            pitch1 = pin_json[pin_event]["observations"]["NOV_INS"]["p"]
+                            heading1 = pin_json[pin_event]["observations"]["NOV_INS"]["h"]
+
+                            # Truncated data export for ping transmit
+                            if event == "interrogation":
+                                T_receive = AstroTime(
+                                    pin_json["interrogation"]["observations"]["GNSS"]["time"][
+                                        "common"
+                                    ],
+                                    format="unix",
+                                    scale="tt",
+                                ).rangea_j2000
+                                mtid = "T_transmit"
+                                twtt = T_receive - T_transmit
+                                temp_list.append(
+                                    [
+                                        mtid,
+                                        T_receive,
+                                        np.nan,
+                                        twtt,
+                                        ant_X0,
+                                        ant_Y0,
+                                        ant_Z0,
+                                        roll1,
+                                        pitch1,
+                                        heading1,
+                                        ant_X0,
+                                        ant_Y0,
+                                        ant_Z0,
+                                    ]
+                                )
+
+                            # Data export for ping reply
+                            if event == "range":
+                                # Don't record data if it is a zero range
+                                if pin_json[pin_event]["range"]["range"] == 0.0:
+                                    break
+                                twtt = pin_json[pin_event]["range"]["range"] - 0.13
+
+                                T_receive = AstroTime(
+                                    pin_json[pin_event]["time"]["common"],
+                                    format="unix",
+                                    scale="tt",
+                                ).rangea_j2000
+
+                                # Determine MT_ID from acoustic address
+                                address = pin_json[pin_event]["range"]["cn"]
+                                if address == "IR5209":
+                                    mtid = SITE + "-1"
+                                if address == "IR5210":
+                                    mtid = SITE + "-2"
+                                if address == "IR5211":
+                                    mtid = SITE + "-3"
+
+                                # Check to see if lat/lon is in INS records
+                                if "latitude" in pin_json[pin_event]["observations"]["NOV_INS"]:
+                                    Lat_reply = pin_json[pin_event]["observations"]["NOV_INS"][
+                                        "latitude"
+                                    ]
+                                    Lon_reply = pin_json[pin_event]["observations"]["NOV_INS"][
+                                        "longitude"
+                                    ]
+                                    Hae_reply = pin_json[pin_event]["observations"]["NOV_INS"][
+                                        "hae"
+                                    ]
+                                    [ant_X1, ant_Y1, ant_Z1] = geodetic2ecef(
+                                        Lat_reply, Lon_reply, Hae_reply
+                                    )
+                                else:
+                                    # Lat/lon missing from record
+                                    # Use crude integration to estimate new antenna position
+                                    Vx1 = pin_json[pin_event]["observations"]["NOV_INS"]["vx"]
+                                    Vy1 = pin_json[pin_event]["observations"]["NOV_INS"]["vy"]
+                                    Vz1 = pin_json[pin_event]["observations"]["NOV_INS"]["vz"]
+                                    ant_X1 = ant_X0 + (Vx0 * twtt) + (0.5 * twtt * (Vx1 - Vx0))
+                                    ant_Y1 = ant_Y0 + (Vy0 * twtt) + (0.5 * twtt * (Vy1 - Vy0))
+                                    ant_Z1 = ant_Z0 + (Vz0 * twtt) + (0.5 * twtt * (Vz1 - Vz0))
+
+                                temp_list.append(
+                                    [
+                                        mtid,
+                                        T_receive,
+                                        T_transmit,
+                                        twtt,
+                                        ant_X1,
+                                        ant_Y1,
+                                        ant_Z1,
+                                        roll1,
+                                        pitch1,
+                                        heading1,
+                                        ant_X0,
+                                        ant_Y0,
+                                        ant_Z0,
+                                    ]
+                                )
+
+    # Define columns out and convert list to DataFrame
+    columns = [
+        constants.DATA_SPEC.transponder_id,
+        constants.TIME_J2000,
+        constants.DATA_SPEC.tx_time,
+        constants.DATA_SPEC.travel_time,
+        "ant_x1",
+        "ant_y1",
+        "ant_z1",
+        constants.RPH_ROLL,
+        constants.RPH_PITCH,
+        constants.RPH_HEADING,
+        "ant_x0",
+        "ant_y0",
+        "ant_z0",
+    ]
+    raw_data_out = pd.DataFrame(temp_list, columns=columns)
+
+    # Round to match the delays precision
+    return _round_time_precision(raw_data_out, time_round)
 
 
 def load_gps_positions(files: list[str], time_round: int = constants.DELAY_TIME_PRECISION):

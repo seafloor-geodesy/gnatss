@@ -19,6 +19,7 @@ from ..loaders import (
     load_novatel_std,
     load_quality_control,
     load_sound_speed,
+    load_sv3_targz,
     load_travel_times,
 )
 
@@ -117,7 +118,7 @@ def set_limits(
 
 def gather_files(
     config: Configuration,
-    proc: Literal["solver", "posfilter"] = "solver",
+    proc: Literal["solver", "parsed", "posfilter"] = "solver",
     mode: Literal["files", "object"] = "files",
 ) -> dict[str, list[str | InputData]]:
     """Gather file paths for the various dataset files defined in proc config.
@@ -294,6 +295,10 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
     if key == "gps_positions":
         # Posfilter input
         return load_gps_positions(file_paths)
+
+    if key == "raw_data":
+        # Posfilter input
+        return load_sv3_targz(config=config, file_paths=file_paths)
 
     if key == "gps_solution":
         # Solver input
