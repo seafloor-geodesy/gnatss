@@ -63,6 +63,11 @@ def configuration() -> Configuration:
 
 
 @pytest.fixture(scope="session")
+def parsed_configuration() -> Configuration:
+    return load_configuration(TEST_DATA_FOLDER / "config_parsed.yaml")
+
+
+@pytest.fixture(scope="session")
 def all_files_dict() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
     return gather_files_all_procs(config)

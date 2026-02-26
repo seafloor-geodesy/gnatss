@@ -5,11 +5,12 @@ from typing import Any
 import pandas as pd
 import pytest
 from pandas import DataFrame, concat, read_csv
-from pandas.api.types import is_float_dtype, is_integer_dtype, is_object_dtype
+from pandas.api.types import is_float_dtype, is_integer_dtype, is_object_dtype, is_string_dtype
 
 from gnatss.configs.io import CSVOutput, InputData
 from gnatss.configs.main import Configuration
 from gnatss.constants import (
+    DATA_SPEC,
     DEFAULT_CONFIG_PROCS,
     DEL_ENDTIME,
     DEL_STARTTIME,
@@ -17,7 +18,10 @@ from gnatss.constants import (
     GPS_GEOCENTRIC,
     GPS_TIME,
     L1_DATA_FORMAT,
+    RPH_HEADING,
     RPH_LOCAL_TANGENTS,
+    RPH_PITCH,
+    RPH_ROLL,
     RPH_TIME,
     SP_DEPTH,
     SP_SOUND_SPEED,
@@ -32,6 +36,7 @@ from gnatss.loaders import (
     load_gps_solutions,
     load_roll_pitch_heading,
     load_sound_speed,
+    load_sv3_targz,
     load_travel_times,
 )
 from gnatss.ops.io import gather_files_all_procs
@@ -43,6 +48,11 @@ def all_files_dict_j2k_travel_times(config_yaml_path) -> dict[str, Any]:
     config = load_configuration(config_yaml_path)
     config.posfilter.input_files.travel_times = InputData(path="./tests/data/2022/NCL1/**/WG_*/pxp_tt_j2k")
     return gather_files_all_procs(config)
+
+
+@pytest.fixture(scope="session")
+def parsed_test_files_configuration() -> Configuration:
+    return load_configuration(TEST_DATA_FOLDER / "config_parsed_test_files.yaml")
 
 
 @pytest.mark.parametrize(
@@ -68,6 +78,39 @@ def test_gather_files_no_procs(config_yaml_path):
             delattr(config, proc)
     with pytest.raises(ValueError):
         gather_files_all_procs(config)
+
+
+@pytest.mark.parametrize(
+    "time_round",
+    [3, 6],
+)
+def test_load_sv3_targz(parsed_test_files_configuration,time_round):
+    parsed_files_dict = gather_files_all_procs(parsed_test_files_configuration)
+    loaded_targz_data = load_sv3_targz(parsed_test_files_configuration,parsed_files_dict["raw_data"],time_round)
+
+    expected_columns = [
+        DATA_SPEC.transponder_id,
+        TIME_J2000,
+        DATA_SPEC.tx_time,
+        DATA_SPEC.travel_time,
+        "ant_x1",
+        "ant_y1",
+        "ant_z1",
+        RPH_ROLL,
+        RPH_PITCH,
+        RPH_HEADING,
+        "ant_x0",
+        "ant_y0",
+        "ant_z0",
+    ]
+
+    assert isinstance(loaded_targz_data, DataFrame)
+    assert set(expected_columns) == set(loaded_targz_data.columns.values.tolist())
+    assert is_string_dtype(loaded_targz_data[DATA_SPEC.transponder_id])
+    assert all(
+        is_float_dtype(loaded_targz_data[column]) for column in expected_columns[1:]
+    )
+
 
 def test_load_sound_speed(all_files_dict):
     svdf = load_sound_speed(all_files_dict["sound_speed"])

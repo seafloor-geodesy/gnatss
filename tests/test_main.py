@@ -78,6 +78,47 @@ def test_gather_files(configuration, proc, mode):
         assert False
 
 
+@pytest.mark.parametrize(
+    "proc, mode",
+    [
+        ("parsed", "files"),
+        ("parsed", "object"),
+    ],
+)
+def test_gather_parsed_files(parsed_configuration, proc, mode):
+
+    all_files_dict = gather_files(parsed_configuration, proc=proc, mode=mode)
+    print(f"{all_files_dict=}")
+
+    if mode == "files":
+        assert isinstance(all_files_dict, dict)
+        assert all(
+            key in all_files_dict.keys() for key in ("gps_positions", "raw_data")
+        )
+        assert (
+            len(all_files_dict["gps_positions"]) == 3
+            and len(all_files_dict["raw_data"]) == 496
+        )
+
+        for key, val in all_files_dict.items():
+            assert isinstance(val, list)
+            assert isinstance(key, str)
+            assert all(isinstance(file, str) for file in val)
+            assert all(Path(file).is_file() for file in val)
+
+    elif mode == "object":
+        assert isinstance(all_files_dict, dict)
+        assert all(
+            key in all_files_dict.keys() for key in ("gps_positions", "raw_data")
+        )
+        for key, val in all_files_dict.items():
+            assert isinstance(val, InputData)
+            assert isinstance(key, str)
+
+    else:
+        assert False
+
+
 def test__get_latest_process():
     """Test helper function to get the latest process dictionary"""
     # The actual data input doesn't matter,
