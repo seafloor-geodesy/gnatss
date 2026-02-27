@@ -7,6 +7,7 @@ from .configs.main import Configuration
 from .ops.data import data_loading
 from .ops.io import to_file
 from .ops.qc import export_qc_plots
+from .parsed.run import run_parsed
 from .posfilter.run import run_posfilter
 from .solver.run import run_solver
 
@@ -114,6 +115,9 @@ def run_gnatss(
         skip_posfilter=skip_posfilter,
         skip_solver=skip_solver,
     )
+
+    if config.parsed and not from_cache and not skip_parsed:
+        data_dict = run_parsed(config, data_dict)
 
     if config.posfilter and not from_cache and not skip_posfilter:
         data_dict = run_posfilter(config, data_dict)
