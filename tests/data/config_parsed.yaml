@@ -34,7 +34,7 @@ parsed:
     downward: 0.92813
   input_files:
     gps_positions:
-      path: ./tests/data/2022/NCL1/**/GPS_PPP/GPS_POS_FREED
+      path: ./tests/data/2022/NCL1_parsed/**/GPS_PPP/GPS_POS_FREED
     raw_data:
       path: ./tests/data/2022/NCL1_parsed/**/WG_*/*.tar.gz
 

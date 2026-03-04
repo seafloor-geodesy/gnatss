@@ -14,6 +14,7 @@ from gnatss.solver.utilities import _get_latest_process, _print_final_stats
 from tests import TEST_DATA_FOLDER
 
 config_yaml_path = (TEST_DATA_FOLDER / "config.yaml").resolve()
+config_yaml_parsed_path = (TEST_DATA_FOLDER / "config_parsed.yaml").resolve()
 
 
 def test_run_gnatss():
@@ -21,6 +22,16 @@ def test_run_gnatss():
     end-to-end run of gnatss
     """
     config, data_dict = run_gnatss(str(config_yaml_path))
+
+    assert isinstance(config, Configuration)
+    assert isinstance(data_dict, dict)
+
+
+def test_run_gnatss_parsed_data():
+    """
+    end-to-end run of gnatss with parsed QC data
+    """
+    config, data_dict = run_gnatss(str(config_yaml_parsed_path),skip_parsed=False,skip_posfilter=True,skip_solver=False)
 
     assert isinstance(config, Configuration)
     assert isinstance(data_dict, dict)
