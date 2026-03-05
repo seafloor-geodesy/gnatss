@@ -96,7 +96,7 @@ def test_parsed_pos_twtt(parsed_pos_twtt,gps_positions_parsed):
     gps_data_df = gps_positions_parsed[
         [constants.GPS_TIME, *constants.ANT_GPS_GEOCENTRIC_STD]
     ]
-    
+
 
     merged_df = gps_data_df.merge(
         pos_twtt_df,
@@ -149,7 +149,7 @@ def test_parsed_pos_twtt_no_gps(raw_data_parsed):
         [constants.GPS_TIME, "ant_x1", "ant_y1", "ant_z1",]
     ]
     ins_data_df = ins_data_df.rename(columns={"ant_x1":"ant_x", "ant_y1":"ant_y", "ant_z1":"ant_z"})
-        
+
 
     merged_df = ins_data_df.merge(
         pos_twtt_df,
