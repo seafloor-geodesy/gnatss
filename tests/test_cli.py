@@ -53,3 +53,9 @@ def test_app_run_parsed_posfilter_fails():
     result = runner.invoke(app, ["run", str(config_yaml_path), "--posfilter", "--parsed"])
     with pytest.raises(ValueError):
         raise result.exception
+
+
+def test_app_run_none_fails():
+    result = runner.invoke(app, ["run", str(config_yaml_path), "--no-run-all"])
+    with pytest.raises(ValueError):
+        raise result.exception
