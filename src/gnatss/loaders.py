@@ -296,7 +296,7 @@ def load_sv3_targz(
 
         # Read through .pin files and extract data
         for file in list(Path(temp_dir_path).rglob("*.pin")):
-            if Path.stat(temp_dir_path + "/" + file.name).st_size != 0:
+            if Path.stat(Path(temp_dir_path + "/" + file.name)).st_size != 0:
                 with Path(temp_dir_path + "/" + file.name).open() as pin_file:
                     for line_pin in pin_file:
                         pin_json = json.loads(line_pin)
