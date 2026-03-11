@@ -374,11 +374,8 @@ def load_sv3_targz(
                                     ]
                                 )
 
-                            # Data export for ping reply
-                            if event == "range":
-                                # Don't record data if it is a zero range
-                                if pin_json[pin_event]["range"]["range"] == 0.0:
-                                    break
+                            # Data export for nonzero ranges in ping reply
+                            if event == "range" and pin_json[pin_event]["range"]["range"] != 0.0:
                                 twtt = pin_json[pin_event]["range"]["range"] - 0.13
 
                                 T_receive = AstroTime(
