@@ -19,9 +19,11 @@ from gnatss.loaders import (
     load_novatel,
     load_novatel_std,
     load_roll_pitch_heading,
+    load_sv3_targz,
     load_travel_times,
 )
 from gnatss.ops.io import gather_files_all_procs
+from gnatss.parsed import get_parsed_ant_positions, get_parsed_rph
 from gnatss.posfilter import kalman_filtering, spline_interpolate
 from tests import TEST_DATA_FOLDER
 
@@ -63,8 +65,19 @@ def configuration() -> Configuration:
 
 
 @pytest.fixture(scope="session")
+def parsed_configuration() -> Configuration:
+    return load_configuration(TEST_DATA_FOLDER / "config_parsed.yaml")
+
+
+@pytest.fixture(scope="session")
 def all_files_dict() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
+    return gather_files_all_procs(config)
+
+
+@pytest.fixture(scope="session")
+def all_files_dict_parsed() -> dict[str, Any]:
+    config = load_configuration(TEST_DATA_FOLDER / "config_parsed.yaml")
     return gather_files_all_procs(config)
 
 
@@ -148,6 +161,28 @@ def kalman_filtering_data(
         twtt_df=travel_times_data,
     )
     return kalman_data
+
+
+@pytest.fixture(scope="session")
+def gps_positions_parsed(all_files_dict_parsed) -> DataFrame:
+    data_files = all_files_dict_parsed["gps_positions"]
+    return load_gps_positions(data_files)
+
+
+@pytest.fixture(scope="session")
+def raw_data_parsed(all_files_dict_parsed,parsed_configuration) -> DataFrame:
+    data_files = all_files_dict_parsed["raw_data"]
+    return load_sv3_targz(parsed_configuration,data_files)
+
+
+@pytest.fixture(scope="session")
+def parsed_cov_rph_twtt(raw_data_parsed):
+    return get_parsed_rph(raw_data_parsed)
+
+
+@pytest.fixture(scope="session")
+def parsed_pos_twtt(raw_data_parsed,gps_positions_parsed):
+    return get_parsed_ant_positions(raw_data_parsed,gps_positions_parsed)
 
 
 @pytest.fixture(scope="session")

@@ -29,6 +29,20 @@ class TimeUnixJ2000(TimeFromEpoch):
     epoch_format = "iso"  # Format for epoch_val class attribute
 
 
+class TimeRangeaJ2000(TimeFromEpoch):
+    """
+    Seconds from 2000-01-01 12:00:00 TT (equivalent to 2000-01-01 11:58:55.816 UTC),
+    ignoring leap seconds.
+    """
+
+    name = "rangea_j2000"
+    unit = 1.0 / erfa.DAYSEC  # in days (1 day == 86400 seconds)
+    epoch_val = 630763200
+    epoch_val2 = None
+    epoch_scale = "tt"  # Scale for epoch_val class attribute
+    epoch_format = "gps"  # Format for epoch_val class attribute
+
+
 def gps_ws_time_to_astrotime(
     weeks: NDArray[Shape["*"], Int], seconds: NDArray[Shape["*"], Float]
 ) -> AstroTime:

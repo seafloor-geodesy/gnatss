@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ..utilities.geo import ecef2ae
 from .io import OutputPath
+from .parsed import Parsed
 from .posfilter import PositionFilter
 from .solver import Solver
 from .transponders import Transponder
@@ -67,6 +68,7 @@ class Configuration(BaseConfiguration):
     # Processing configurations
     solver: Solver | None = Field(None, description="Solver configurations")
     posfilter: PositionFilter | None = Field(None, description="Position filter configurations")
+    parsed: Parsed | None = Field(None, description="Position filter configurations")
 
     # File related configurations
     output: OutputPath | None = Field(None, description="Output path configurations")
