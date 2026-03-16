@@ -304,6 +304,7 @@ def load_csrs_positions(files: list[str], time_round: int = constants.DELAY_TIME
         3: Geocentric y in meters
         4: Geocentric z in meters
         5 - 7: Standard deviations std_x, std_y, std_z
+        8 - 16: Covariance matrix Vxyz
     """
     columns = [
         "YMD",
@@ -403,10 +404,6 @@ def load_csrs_positions(files: list[str], time_round: int = constants.DELAY_TIME
     # The rotation is calculated with the operation
     #
     #  Vxyz = R * Vneu * R^T
-    #
-    # We specifically want to calculate the diagonal of Vxyz, so we can save
-    # some computation by foregoing the entire matrix operation. However,
-    # we are strictly losing information here.
 
     # Calculate cosine and sine values of lat/lon
     clat = np.cos(all_gnss_positions["LAT"] * np.pi / 180.0)
@@ -414,28 +411,65 @@ def load_csrs_positions(files: list[str], time_round: int = constants.DELAY_TIME
     slat = np.sin(all_gnss_positions["LAT"] * np.pi / 180.0)
     slon = np.sin(all_gnss_positions["LON"] * np.pi / 180.0)
 
-    # Calculate XYZ standard deviations
+    # Calculate rotation matrix elements
+    R11 = -slat * clon
+    R12 = -slon
+    R13 = clat * clon
+    R21 = -slat * slon
+    R22 = clon
+    R23 = clat * clon
+    R31 = clat
+    R32 = np.zeros(clat.shape)
+    R33 = slat
+
+    # Calculate Vxyz = R * Vneu * R^T
     # Note the extra factor of 0.5 since the default CSRS NEU uncertainties are 2-sigma STDs
 
-    all_gnss_positions["ant_sigx"] = np.sqrt(
-        (slat * clon * 0.5 * all_gnss_positions["SDLAT"]) ** 2
-        + (slon * 0.5 * all_gnss_positions["SDLON"]) ** 2
-        + (clat * clon * 0.5 * all_gnss_positions["SDHGT"]) ** 2
+    all_gnss_positions["ant_cov_xx"] = (
+        (R11 * 0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + (R12 * 0.5 * all_gnss_positions["SDLON"]) ** 2
+        + (R13 * 0.5 * all_gnss_positions["SDHGT"]) ** 2
     )
-    all_gnss_positions["ant_sigy"] = np.sqrt(
-        (slat * slon * 0.5 * all_gnss_positions["SDLAT"]) ** 2
-        + (clon * 0.5 * all_gnss_positions["SDLON"]) ** 2
-        + (clat * slon * 0.5 * all_gnss_positions["SDHGT"]) ** 2
+    all_gnss_positions["ant_cov_yy"] = (
+        (R21 * 0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + (R22 * 0.5 * all_gnss_positions["SDLON"]) ** 2
+        + (R23 * 0.5 * all_gnss_positions["SDHGT"]) ** 2
     )
-    all_gnss_positions["ant_sigz"] = np.sqrt(
-        (clat * 0.5 * all_gnss_positions["SDLAT"]) ** 2
-        + (slat * 0.5 * all_gnss_positions["SDHGT"]) ** 2
+    all_gnss_positions["ant_cov_zz"] = (
+        (R31 * 0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + (R32 * 0.5 * all_gnss_positions["SDLON"]) ** 2
+        + (R33 * 0.5 * all_gnss_positions["SDHGT"]) ** 2
     )
+    all_gnss_positions["ant_cov_xy"] = (
+        R11 * R21 * (0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + R12 * R22 * (0.5 * all_gnss_positions["SDLON"]) ** 2
+        + R13 * R23 * (0.5 * all_gnss_positions["SDHGT"]) ** 2
+    )
+    all_gnss_positions["ant_cov_xz"] = (
+        R11 * R31 * (0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + R12 * R32 * (0.5 * all_gnss_positions["SDLON"]) ** 2
+        + R13 * R33 * (0.5 * all_gnss_positions["SDHGT"]) ** 2
+    )
+    all_gnss_positions["ant_cov_yz"] = (
+        R21 * R31 * (0.5 * all_gnss_positions["SDLAT"]) ** 2
+        + R22 * R32 * (0.5 * all_gnss_positions["SDLON"]) ** 2
+        + R23 * R33 * (0.5 * all_gnss_positions["SDHGT"]) ** 2
+    )
+    all_gnss_positions["ant_cov_yx"] = all_gnss_positions["ant_cov_xy"]
+    all_gnss_positions["ant_cov_zx"] = all_gnss_positions["ant_cov_xz"]
+    all_gnss_positions["ant_cov_zy"] = all_gnss_positions["ant_cov_yz"]
+
+    # Calculate XYZ standard deviations
+
+    all_gnss_positions["ant_sigx"] = np.sqrt(all_gnss_positions["ant_cov_xx"])
+    all_gnss_positions["ant_sigy"] = np.sqrt(all_gnss_positions["ant_cov_yy"])
+    all_gnss_positions["ant_sigz"] = np.sqrt(all_gnss_positions["ant_cov_zz"])
 
     columns_out = [
         constants.GPS_TIME,
         *constants.ANT_GPS_GEOCENTRIC,
         *constants.ANT_GPS_GEOCENTRIC_STD,
+        *constants.ANT_GPS_COV,
     ]
 
     # Round to match the delays precision

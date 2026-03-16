@@ -10,6 +10,7 @@ from pandas.api.types import is_float_dtype, is_integer_dtype, is_object_dtype
 from gnatss.configs.io import CSVOutput, InputData
 from gnatss.configs.main import Configuration
 from gnatss.constants import (
+    ANT_GPS_COV,
     ANT_GPS_GEOCENTRIC,
     ANT_GPS_GEOCENTRIC_STD,
     DEFAULT_CONFIG_PROCS,
@@ -219,7 +220,7 @@ def test_load_csrs_solutions(all_files_dict_csrs_solutions, time_round):
         all_files_dict_csrs_solutions["gps_positions"],
         time_round
     )
-    expected_columns = [GPS_TIME, *ANT_GPS_GEOCENTRIC, *ANT_GPS_GEOCENTRIC_STD]
+    expected_columns = [GPS_TIME, *ANT_GPS_GEOCENTRIC, *ANT_GPS_GEOCENTRIC_STD, *ANT_GPS_COV]
 
     assert isinstance(loaded_gps_positions, DataFrame)
     assert set(expected_columns) == set(loaded_gps_positions.columns.values.tolist())
