@@ -349,6 +349,7 @@ def load_csrs_positions(files: list[str], time_round: int = constants.DELAY_TIME
 
     # Determine j2000 time from date and time string,
     # assuming that they're in Terrestrial Time (TT) scale
+    # (equivalent to the TAI scale)
     all_gnss_positions[constants.TIME_ASTRO] = all_gnss_positions.apply(
         lambda row: AstroTime.strptime(
             f"{row['YMD']} {row['hms']}",
