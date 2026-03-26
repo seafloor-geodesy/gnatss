@@ -12,6 +12,7 @@ from ..configs.io import CSVOutput, InputData, OutputPath
 from ..configs.main import Configuration
 from ..loaders import (
     load_configuration,
+    load_csrs_positions,
     load_deletions,
     load_gps_positions,
     load_gps_solutions,
@@ -274,6 +275,7 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
         typer.echo(f"Loading {key} from {input_data.path}")
         file_paths = input_data.files
         loader_kwargs = input_data.loader_kwargs
+        format = input_data.format
 
     loaders_map = {
         "sound_speed": load_sound_speed,
@@ -294,7 +296,17 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
 
     if key == "gps_positions":
         # Posfilter input
-        return load_gps_positions(file_paths)
+        typer.echo(f"GPS position format set to {format}")
+        if format in {"CSRS", "csrs", "CSRS-PPP"}:
+            return load_csrs_positions(file_paths)
+        if format in {"legacy", "Legacy", "default", "Default", None}:
+            return load_gps_positions(file_paths)
+        # Raise an error if no expected format
+        msg = f"Unrecognized GNSS position file format {format}. Supported formats are: \n"
+        msg += "    CSRS - CSRS-PPP .pos format\n"
+        msg += "    legacy - GPS_POS_FREED format\n"
+        msg += "    No value defaults to GPS_POS_FREED format"
+        raise ValueError(msg)
 
     if key == "raw_data":
         # Posfilter input
