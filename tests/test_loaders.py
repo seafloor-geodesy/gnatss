@@ -113,8 +113,8 @@ def test_load_sv3_targz(parsed_test_files_configuration,time_round):
     assert all(
         is_float_dtype(loaded_targz_data[column]) for column in expected_columns[1:]
     )
-    
-    
+
+
 def test_load_posfilter_bad_format(configuration):
     bad_config = configuration
     bad_config.posfilter.input_files.gps_positions.format = 'bad_format'
