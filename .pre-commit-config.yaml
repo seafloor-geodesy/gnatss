@@ -3,6 +3,7 @@ exclude: |
     docs/conf.py |
     .devcontainer/ |
     tests/ops_data.py |
+    tests/install_test_directory.py |
     docs/gnssa_preprocessing.md
   )
 
