@@ -378,6 +378,7 @@ def data_loading(
     outlier_threshold: float | None = None,
     from_cache: bool = False,
     remove_outliers: bool = False,
+    skip_parsed: bool = True,
     skip_posfilter: bool = False,
     skip_solver: bool = False,
 ):
@@ -392,7 +393,9 @@ def data_loading(
     if from_cache and not gps_solution_exists(config):
         from_cache = False
 
-    return config, load_datasets(config, from_cache, remove_outliers, skip_posfilter, skip_solver)
+    return config, load_datasets(
+        config, from_cache, remove_outliers, skip_parsed, skip_posfilter, skip_solver
+    )
 
 
 def preprocess_data(config, data_dict):

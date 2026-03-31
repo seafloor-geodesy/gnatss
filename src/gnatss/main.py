@@ -7,6 +7,7 @@ from .configs.main import Configuration
 from .ops.data import data_loading
 from .ops.io import to_file
 from .ops.qc import export_qc_plots
+from .parsed.run import run_parsed
 from .posfilter.run import run_posfilter
 from .solver.run import run_solver
 
@@ -23,6 +24,7 @@ def run_gnatss(
     extract_process_dataset: bool = True,
     extract_dist_center: bool = True,
     qc: bool = True,
+    skip_parsed: bool = True,
     skip_posfilter: bool = False,
     skip_solver: bool = False,
 ) -> tuple[Configuration, dict[str, any]]:
@@ -80,6 +82,9 @@ def run_gnatss(
     qc : bool, optional
         Flag to plot residuals from run and store in output folder, by default True
 
+    skip_parsed : bool, optional
+        Flag to skip the parsed step, by default True
+
     skip_posfilter : bool, optional
         Flag to skip the posfilter step, by default False
 
@@ -106,9 +111,13 @@ def run_gnatss(
         outlier_threshold=outlier_threshold,
         from_cache=from_cache,
         remove_outliers=remove_outliers,
+        skip_parsed=skip_parsed,
         skip_posfilter=skip_posfilter,
         skip_solver=skip_solver,
     )
+
+    if config.parsed and not from_cache and not skip_parsed:
+        data_dict = run_parsed(config, data_dict)
 
     if config.posfilter and not from_cache and not skip_posfilter:
         data_dict = run_posfilter(config, data_dict)

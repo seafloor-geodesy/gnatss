@@ -42,3 +42,20 @@ def test_app_run_all_solver_posfilter():
 def test_app_run_posfilter():
     result = runner.invoke(app, ["run", str(config_yaml_path), "--posfilter"])
     assert result.exit_code == 0
+
+
+def test_app_run_parsed():
+    result = runner.invoke(app, ["run", str(config_yaml_path), "--parsed"])
+    assert result.exit_code == 0
+
+
+def test_app_run_parsed_posfilter_fails():
+    result = runner.invoke(app, ["run", str(config_yaml_path), "--posfilter", "--parsed"])
+    with pytest.raises(ValueError):
+        raise result.exception
+
+
+def test_app_run_none_fails():
+    result = runner.invoke(app, ["run", str(config_yaml_path), "--no-run-all"])
+    with pytest.raises(ValueError):
+        raise result.exception
