@@ -95,6 +95,8 @@ this command by running `gnatss run --help`.
 │ --solver                     --no-solver                            Flag to run the solver process only. Requires GNSS-A Level-2 Data. [default: no-solver]     │
 │ --posfilter                  --no-posfilter                         Flag to run the posfilter process only. Requires GNSS-A Level-1 Data Inputs.                │
 │                                                                     [default: no-posfilter]                                                                     │
+│ --parsed                 --no-parsed                                Flag to run the parsed qc process only. Requires Wave Glider QC Data Inputs.                │
+│                                                                     [default: no-parsed]                                                                        │
 │ --help                                                              Show this message and exit.                                                                 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
@@ -150,10 +152,26 @@ posfilter:
       path: /path/to/file #File with INSPVAA strings
     novatel_std:
       path: /path/to/file #File with INSSTDEVA strings
-    gps_positions: #Assume Chadwell format, (j2000 seconds, "GPSPOS" string, ECEF XYZ coordinates (m), XYZ Standard Deviations)
-      path: /path/to/GPS_POS_FREED #File path to antenna positions, use wildcards ** for day-separated data
+    gps_positions:
+      path: /path/to/file #File path to antenna positions, use wildcards ** for day-separated data
+      format: key #Data format, Accepted values: legacy, CSRS (Default to Chadwell text column format if no value given.)
     travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
-      path: /path/to/pxp_tt
+      path: /path/to/file #File path to TWTT data, use wildcards ** for day-separated data
+
+# Parsed configuration
+parsed:
+  export:
+    full: false #false for only required fields, true to include optional RPH value and uncertainties
+  atd_offsets:
+    forward: 0.0053 #Value for SV3 Wave Glider
+    rightward: 0 #Value for SV3 Wave Glider
+    downward: 0.92813 #Value for SV3 Wave Glider
+  input_files:
+    gps_positions:
+      path: /path/to/file #File path to antenna positions, use wildcards ** for day-separated data
+      format: key #Data format, Accepted values: legacy, CSRS (Default to Chadwell text column format if no value given.)
+    raw_data: #Assume Wave Glider model SV-3 zipped pin files (*.tar.gz)
+      path: /path/to/file #File path to QC data, use wildcards ** for day-separated data
 
 # Solver configuration
 solver:
