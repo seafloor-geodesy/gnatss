@@ -4,7 +4,7 @@ GNATSS is compatible with Python versions 3.10-3.11. If you have a conda
 installation, we recommend creating a fresh environment to install GNATSS in.
 
 ```
-conda create -n gnatss -c conda-forge --yes python=3.10 ipykernel
+conda create -n gnatss -c conda-forge --yes python=3.11 ipykernel
 conda activate gnatss
 ```
 
