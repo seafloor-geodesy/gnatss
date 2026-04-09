@@ -19,6 +19,7 @@ parts:
       - file: input
       - file: config_yaml
       - file: position_inversion
+      - file: parsed_processing
   - caption: Help & reference
     chapters:
       - file: configs
