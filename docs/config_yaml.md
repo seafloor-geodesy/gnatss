@@ -6,17 +6,31 @@ geometry of the GNSS-Acoustic array.
 
 The configuration file is divided into multiple sections, but not all of the
 sections are required depending on your processing needs. In general, GNATSS
-operates in two modes, a posfilter mode which performs pre-processing on wave
-glider data to generate input required for array positioning, and a solver mode
-that performs the array positioning using the data computed by the posfilter.
+operates in two modes, a pre-processing mode that operates on wave glider data
+to generate input required for array positioning, and a solver mode that
+performs the array positioning using the data computed by the pre-processing.
+
+There are two styles of pre-processing. The default pre-processing is the
+[_posfilter_](gnssa_preprocessing.md) mode, short for "position filter", which
+infers Wave Glider positions using a spline interpolation in tandem with a
+Kalman filter. The alternative pre-processing mode is the
+[_parsed_](parsed_processing.md) mode, which is designed to operate in a reduced
+capacity on 2-minute subsampled (or "parsed") data sets telemetered to shore in
+real-time during a survey. The posfilter and parsed modes may be defined in the
+same configuration file, but only one may be called when invoking `gnatss run`.
+By default GNATSS assumes pre-processing is done with the posfilter, but the
+parsed pre-processing can be executed by adding the `--parsed` flag.
+
 These modes are defined separately in the config file. It is possible to run
-only one of these two modes at a time, or to run both in sequence, so it is
-optional to include their information in the config file.
+only one mode at a time or to run a pre-processing mode and the solver in
+sequence, so it is optional to include their information in the config file.
 
 At a high level, the sections of the configuration file are:
 
 - Metadata _(required)_: Information about the array
 - Posfilter configuration _(optional)_: Pre-processing configuration
+- Parsed configuration _(optional)_: Pre-processing configuration for real-time
+  observations
 - Solver _(optional)_: Array positioning configuration
 - Output configuration _(required)_: Destination for output files
 
@@ -68,9 +82,24 @@ posfilter:
       path: /path/to/file #File with INSSTDEVA strings
     gps_positions: #By default assume Chadwell format, (j2000 seconds, "GPSPOS" string, ECEF XYZ coordinates (m), XYZ Standard Deviations)
       path: /path/to/GPS_POS_FREED #File path to antenna positions, use wildcards ** for day-separated data
-      format: key #Optional designation for alternate GPS Positions file formats
+      format: key #Optional designation for alternate GNSS Position file formats
     travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
       path: /path/to/pxp_tt
+
+# Parsed configuration
+parsed:
+  export:
+    full: false #false for only required fields, true to include optional RPH value and uncertainties
+  atd_offsets:
+    forward: 0.0053 #Value for SV3 Wave Glider
+    rightward: 0 #Value for SV3 Wave Glider
+    downward: 0.92813 #Value for SV3 Wave Glider
+  input_files:
+    gps_positions: #By default assume Chadwell format, (j2000 seconds, "GPSPOS" string, ECEF XYZ coordinates (m), XYZ Standard Deviations)
+      path: /path/to/file #File path to antenna positions, use wildcards ** for day-separated data
+      format: key #Optional designation for alternate GNSS Position file formats
+    raw_data: #Assume Wave Glider model SV-3 zipped pin files (*.tar.gz)
+      path: /path/to/file #File path to QC data, use wildcards ** for day-separated data
 
 # Solver configuration
 solver:
@@ -167,6 +196,33 @@ The information that should be defined in the config.yaml file is as follows:
     every transponder in the array. These ranges should include the internal
     delay of the transponders but exclude the transducer delay time. GNATSS
     assumes this file is in the legacy Chadwell format (See
+    [_Required Input Data_](./input.md)).
+
+### Parsed configuration
+
+- **Export** The _full_ parameter determines whether to include roll, pitch, and
+  heading values not required for the solver but useful for recalculating
+  transducer positions. The default value of _false_ provides only the minimum
+  data fields required for the solver, as defined by the
+  [GNSS-Acoustic Standard Data Format](https://hal.science/hal-04319233/).
+- **ATD Offsets** The ATD offsets (also called the _lever arms_) are the static
+  offsets between the GNSS antenna and acoustic transducer in the static body
+  frame coordinates of the surface platform. The given values in the above
+  template are the ATD offsets for the SV3 Wave Glider.
+- **Input Files** These are file paths to [input data](./input.md) required
+  specifically for the parsed mode, assumed to be collected by an SV3 wave
+  glider using a Sonardyne GNSS-A payload.
+  - The user may input a file path to a single input file or use the UNIX "\*\*"
+    wildcard to point to multiple input files, such as day-separated data.
+  - The GPS positions are assumed to be computed by the user with a GNSS
+    processing software of their choice, such as PRIDE PPP-AR, GAMIT, or GipsyX.
+    By default GNATSS assumes that the solution has been converted into a legacy
+    Chadwell format, but other supported formats can be provided by designating
+    an optional `format` key in the configuration file (See
+    [_Required Input Data_](./input.md) for the list of supported file formats
+    and keys).
+  - The raw data files are zipped tarballs that contain data stored in a `.pin`
+    format telemetered to shore by the LRI model SV-3 Wave Glider (See
     [_Required Input Data_](./input.md)).
 
 ### Solver configuration
