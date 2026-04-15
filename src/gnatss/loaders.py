@@ -167,6 +167,128 @@ def load_travel_times(
     return all_travel_times
 
 
+def load_dfo(
+    config: Configuration, file_paths: list[str], time_round: int = constants.DELAY_TIME_PRECISION
+):
+    """
+    Loads SV-3 parsed raw data into a pandas dataframe from a list of files.
+    These files should be zipped binary files containing .pin files.
+    Each .pin file contains a json structure with an interrogation event
+    and events for each reply. These events should contain the timing and
+    position data at ping transmit and reply, but the specific structure
+    has been modified over time. This function also aims to accommodate these
+    variations.
+
+    Parameters
+    ----------
+    config : Configuration
+        The configuration object
+    files : list of str
+        The list of path string to files to load
+    time_round : int
+        The precision value to round the time values
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing all of the raw data required for parsed pre-processing.
+        The numbers are column number.
+        1: Transponder ID
+        2: Time unit seconds in J2000 epoch
+        3: Transmit Time
+        4: Two-way Travel Time
+        5-7: Antenna positions (Geocentric x,y,z in meters)
+        8: Roll
+        9: Pitch
+        10: Heading
+        11-13: Antenna positions at Transmit (Geocentric x,y,z in meters)
+    """
+
+    # Get Site ID from config
+    SITE = config.site_id
+
+    temp_list = []
+    num = 0
+
+    for file in file_paths:
+        with Path(file).open() as pin_file:
+            for line_pin in pin_file:
+                num = num + 1
+                pin_json = json.loads(line_pin)
+                #             # num = num + 1
+
+                #             # Log event designation
+                event = pin_json["event"]
+
+                # Truncated data export for ping transmit
+                if event == "interrogation":
+                    T_transmit = AstroTime(
+                        pin_json["observations"]["GNSS"]["time"]["common"],
+                        format="unix",
+                        scale="tt",
+                    ).rangea_j2000
+                    T_receive = AstroTime(
+                        pin_json["observations"]["GNSS"]["time"]["common"],
+                        format="unix",
+                        scale="tt",
+                    ).rangea_j2000
+                    mtid = "T_transmit"
+                    twtt = T_receive - T_transmit
+                    temp_list.append(
+                        [
+                            T_receive,
+                            mtid,
+                            twtt,
+                            np.nan,
+                        ]
+                    )
+
+                # Data export for ping reply
+                if event == "range" and pin_json["range"]["range"] != 0.0:
+                    # # Don't record data if it is a zero range
+                    # if pin_json["range"]["range"] == 0.0:
+                    #     continue
+                    twtt = pin_json["range"]["range"] - 0.13
+
+                    T_receive = AstroTime(
+                        pin_json["time"]["common"],
+                        format="unix",
+                        scale="tt",
+                    ).rangea_j2000
+
+                    # Determine MT_ID from acoustic address
+                    address = pin_json["range"]["cn"]
+                    if address == "IR5209":
+                        mtid = SITE + "-1"
+                    if address == "IR5210":
+                        mtid = SITE + "-2"
+                    if address == "IR5211":
+                        mtid = SITE + "-3"
+
+                    temp_list.append(
+                        [
+                            T_receive,
+                            mtid,
+                            twtt,
+                            T_transmit,
+                        ]
+                    )
+
+    # Define columns out and convert list to DataFrame
+    columns = [
+        constants.TIME_J2000,
+        constants.DATA_SPEC.transponder_id,
+        constants.DATA_SPEC.travel_time,
+        constants.DATA_SPEC.tx_time,
+    ]
+    raw_data_out = pd.DataFrame(temp_list, columns=columns)
+
+    typer.echo(f"Read {num} lines from DFOP files.")
+
+    # Round to match the delays precision
+    return _round_time_precision(raw_data_out, time_round)
+
+
 def load_roll_pitch_heading(
     files: list[str],
 ) -> pd.DataFrame:

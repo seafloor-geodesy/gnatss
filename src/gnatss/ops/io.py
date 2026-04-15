@@ -14,6 +14,7 @@ from ..loaders import (
     load_configuration,
     load_csrs_positions,
     load_deletions,
+    load_dfo,
     load_gps_positions,
     load_gps_solutions,
     load_novatel,
@@ -285,11 +286,16 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
     }
 
     if key == "travel_times":
-        return load_travel_times(
-            file_paths,
-            transponder_ids=[tp.pxp_id for tp in config.transponders],
-            **loader_kwargs,
-        )
+        # Acoustic TWTT input for posfilter
+        typer.echo(f"Travel time format set to {format}")
+        if format in {"DFOP", "dfop", "DFO", "dfo"}:
+            return load_dfo(config=config, file_paths=file_paths)
+        if format in {"legacy", "Legacy", "default", "Default", None}:
+            return load_travel_times(
+                file_paths,
+                transponder_ids=[tp.pxp_id for tp in config.transponders],
+                **loader_kwargs,
+            )
 
     if key == "deletions":
         return load_deletions(config=config, file_paths=file_paths, remove_outliers=remove_outliers)
@@ -309,7 +315,7 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
         raise ValueError(msg)
 
     if key == "raw_data":
-        # Posfilter input
+        # Parsed input
         return load_sv3_targz(config=config, file_paths=file_paths)
 
     if key == "gps_solution":
