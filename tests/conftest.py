@@ -202,6 +202,12 @@ def all_files_dict_csrs_solutions() -> dict[str, Any]:
 
 
 @pytest.fixture(scope="session")
+def all_files_dict_pride_solutions() -> dict[str, Any]:
+    config = load_configuration(TEST_DATA_FOLDER / "config_pride.yaml")
+    return gather_files_all_procs(config)
+
+
+@pytest.fixture(scope="session")
 def legacy_gps_solutions_data(all_files_dict_legacy_gps_solutions):
     return load_gps_solutions(
         all_files_dict_legacy_gps_solutions["gps_solution"],

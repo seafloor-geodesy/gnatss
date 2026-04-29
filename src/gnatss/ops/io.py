@@ -18,6 +18,7 @@ from ..loaders import (
     load_gps_solutions,
     load_novatel,
     load_novatel_std,
+    load_pride_positions,
     load_quality_control,
     load_sound_speed,
     load_sv3_targz,
@@ -299,11 +300,14 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
         typer.echo(f"GPS position format set to {format}")
         if format in {"CSRS", "csrs", "CSRS-PPP"}:
             return load_csrs_positions(file_paths)
+        if format in {"PRIDE", "pride", "PRIDE PPP-AR", "pride ppp-ar", "PRIDE-PPP"}:
+            return load_pride_positions(file_paths)
         if format in {"legacy", "Legacy", "default", "Default", None}:
             return load_gps_positions(file_paths)
         # Raise an error if no expected format
         msg = f"Unrecognized GNSS position file format {format}. Supported formats are: \n"
         msg += "    CSRS - CSRS-PPP .pos format\n"
+        msg += "    PRIDE - PRIDE PPP-AR kin file format\n"
         msg += "    legacy - GPS_POS_FREED format\n"
         msg += "    No value defaults to GPS_POS_FREED format"
         raise ValueError(msg)
