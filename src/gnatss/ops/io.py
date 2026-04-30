@@ -296,6 +296,12 @@ def load_files_to_dataframe(key, input_data, config: Configuration, remove_outli
                 transponder_ids=[tp.pxp_id for tp in config.transponders],
                 **loader_kwargs,
             )
+        # Raise an error if no expected format
+        msg = f"Unrecognized acoustic TWTT file format {format}. Supported formats are: \n"
+        msg += "    DFOP - SV-3 Wave Glider DFOP00.raw format\n"
+        msg += "    legacy - pxp_tt format\n"
+        msg += "    No value defaults to pxp_tt format"
+        raise ValueError(msg)
 
     if key == "deletions":
         return load_deletions(config=config, file_paths=file_paths, remove_outliers=remove_outliers)

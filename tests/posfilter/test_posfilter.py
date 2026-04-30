@@ -7,6 +7,7 @@ from tests import TEST_DATA_FOLDER
 from gnatss import constants
 from gnatss.loaders import load_gps_solutions
 from gnatss.posfilter import rotation
+from gnatss.posfilter.run import run_posfilter
 
 
 @pytest.fixture()
@@ -121,3 +122,11 @@ def test_rotation(legacy_gps_solutions_data, rotation_data):
             (merged_df[ref_col] - merged_df[solutions_col]).abs() > col_err_tol
         ]
         assert len(outlier_df) * 100.0 / len(merged_df) < rows_outside_threshold_percent
+
+
+def test_run_posfilter_with_dfop(dfop_configuration, data_dict_with_dfop):
+    # Verify that the posfilter still runs if given a travel time
+    # dict loaded from DFOP00.raw files.
+    data_dict = run_posfilter(dfop_configuration, data_dict_with_dfop)
+
+    assert isinstance(data_dict, dict)

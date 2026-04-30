@@ -171,13 +171,9 @@ def load_dfo(
     config: Configuration, file_paths: list[str], time_round: int = constants.DELAY_TIME_PRECISION
 ):
     """
-    Loads SV-3 parsed raw data into a pandas dataframe from a list of files.
-    These files should be zipped binary files containing .pin files.
-    Each .pin file contains a json structure with an interrogation event
-    and events for each reply. These events should contain the timing and
-    position data at ping transmit and reply, but the specific structure
-    has been modified over time. This function also aims to accommodate these
-    variations.
+    Loads Two-way travel time data from SV-3 DFOP00.raw data files.
+    These files store data in a JSON format, which includes information
+    on the interrogation and reply epochs of each ping.
 
     Parameters
     ----------
@@ -193,31 +189,23 @@ def load_dfo(
     pd.DataFrame
         Pandas DataFrame containing all of the raw data required for parsed pre-processing.
         The numbers are column number.
-        1: Transponder ID
-        2: Time unit seconds in J2000 epoch
-        3: Transmit Time
-        4: Two-way Travel Time
-        5-7: Antenna positions (Geocentric x,y,z in meters)
-        8: Roll
-        9: Pitch
-        10: Heading
-        11-13: Antenna positions at Transmit (Geocentric x,y,z in meters)
+        1: Time unit seconds in J2000 epoch
+        2: Transponder ID
+        3: Two-way Travel Time
+        4: Transmit Time
     """
 
     # Get Site ID from config
     SITE = config.site_id
 
     temp_list = []
-    num = 0
 
     for file in file_paths:
         with Path(file).open() as pin_file:
             for line_pin in pin_file:
-                num = num + 1
                 pin_json = json.loads(line_pin)
-                #             # num = num + 1
 
-                #             # Log event designation
+                # Log event designation
                 event = pin_json["event"]
 
                 # Truncated data export for ping transmit
@@ -243,11 +231,9 @@ def load_dfo(
                         ]
                     )
 
-                # Data export for ping reply
+                # Data export for ping reply, ignoring replies with zero range
                 if event == "range" and pin_json["range"]["range"] != 0.0:
-                    # # Don't record data if it is a zero range
-                    # if pin_json["range"]["range"] == 0.0:
-                    #     continue
+
                     twtt = pin_json["range"]["range"] - 0.13
 
                     T_receive = AstroTime(
@@ -282,8 +268,6 @@ def load_dfo(
         constants.DATA_SPEC.tx_time,
     ]
     raw_data_out = pd.DataFrame(temp_list, columns=columns)
-
-    typer.echo(f"Read {num} lines from DFOP files.")
 
     # Round to match the delays precision
     return _round_time_precision(raw_data_out, time_round)
