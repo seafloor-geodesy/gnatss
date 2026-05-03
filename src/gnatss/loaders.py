@@ -233,7 +233,6 @@ def load_dfo(
 
                 # Data export for ping reply, ignoring replies with zero range
                 if event == "range" and pin_json["range"]["range"] != 0.0:
-
                     twtt = pin_json["range"]["range"] - 0.13
 
                     T_receive = AstroTime(
