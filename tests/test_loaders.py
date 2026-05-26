@@ -37,6 +37,7 @@ from gnatss.loaders import (
     load_configuration,
     load_csrs_positions,
     load_deletions,
+    load_dfo,
     load_gps_solutions,
     load_pride_positions,
     load_roll_pitch_heading,
@@ -116,12 +117,39 @@ def test_load_sv3_targz(parsed_test_files_configuration,time_round):
     )
 
 
+@pytest.mark.parametrize(
+    "time_round",
+    [3, 6],
+)
+def test_load_dfo(dfop_configuration,time_round):
+    dfop_files_dict = gather_files_all_procs(dfop_configuration)
+    travel_time_data = load_dfo(dfop_configuration,dfop_files_dict["travel_times"],time_round)
+
+    expected_columns = [
+        TIME_J2000,
+        DATA_SPEC.transponder_id,
+        DATA_SPEC.travel_time,
+        DATA_SPEC.tx_time,
+    ]
+
+    assert isinstance(travel_time_data, DataFrame)
+    assert set(expected_columns) == set(travel_time_data.columns.values.tolist())
+    assert is_string_dtype(travel_time_data[DATA_SPEC.transponder_id])
+    assert is_float_dtype(travel_time_data[TIME_J2000])
+    assert all(
+        is_float_dtype(travel_time_data[column]) for column in expected_columns[2:]
+    )
+
+
 def test_load_posfilter_bad_format(configuration):
     bad_config = configuration
     bad_config.posfilter.input_files.gps_positions.format = 'bad_format'
+    bad_config.posfilter.input_files.travel_times.format = 'bad_format'
     bad_dict = gather_files(bad_config,'posfilter',"object")
     with pytest.raises(ValueError):
         load_files_to_dataframe('gps_positions',bad_dict['gps_positions'],bad_config)
+    with pytest.raises(ValueError):
+        load_files_to_dataframe('travel_times',bad_dict['travel_times'],bad_config)
 
 
 def test_load_sound_speed(all_files_dict):

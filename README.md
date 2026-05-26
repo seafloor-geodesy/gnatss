@@ -155,8 +155,9 @@ posfilter:
     gps_positions:
       path: /path/to/file #File path to antenna positions, use wildcards ** for day-separated data
       format: key #Optional designation for alternate GNSS Position file formats
-    travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
+    travel_times:
       path: /path/to/file #File path to TWTT data, use wildcards ** for day-separated data
+      format: key #Optional designation for alternate TWTT file formats
 
 # Parsed configuration
 parsed:

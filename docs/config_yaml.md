@@ -83,8 +83,9 @@ posfilter:
     gps_positions: #By default assume Chadwell format, (j2000 seconds, "GPSPOS" string, ECEF XYZ coordinates (m), XYZ Standard Deviations)
       path: /path/to/GPS_POS_FREED #File path to antenna positions, use wildcards ** for day-separated data
       format: key #Optional designation for alternate GNSS Position file formats
-    travel_times: #Assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
-      path: /path/to/pxp_tt
+    travel_times: #By Default assume Chadwell format, (Time at Ping send [DD-MON-YY HH:MM:SS.ss], TWTT1 (microseconds), TWTT2, TWTT3, TWTT4), TWTT=0 if no reply
+      path: /path/to/file #File path to TWTT data, use wildcards ** for day-separated data
+      format: key #Optional designation for alternate TWTT file formats
 
 # Parsed configuration
 parsed:
@@ -194,9 +195,11 @@ The information that should be defined in the config.yaml file is as follows:
     and keys).
   - The TWTT input file contains the ranges collected by the surface platform to
     every transponder in the array. These ranges should include the internal
-    delay of the transponders but exclude the transducer delay time. GNATSS
-    assumes this file is in the legacy Chadwell format (See
-    [_Required Input Data_](./input.md)).
+    delay of the transponders but exclude the transducer delay time. By default
+    GNATSS assumes this file is in the legacy Chadwell format, but other
+    supported formats can be provided by designating an optional `format` key in
+    the configuration file (See [_Required Input Data_](./input.md) for the list
+    of supported file formats and keys).
 
 ### Parsed configuration
 

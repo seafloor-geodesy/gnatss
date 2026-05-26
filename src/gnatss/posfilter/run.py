@@ -9,7 +9,17 @@ from .utilities import export_gps_solution, filter_columns
 
 
 def run_posfilter(config, data_dict):
-    config, data_dict = preprocess_data(config, data_dict)
+
+    # Reconfigure travel times if input data in pxp_tt format
+    if config.posfilter.input_files.travel_times.format in {
+        "legacy",
+        "Legacy",
+        "default",
+        "Default",
+        None,
+    }:
+        config, data_dict = preprocess_data(config, data_dict)
+
     typer.echo("Performing Kalman filtering ...")
     # These are antenna positions and covariances
     pos_twtt = kalman_filtering(

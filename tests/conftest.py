@@ -22,7 +22,7 @@ from gnatss.loaders import (
     load_sv3_targz,
     load_travel_times,
 )
-from gnatss.ops.io import gather_files_all_procs
+from gnatss.ops.io import gather_files_all_procs, load_datasets
 from gnatss.parsed import get_parsed_ant_positions, get_parsed_rph
 from gnatss.posfilter import kalman_filtering, spline_interpolate
 from tests import TEST_DATA_FOLDER
@@ -70,6 +70,11 @@ def parsed_configuration() -> Configuration:
 
 
 @pytest.fixture(scope="session")
+def dfop_configuration() -> Configuration:
+    return load_configuration(TEST_DATA_FOLDER / "config_dfop.yaml")
+
+
+@pytest.fixture(scope="session")
 def all_files_dict() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config.yaml")
     return gather_files_all_procs(config)
@@ -79,6 +84,12 @@ def all_files_dict() -> dict[str, Any]:
 def all_files_dict_parsed() -> dict[str, Any]:
     config = load_configuration(TEST_DATA_FOLDER / "config_parsed.yaml")
     return gather_files_all_procs(config)
+
+
+@pytest.fixture(scope="session")
+def data_dict_with_dfop() -> dict[str, Any]:
+    config = load_configuration(TEST_DATA_FOLDER / "config_dfop.yaml")
+    return load_datasets(config,skip_solver=True)
 
 
 @pytest.fixture(scope="session")

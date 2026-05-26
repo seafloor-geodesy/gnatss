@@ -167,6 +167,111 @@ def load_travel_times(
     return all_travel_times
 
 
+def load_dfo(
+    config: Configuration, file_paths: list[str], time_round: int = constants.DELAY_TIME_PRECISION
+):
+    """
+    Loads Two-way travel time data from SV-3 DFOP00.raw data files.
+    These files store data in a JSON format, which includes information
+    on the interrogation and reply epochs of each ping.
+
+    Parameters
+    ----------
+    config : Configuration
+        The configuration object
+    files : list of str
+        The list of path string to files to load
+    time_round : int
+        The precision value to round the time values
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing all of the raw data required for parsed pre-processing.
+        The numbers are column number.
+        1: Time unit seconds in J2000 epoch
+        2: Transponder ID
+        3: Two-way Travel Time
+        4: Transmit Time
+    """
+
+    # Get Site ID from config
+    SITE = config.site_id
+
+    temp_list = []
+
+    for file in file_paths:
+        with Path(file).open() as pin_file:
+            for line_pin in pin_file:
+                pin_json = json.loads(line_pin)
+
+                # Log event designation
+                event = pin_json["event"]
+
+                # Truncated data export for ping transmit
+                if event == "interrogation":
+                    T_transmit = AstroTime(
+                        pin_json["observations"]["GNSS"]["time"]["common"],
+                        format="unix",
+                        scale="tt",
+                    ).rangea_j2000
+                    T_receive = AstroTime(
+                        pin_json["observations"]["GNSS"]["time"]["common"],
+                        format="unix",
+                        scale="tt",
+                    ).rangea_j2000
+                    mtid = "T_transmit"
+                    twtt = T_receive - T_transmit
+                    temp_list.append(
+                        [
+                            T_receive,
+                            mtid,
+                            twtt,
+                            np.nan,
+                        ]
+                    )
+
+                # Data export for ping reply, ignoring replies with zero range
+                if event == "range" and pin_json["range"]["range"] != 0.0:
+                    twtt = pin_json["range"]["range"] - 0.13
+
+                    T_receive = AstroTime(
+                        pin_json["time"]["common"],
+                        format="unix",
+                        scale="tt",
+                    ).rangea_j2000
+
+                    # Determine MT_ID from acoustic address
+                    address = pin_json["range"]["cn"]
+                    if address == "IR5209":
+                        mtid = SITE + "-1"
+                    if address == "IR5210":
+                        mtid = SITE + "-2"
+                    if address == "IR5211":
+                        mtid = SITE + "-3"
+
+                    temp_list.append(
+                        [
+                            T_receive,
+                            mtid,
+                            twtt,
+                            T_transmit,
+                        ]
+                    )
+
+    # Define columns out and convert list to DataFrame
+    columns = [
+        constants.TIME_J2000,
+        constants.DATA_SPEC.transponder_id,
+        constants.DATA_SPEC.travel_time,
+        constants.DATA_SPEC.tx_time,
+    ]
+    raw_data_out = pd.DataFrame(temp_list, columns=columns)
+
+    # Round to match the delays precision
+    return _round_time_precision(raw_data_out, time_round)
+
+
 def load_roll_pitch_heading(
     files: list[str],
 ) -> pd.DataFrame:
