@@ -38,6 +38,7 @@ from gnatss.loaders import (
     load_csrs_positions,
     load_deletions,
     load_gps_solutions,
+    load_pride_positions,
     load_roll_pitch_heading,
     load_sound_speed,
     load_sv3_targz,
@@ -269,6 +270,29 @@ def test_load_csrs_solutions(all_files_dict_csrs_solutions, time_round):
     assert all(
         is_float_dtype(loaded_gps_positions[column]) for column in loaded_gps_positions.columns
     )
+
+
+@pytest.mark.parametrize(
+    "time_round",
+    [3, 6],
+)
+def test_load_pride_solutions(all_files_dict_pride_solutions, time_round):
+    loaded_gps_positions = load_pride_positions(
+        all_files_dict_pride_solutions["gps_positions"],
+        time_round
+    )
+    expected_columns = [GPS_TIME, *ANT_GPS_GEOCENTRIC, *ANT_GPS_GEOCENTRIC_STD]
+
+    assert isinstance(loaded_gps_positions, DataFrame)
+    assert set(expected_columns) == set(loaded_gps_positions.columns.values.tolist())
+    assert all(
+        is_float_dtype(loaded_gps_positions[column]) for column in loaded_gps_positions.columns
+    )
+
+
+def test_load_pride_solution_bad_header(all_files_dict):
+    with pytest.raises(ValueError):
+        load_pride_positions(all_files_dict["gps_positions"])
 
 
 def test_load_roll_pitch_heading(all_files_dict_roll_pitch_heading):
