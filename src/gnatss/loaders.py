@@ -209,7 +209,7 @@ def load_dfo(
                 event = pin_json["event"]
 
                 # Truncated data export for ping transmit
-                if event == "interrogation":
+                if event == "interrogation" and pin_json["observations"]["GNSS"] != "ERR3":
                     T_transmit = AstroTime(
                         pin_json["observations"]["GNSS"]["time"]["common"],
                         format="unix",
