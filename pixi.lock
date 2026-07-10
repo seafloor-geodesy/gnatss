@@ -2531,7 +2531,7 @@ packages:
   requires_python: '>=3.8'
 - pypi: ./
   name: gnatss
-  version: 0.1.dev342
+  version: 0.1.dev357
   sha256: 90b938b2aaed7eb207f4992678e560e263df4269ad48637e42e7c72c067b4765
   requires_dist:
   - astropy>=6.1.7,<8

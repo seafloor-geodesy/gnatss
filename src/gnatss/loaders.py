@@ -397,14 +397,24 @@ def load_sv3_targz(
         # Iterate through targz files and extract .pin files to temp directory
         for file_list in file_paths:
             with tarfile.open(file_list) as zipfile:
-                zipfile.extractall(temp_dir_path)
+                try:
+                    zipfile.extractall(temp_dir_path)
+                except EOFError:
+                    continue
 
         # Read through .pin files and extract data
         for file in list(Path(temp_dir_path).rglob("*.pin")):
             if Path.stat(Path(temp_dir_path + "/" + file.name)).st_size != 0:
                 with Path(temp_dir_path + "/" + file.name).open() as pin_file:
                     for line_pin in pin_file:
-                        pin_json = json.loads(line_pin)
+
+                        try:
+                            pin_json = json.loads(line_pin)
+                        except json.JSONDecodeError:
+                            continue
+
+                        if pin_json["interrogation"]["observations"]["GNSS"] == "ERR3":
+                            continue
 
                         # Read transmit values
                         T_transmit = AstroTime(
@@ -442,6 +452,10 @@ def load_sv3_targz(
 
                         # Gather reply values and write to list
                         for pin_event in pin_json:
+
+                            if pin_json["interrogation"]["observations"]["GNSS"] == "ERR3":
+                                continue
+
                             # Log event designation
                             event = pin_json[pin_event]["event"]
 
