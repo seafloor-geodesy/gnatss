@@ -199,6 +199,7 @@ def load_dfo(
     SITE = config.site_id
 
     temp_list = []
+    skip = False
 
     for file in file_paths:
         with Path(file).open() as pin_file:
@@ -206,13 +207,24 @@ def load_dfo(
                 try:
                     pin_json = json.loads(line_pin)
                 except json.JSONDecodeError:
+                    skip = True #Skip remaining returns in ping if record corrupted
                     continue
 
                 # Log event designation
                 event = pin_json["event"]
 
+                if event == "interrogation":
+                    skip = False #Reset if uncorrupted iterrogation
+                if skip:
+                    continue #Skip ping returns if previous record in ping corrupted
+
+                # Check for missing GNSS data in interrogation
+                if event == "interrogation" and pin_json["observations"]["GNSS"] == "ERR3":
+                    skip = True
+                    continue
+
                 # Truncated data export for ping transmit
-                if event == "interrogation" and pin_json["observations"]["GNSS"] != "ERR3":
+                if event == "interrogation":
                     T_transmit = AstroTime(
                         pin_json["observations"]["GNSS"]["time"]["common"],
                         format="unix",
