@@ -203,7 +203,10 @@ def load_dfo(
     for file in file_paths:
         with Path(file).open() as pin_file:
             for line_pin in pin_file:
-                pin_json = json.loads(line_pin)
+                try:
+                    pin_json = json.loads(line_pin)
+                except json.JSONDecodeError:
+                    continue
 
                 # Log event designation
                 event = pin_json["event"]
