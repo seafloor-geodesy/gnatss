@@ -207,16 +207,16 @@ def load_dfo(
                 try:
                     pin_json = json.loads(line_pin)
                 except json.JSONDecodeError:
-                    skip = True #Skip remaining returns in ping if record corrupted
+                    skip = True  # Skip remaining returns in ping if record corrupted
                     continue
 
                 # Log event designation
                 event = pin_json["event"]
 
                 if event == "interrogation":
-                    skip = False #Reset if uncorrupted iterrogation
+                    skip = False  # Reset if uncorrupted iterrogation
                 if skip:
-                    continue #Skip ping returns if previous record in ping corrupted
+                    continue  # Skip ping returns if previous record in ping corrupted
 
                 # Check for missing GNSS data in interrogation
                 if event == "interrogation" and pin_json["observations"]["GNSS"] == "ERR3":
@@ -422,7 +422,6 @@ def load_sv3_targz(
             if Path.stat(Path(temp_dir_path + "/" + file.name)).st_size != 0:
                 with Path(temp_dir_path + "/" + file.name).open() as pin_file:
                     for line_pin in pin_file:
-
                         try:
                             pin_json = json.loads(line_pin)
                         except json.JSONDecodeError:
@@ -467,7 +466,6 @@ def load_sv3_targz(
 
                         # Gather reply values and write to list
                         for pin_event in pin_json:
-
                             if pin_json["interrogation"]["observations"]["GNSS"] == "ERR3":
                                 continue
 
