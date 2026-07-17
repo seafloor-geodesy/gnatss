@@ -73,6 +73,10 @@ def parsed_configuration() -> Configuration:
 def dfop_configuration() -> Configuration:
     return load_configuration(TEST_DATA_FOLDER / "config_dfop.yaml")
 
+@pytest.fixture(scope="session")
+def bugged_dfop_configuration() -> Configuration:
+    return load_configuration(TEST_DATA_FOLDER / "config_dfop_bugged_files.yaml")
+
 
 @pytest.fixture(scope="session")
 def all_files_dict() -> dict[str, Any]:
