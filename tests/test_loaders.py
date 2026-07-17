@@ -141,6 +141,30 @@ def test_load_dfo(dfop_configuration,time_round):
     )
 
 
+@pytest.mark.parametrize(
+    "time_round",
+    [3],
+)
+def test_load_bugged_dfo(bugged_dfop_configuration,time_round):
+    dfop_files_dict = gather_files_all_procs(bugged_dfop_configuration)
+    travel_time_data = load_dfo(bugged_dfop_configuration,dfop_files_dict["travel_times"],time_round)
+
+    expected_columns = [
+        TIME_J2000,
+        DATA_SPEC.transponder_id,
+        DATA_SPEC.travel_time,
+        DATA_SPEC.tx_time,
+    ]
+
+    assert isinstance(travel_time_data, DataFrame)
+    assert set(expected_columns) == set(travel_time_data.columns.values.tolist())
+    assert is_string_dtype(travel_time_data[DATA_SPEC.transponder_id])
+    assert is_float_dtype(travel_time_data[TIME_J2000])
+    assert all(
+        is_float_dtype(travel_time_data[column]) for column in expected_columns[2:]
+    )
+
+
 def test_load_posfilter_bad_format(configuration):
     bad_config = configuration
     bad_config.posfilter.input_files.gps_positions.format = 'bad_format'
