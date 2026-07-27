@@ -193,7 +193,7 @@ def update_position(row, Nx, X, P, R_position):
     K = (P @ H.T) @ np.linalg.inv(S)
     X = X + K @ y
 
-    I = np.identity(Nx)  # noqa: E741
+    I = np.identity(Nx)
     P = (I - K @ H) @ P
     return X, P, R_position
 
