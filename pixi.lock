@@ -2531,8 +2531,8 @@ packages:
   requires_python: '>=3.8'
 - pypi: ./
   name: gnatss
-  version: 0.1.dev357
-  sha256: 90b938b2aaed7eb207f4992678e560e263df4269ad48637e42e7c72c067b4765
+  version: 0.1.dev364
+  sha256: ec963cd681fab0d26fd1de6a461d567b168135b01f7bfb9dbf95335cd123c6b3
   requires_dist:
   - astropy>=6.1.7,<8
   - cftime>=1.6.5,<2
@@ -2560,12 +2560,12 @@ packages:
   - numpydoc ; extra == 'all'
   - pre-commit ; extra == 'all'
   - pygithub ; extra == 'all'
-  - pytest ; extra == 'all'
   - pytest-benchmark ; extra == 'all'
   - pytest-cov ; extra == 'all'
   - pytest-flake8 ; extra == 'all'
   - pytest-mock ; extra == 'all'
   - pytest-xdist ; extra == 'all'
+  - pytest<9.1 ; extra == 'all'
   - sphinx-automodapi ; extra == 'all'
   - sphinx-panels ; extra == 'all'
   - sphinx-rtd-theme ; extra == 'all'
@@ -2583,12 +2583,12 @@ packages:
   - nox ; extra == 'test'
   - pre-commit ; extra == 'test'
   - pygithub ; extra == 'test'
-  - pytest ; extra == 'test'
   - pytest-benchmark ; extra == 'test'
   - pytest-cov ; extra == 'test'
   - pytest-flake8 ; extra == 'test'
   - pytest-mock ; extra == 'test'
   - pytest-xdist ; extra == 'test'
+  - pytest<9.1 ; extra == 'test'
   requires_python: '>=3.10.17'
 - pypi: https://files.pythonhosted.org/packages/e5/5c/8c5633ece6ba611d64bf2770219a98dd439921d6424e4e8cf16b0ac74ea5/greenlet-3.4.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
   name: greenlet

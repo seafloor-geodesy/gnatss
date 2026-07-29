@@ -1178,7 +1178,7 @@ def _read_novatel_L1_data_files(
     """
     if data_format not in constants.L1_DATA_FORMAT:
         msg: str = "Unsupported data_format value"
-        raise Exception(msg)
+        raise ValueError(msg)
 
     # Read Novatel's INSPVAA/INSSTDEVA Level-1 data format including regex, fields, and dtypes
     l1_data_config = constants.L1_DATA_FORMAT.get(data_format)
