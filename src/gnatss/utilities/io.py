@@ -84,7 +84,7 @@ def check_permission(input_path: fsspec.FSMap) -> None:
         TEST_FILE = os.path.join(base_dir, ".permission_test")  # noqa: PTH118
         with input_path.fs.open(TEST_FILE, "w") as f:
             f.write("testing\n")
-    except Exception:
+    except PermissionError:
         msg = "Writing to specified path is not permitted."
         raise PermissionError(msg) from None
     finally:
