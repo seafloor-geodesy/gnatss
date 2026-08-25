@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import tarfile
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 from re import compile
+from tarfile import ReadError
 from typing import Literal
 
 import numpy as np
@@ -411,16 +413,13 @@ def load_sv3_targz(
     with tempfile.TemporaryDirectory() as temp_dir_path:
         # Iterate through targz files and extract .pin files to temp directory
         for file_list in file_paths:
-            with tarfile.open(file_list) as zipfile:
-                try:
-                    zipfile.extractall(temp_dir_path)
-                except EOFError:
-                    continue
+            with suppress(ReadError, EOFError), tarfile.open(file_list) as zipfile:
+                zipfile.extractall(temp_dir_path)
 
         # Read through .pin files and extract data
         for file in list(Path(temp_dir_path).rglob("*.pin")):
             if Path.stat(Path(temp_dir_path + "/" + file.name)).st_size != 0:
-                with Path(temp_dir_path + "/" + file.name).open() as pin_file:
+                with suppress(KeyError), Path(temp_dir_path + "/" + file.name).open() as pin_file:
                     for line_pin in pin_file:
                         try:
                             pin_json = json.loads(line_pin)
