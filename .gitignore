@@ -151,3 +151,6 @@ tests/data/2022.zip
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# Local commit message drafts
+COMMIT_MSG.txt

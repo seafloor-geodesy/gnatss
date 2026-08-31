@@ -5,6 +5,8 @@ on: [push, pull_request]
 env:
   PROJECT_NAME: "gnatss"
 
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,6 +16,8 @@ jobs:
     name: ${{ matrix.python-version }}-unit-test
     runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -21,11 +25,12 @@ jobs:
         experimental: [false]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags.
+          persist-credentials: false
       - name: Setup Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Print system platform
@@ -49,12 +54,12 @@ jobs:
           nox --verbose -s tests -- --cov=${{ env.PROJECT_NAME }} --cov-report=xml --cov-report=term tests/ |& tee unit_test_log${{ matrix.python-version }}.log
       - name: Upload unit test log
         if: ${{ success() || failure() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: unit_test_log${{ matrix.python-version }}
           path: unit_test_log${{ matrix.python-version }}.log
       - name: Upload coverage reports to Codecov with GitHub Action
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         # Don't run coverage on merge queue CI to avoid duplicating reports
         # to codecov. See https://github.com/matplotlib/napari-matplotlib/issues/155
         if: github.event_name != 'merge_group'
