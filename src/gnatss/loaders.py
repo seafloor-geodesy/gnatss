@@ -473,9 +473,18 @@ def load_sv3_targz(
                             event = pin_json[pin_event]["event"]
 
                             # Record RPH values
-                            roll1 = pin_json[pin_event]["observations"]["NOV_INS"]["r"]
-                            pitch1 = pin_json[pin_event]["observations"]["NOV_INS"]["p"]
                             heading1 = pin_json[pin_event]["observations"]["NOV_INS"]["h"]
+                            if use_ahrs:
+                                ahrs = pin_json[pin_event]["observations"].get("AHRS", {})
+                                if "roll1" in ahrs and "pitch1" in ahrs:
+                                    roll1 = ahrs["roll1"]
+                                    pitch1 = ahrs["pitch1"]
+                                else:
+                                    roll1 = nov_ins["r"]
+                                    pitch1 = nov_ins["p"]
+                            else:
+                                roll1 = nov_ins["r"]
+                                pitch1 = nov_ins["p"]
 
                             # Truncated data export for ping transmit
                             if event == "interrogation":
