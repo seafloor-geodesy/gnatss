@@ -19,12 +19,11 @@ so $a_1$ has units of time (nominally s) as expected.
 Now let us assume that the seafloor transponder remains stationary but is offset
 from $X_1$, while holding the transducer position $X_G$ constant. In this case,
 let $a_{mod}$ be the expected travel time had the acoustic pulse traveled along
-$\vec{D}_1$ and $a_{meas}$ be the measured travel time. If
-$a_{meas} \neq a_{mod}$, then the “true” raypath $\vec{D}_{1t}$ must differ from
-$\vec{D}_1$ by offset $\Delta X_1$. Assuming that
-$||\Delta X_1|| << ||\vec{D}_1||,$ we may approximate
-$\hat{D}_{1t} \approx \hat{D}_1$. This lets us write a simplified equation
-solving for the travel time residual $\Delta a_1 = a_{meas}-a_{mod}$,
+$\vec{D}_1$ and $a_{meas}$ be the measured travel time. If $a_{meas} \neq
+a_{mod}$, then the “true” raypath $\vec{D}_{1t}$ must differ from $\vec{D}_1$ by
+offset $\Delta X_1$. Assuming that $||\Delta X_1|| << ||\vec{D}_1||,$ we may
+approximate $\hat{D}_{1t} \approx \hat{D}_1$. This lets us write a simplified
+equation solving for the travel time residual $\Delta a_1 = a_{meas}-a_{mod}$,
 
 $$\frac{\hat{D}_1}{c} \cdot \Delta X_1 = \Delta a_1$$
 
@@ -47,10 +46,9 @@ Until now we have only considered a single transponder, but we may generalize
 this to an array with $i$ transponders. Assuming that the array moves as a
 block, each transponder has the same offset, so
 $\Delta X_1 = \Delta X_2 = \cdots = \Delta X_i = \Delta X$. Furthermore, since
-there may be subtle oceanographic variations across the array, let us assume
-that the raypath from the transducer to each transponder travels through a
-different mean sound velocity $c_i$. With this assumption, we can define the
-variable $\vec{P}_i$ as
+there may be subtle oceanographic variations across the array, let us assume that
+the raypath from the transducer to each transponder travels through a different mean
+sound velocity $c_i$. With this assumption, we can define the variable $\vec{P}_i$ as
 
 $$\vec{P}_i = \left( \frac{\vec{D}_{iS} + \vec{D}_{iR}}{c_i} \right)$$
 
