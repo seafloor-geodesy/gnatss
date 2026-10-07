@@ -1,0 +1,9 @@
+# Defaults
+**/.git
+**/.svn
+**/.hg
+
+# Documentation Markdown files
+docs/*.md
+
+
