@@ -6,7 +6,7 @@ classes
 
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import Literal
 
 import numpy as np
@@ -46,7 +46,7 @@ class Configuration(BaseConfiguration):
     # General configurations
     site_id: str = Field(..., description="GNSS-A site name or code")
     campaign: str | None = Field(None, description="Observation campaign name")
-    time_origin: str | datetime.datetime | None = Field(
+    time_origin: str | dt.datetime | None = Field(
         None, description="Origin of time used in the file [UTC]"
     )
     ref_frame: Literal["wgs84"] = Field("wgs84", description="Reference frame used in the file")
