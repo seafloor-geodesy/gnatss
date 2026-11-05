@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "astropy>=6.1.7,<8",
-    "fsspec>=2024.12.0,<2025",
+    "fsspec>=2026.6.0",
     "matplotlib>=3.10.7,<4",
     "numba>=0.62.1,<1",
     # numpy/f2py/f2py2e.py:719
