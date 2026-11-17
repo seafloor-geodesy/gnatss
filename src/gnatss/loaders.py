@@ -225,18 +225,26 @@ def load_dfo(
                     skip = True
                     continue
 
-                # Truncated data export for ping transmit
+                # The attached GNSS observation can precede the acoustic event.
+                # Use the event clock, matching reply event timestamps and ranges.
                 if event == "interrogation":
+                    event_clock = pin_json.get("time")
+                    event_time = (
+                        event_clock.get("common") if isinstance(event_clock, dict) else None
+                    )
+                    if (
+                        not isinstance(event_time, (int, float))
+                        or isinstance(event_time, bool)
+                        or not np.isfinite(event_time)
+                    ):
+                        msg = "DFOP interrogation requires finite event time.common"
+                        raise ValueError(msg)
                     T_transmit = AstroTime(
-                        pin_json["observations"]["GNSS"]["time"]["common"],
+                        event_time,
                         format="unix",
                         scale="tt",
                     ).rangea_j2000
-                    T_receive = AstroTime(
-                        pin_json["observations"]["GNSS"]["time"]["common"],
-                        format="unix",
-                        scale="tt",
-                    ).rangea_j2000
+                    T_receive = T_transmit
                     mtid = "T_transmit"
                     twtt = T_receive - T_transmit
                     temp_list.append(
@@ -361,9 +369,13 @@ def get_atd_offsets(config: Configuration) -> NDArray[Shape[3], Float] | None:
 
 
 def _round_time_precision(gps_data, time_round):
-    # TODO: Find a way to determine this precision dynamically?
+    # Both sides of standardize_data's exact transmit-time join must use the
+    # same precision. Rounding only the event time silently drops reply rows.
     if isinstance(time_round, int) and time_round > 0:
-        gps_data.loc[:, constants.GPS_TIME] = gps_data[constants.GPS_TIME].round(time_round)
+        gps_data[constants.GPS_TIME] = gps_data[constants.GPS_TIME].round(time_round)
+        tx_time = constants.DATA_SPEC.tx_time
+        if tx_time in gps_data.columns:
+            gps_data[tx_time] = gps_data[tx_time].round(time_round)
     return gps_data
 
 
